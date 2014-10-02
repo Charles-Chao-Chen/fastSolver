@@ -1,0 +1,46 @@
+DONE: Support multiple right hand side
+
+TODO: Avoid using eigen. Make a generic interface to use standard lib.
+
+Note: Legion rect has highest dimension increasing frist in memory, but the
+	generic interator increase the lowest dimension first.
+
+TODO: OOP design.
+
+TODO: traverse_legion_tree() for row_beg should be inside
+	set_legion_leaf().
+
+TODO: use get_accessor() in gemm().
+
+Assume: All data in region are column major for using blas and lapack,
+	so rect.dim_size(1) is the row size and likewise rect.dim_size(0)
+	is the column size.
+
+TODO: Deconstruction function to be implemented.
+
+TODO: isLegionLeaf for unbalanced tree: lchild and rchild may
+	have different values.
+
+TODO: solve_node_matrix() can take advantage of block operations
+	to avoid copying the rhs two times.
+
+TODO: LU solve for Shur complement to be parallel in serial leaf task?
+
+TODO: tree_to_array for imbalanced tree.
+
+DONE: Kmat are store in real matrix leaves.
+	Changed to be in Legion leaves.
+
+DONE: V's are stored with every node, different from the U structure.
+
+DONE: row_beg and Kmat.
+
+GIVEUP: use return value in set_Legion_tree() for nLegionLeaf.
+	not possible.
+
+DONE: create region with respect to Legion leaf.
+
+DONE: Store V as its transpose
+
+DONE: Reduction operator does not seem to be used in gemm().
+
