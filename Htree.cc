@@ -1001,6 +1001,7 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
 
 void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
+  /*
   RegionRequirement req(matrix, WRITE_DISCARD, EXCLUSIVE, matrix);
   req.add_field(FID_X);
 
@@ -1017,8 +1018,8 @@ void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) 
     acc.write(DomainPoint::from_point<2>(pir.p), 0);
 
   runtime->unmap_region(ctx, init_region);
-  
-  /*
+  */
+
   assert(matrix != LogicalRegion::NO_REGION);
   TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID, TaskArgument(NULL, 0));
 
@@ -1027,7 +1028,7 @@ void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) 
   zero_matrix_task.region_requirements[0].add_field(FID_X);
 
   runtime->execute_task(ctx, zero_matrix_task);
-  */
+
 }
 
 
