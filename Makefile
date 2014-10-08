@@ -19,7 +19,7 @@ GEN_GPU_SRC	:=				# .cu files
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
 #CC_FLAGS	:= -g -std=c++11 -I ./ -DLEGION_PROF -DLEGION_SPY
-CC_FLAGS	:= -g -I ./ -DLEGION_PROF -DLEGION_SPY
+CC_FLAGS	:= -g -I ./ -DLEGION_PROF -DLEGION_SPY -DNDEBUG
 NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 #LD_FLAGS	:= -L /usr/lib/	-l :liblapack.so.3 -l :libblas.so.3 -lm

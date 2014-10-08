@@ -18,6 +18,7 @@ public:
   //                        std::vector<DomainSplit> &slices);
   virtual bool map_task(Task *task); 
   //virtual void notify_mapping_result(const Mappable *mappable);
+  virtual void notify_mapping_failed(const Mappable *mappable);
 };
 
 

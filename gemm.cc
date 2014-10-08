@@ -80,28 +80,40 @@ void gemm_task(const Task *task, const std::vector<PhysicalRegion> &regions,
   
   Rect<2> subrect;
   ByteOffset offsets[2];
-  
+
+  /*
   double *v_ptr = acc_v.raw_rect_ptr<2>(rect_v, subrect, offsets);
   assert(rect_v == subrect);
-
   double *u_ptr = acc_u.raw_rect_ptr<2>(rect_u, subrect, offsets);
-  assert(rect_u == subrect);
-  
+  assert(rect_u == subrect);  
   double *w_ptr = acc_w.raw_rect_ptr<2>(rect_w, subrect, offsets);
   assert(rect_w == subrect);
+  */
 
+  double *v_ptr = regions[0].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect_v, subrect, offsets);
+  assert(rect_v == subrect);
+  
+  double *u_ptr = regions[1].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect_u, subrect, offsets);
+  assert(rect_u == subrect);
+    
+  double *w_ptr = regions[2].get_accessor().typeify<double>().raw_rect_ptr<2>(rect_w, subrect, offsets);
+  assert(rect_w == subrect);
+  
   char transa = 't';
   char transb = 'n';
-  int  m = rect_v.dim_size(0);
+  int  m = rect_v.dim_size(1);
   int  n = u_ncol;
-  int  k = rect_v.dim_size(1);
-  assert(k == rect_u.dim_size(1));
-  assert(m == rect_w.dim_size(1));
-  assert(n == rect_w.dim_size(0));
+  int  k = rect_v.dim_size(0);
+  assert(k == rect_u.dim_size(0));
+  assert(m == rect_w.dim_size(0));
+  assert(n == rect_w.dim_size(1));
 
   
   double beta = 1.0;
-  double * u  = u_ptr + u_col_beg * rect_u.dim_size(1);
+  int u_nrow = rect_u.dim_size(0);
+  double * u  = u_ptr + u_col_beg * u_nrow;
   blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, v_ptr, &k, u, &k, &beta, w_ptr, &m);
 }
 
@@ -113,7 +125,6 @@ void gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u, int col_beg, i
   if (v->isLegionLeaf == true) {
 
     assert(u->isLegionLeaf == true);
-
 
     gemmArg arg = {alpha, col_beg, ncol};
     TaskLauncher gemm_task(GEMM_TASK_ID, TaskArgument(&arg, sizeof(gemmArg)));
@@ -147,7 +158,7 @@ void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double beta, Log
     int ncol = ru.ncol;
     assert(v->nrow == u->nrow);
     create_matrix(res, nrow, ncol, ctx, runtime);
-    set_element(0.0, res, ctx, runtime);
+    zero_matrix(res, ctx, runtime);
     
   } else scale_matrix(beta, res, ctx, runtime);
 
@@ -194,11 +205,11 @@ void gemm2_task(const Task *task, const std::vector<PhysicalRegion> &regions,
   assert(rect_v == subrect);
 
 
-  int u_rows = rect_u.dim_size(1);
+  int u_rows = rect_u.dim_size(0);
   int u_cols = u_ncol;
-  int v_rows = rect_v.dim_size(1);
-  int v_cols = rect_v.dim_size(0);
-  int d_rows = rect_u.dim_size(1);
+  int v_rows = rect_v.dim_size(0);
+  int v_cols = rect_v.dim_size(1);
+  int d_rows = rect_u.dim_size(0);
   int d_cols = d_ncol;
   
   char transa = 'n';

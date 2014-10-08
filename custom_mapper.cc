@@ -231,6 +231,7 @@ AdversarialMapper::AdversarialMapper(Machine *m,
 //  choices for all options except the last one.  Here
 //  we choose a random processor in our system to 
 //  send the task to.
+
 void AdversarialMapper::select_task_options(Task *task)
 {
   task->inline_task = false;
@@ -242,6 +243,8 @@ void AdversarialMapper::select_task_options(Task *task)
   task->target_proc = 
     DefaultMapper::select_random_processor(all_procs, Processor::LOC_PROC, machine);
 }
+
+
 
 // The second call that we override is the slice_domain
 // method. The slice_domain call is used by the runtime
@@ -321,29 +324,29 @@ void AdversarialMapper::select_task_options(Task *task)
 bool AdversarialMapper::map_task(Task *task)
 {
   /*
-  const std::set<Memory> &vis_mems = 
+    const std::set<Memory> &vis_mems = 
     machine->get_visible_memories(task->target_proc);  
-  assert(!vis_mems.empty());
-  for (unsigned idx = 0; idx < task->regions.size(); idx++)
+    assert(!vis_mems.empty());
+    for (unsigned idx = 0; idx < task->regions.size(); idx++)
     {
-      std::set<Memory> mems_copy = vis_mems;  
-      // Assign memories in a random order
-      while (!mems_copy.empty())
-	{
-	  unsigned mem_idx = (1 % mems_copy.size()); // lrand48()
-	  std::set<Memory>::iterator it = mems_copy.begin();
-	  for (unsigned i = 0; i < mem_idx; i++)
-	    it++;
-	  task->regions[idx].target_ranking.push_back(*it);
-	  mems_copy.erase(it);
-	}
-      task->regions[idx].virtual_map = false;
-      task->regions[idx].enable_WAR_optimization = false;
-      task->regions[idx].reduction_list = false;
-      task->regions[idx].blocking_factor = 1;
+    std::set<Memory> mems_copy = vis_mems;  
+    // Assign memories in a random order
+    while (!mems_copy.empty())
+    {
+    unsigned mem_idx = (1 % mems_copy.size()); // lrand48()
+    std::set<Memory>::iterator it = mems_copy.begin();
+    for (unsigned i = 0; i < mem_idx; i++)
+    it++;
+    task->regions[idx].target_ranking.push_back(*it);
+    mems_copy.erase(it);
     }
-  // Report successful mapping results
-  return true;
+    task->regions[idx].virtual_map = false;
+    task->regions[idx].enable_WAR_optimization = false;
+    task->regions[idx].reduction_list = false;
+    task->regions[idx].blocking_factor = 1;
+    }
+    // Report successful mapping results
+    return true;
   */
     
   // Put everything in the system memory
@@ -363,6 +366,11 @@ bool AdversarialMapper::map_task(Task *task)
       //task->regions[idx].max_blocking_factor;
     } 
   return true;
+}
+
+void AdversarialMapper::notify_mapping_failed(const Mappable *mappable)
+{
+  printf("WARNING: MAPPING FAILED!  Retrying...\n");
 }
 
 /*
@@ -395,19 +403,19 @@ bool AdversarialMapper::map_task(Task *task)
 // were mapped for each logical region of each task so we can
 // see that the assignment truly is random.
 /*
-  void AdversarialMapper::notify_mapping_result(const Mappable *mappable)
-  {
+void AdversarialMapper::notify_mapping_result(const Mappable *mappable)
+{
   if (mappable->get_mappable_kind() == Mappable::TASK_MAPPABLE)
-  {
-  const Task *task = mappable->as_mappable_task();
-  assert(task != NULL);
-  for (unsigned idx = 0; idx < task->regions.size(); idx++)
-  {
-  printf("Mapped region %d of task %s (ID %lld) to memory %x\n",
-  idx, task->variants->name, 
-  task->get_unique_task_id(),
-  task->regions[idx].selected_memory.id);
-  }
-  }
-  }
+    {
+      const Task *task = mappable->as_mappable_task();
+      assert(task != NULL);
+      for (unsigned idx = 0; idx < task->regions.size(); idx++)
+	{
+	  printf("Mapped region %d of task %s (ID %lld) to memory %x\n",
+		 idx, task->variants->name, 
+		 task->get_unique_task_id(),
+		 task->regions[idx].selected_memory.id);
+	}
+    }
+}
 */

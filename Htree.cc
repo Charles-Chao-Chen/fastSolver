@@ -3,8 +3,31 @@
 #include <iomanip>
 
 void register_save_task() {
-
+  
   HighLevelRuntime::register_legion_task<save_task>(SAVE_REGION_TASK_ID, Processor::LOC_PROC, true, true);
+
+}
+
+void register_zero_matrix_task() {
+  
+  HighLevelRuntime::register_legion_task<zero_matrix_task>(ZERO_MATRIX_TASK_ID,
+							   Processor::LOC_PROC,
+							   true, true,
+							   AUTO_GENERATE_ID,
+							   TaskConfigOptions(true/*leaf*/),
+							   "zero_matrix_task");
+
+}
+
+
+void register_circulant_matrix_task() {
+  
+  HighLevelRuntime::register_legion_task<circulant_matrix_task>(CIRCULANT_MATRIX_TASK_ID,
+							   Processor::LOC_PROC,
+							   true, true,
+							   AUTO_GENERATE_ID,
+							   TaskConfigOptions(true/*leaf*/),
+							   "circulant_matrix_task");
 
 }
 
@@ -83,6 +106,8 @@ LR_Matrix::LR_Matrix(int N, int threshold, int rhs_cols_, int r_, Context ctx_, 
   uroot -> ncol = rhs_cols;
   create_default_tree(uroot, r, threshold);
 
+  //print_legion_tree(uroot);
+
   // postpone creating V tree after setting the legion leaf
 }
 
@@ -99,6 +124,8 @@ void LR_Matrix::create_legion_leaf(int nleaf_per_legion_node) {
   vroot -> nrow = uroot->nrow;
   vroot -> ncol = 0;
   create_vnode_from_unode(uroot, vroot);
+
+  //print_legion_tree(vroot);
 }
 
 
@@ -801,7 +828,7 @@ void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
 
 void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Context ctx, HighLevelRuntime *runtime) {
 
-  
+
   InlineLauncher launcher(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
   
   launcher.requirement.add_field(FID_X);
@@ -814,18 +841,73 @@ void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Contex
   Domain dom = runtime->get_index_space_domain(ctx, data.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
 
-  assert( (rect.dim_size(0) - col_beg) % r == 0 );
+  int nrow = rect.dim_size(0);
+  int ncol = rect.dim_size(1);
+  assert( (ncol - col_beg) % r == 0 );
   GenericPointInRectIterator<2> pir(rect);
 
-  for (int j=0; j<rect.dim_size(0) - col_beg; j++) {
-    for (int i=0; i<rect.dim_size(1); i++, pir++) {
+  for (int j=0; j<ncol - col_beg; j++) {
+    for (int i=0; i<nrow; i++, pir++) {
       int value = (j+i+row_beg)%r;
-      int pt[2] = {j+col_beg, i};
+      int pt[2] = {i, j+col_beg};
       acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), value);
     }
   }
   
   runtime->unmap_region(ctx, region);
+
+    
+  /*
+  CirArg cir_arg = {col_beg, row_beg, r};
+  TaskLauncher circulant_matrix_task(CIRCULANT_MATRIX_TASK_ID, TaskArgument(&cir_arg, sizeof(CirArg)));
+
+  circulant_matrix_task.add_region_requirement(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
+  circulant_matrix_task.region_requirements[0].add_field(FID_X);
+
+  runtime->execute_task(ctx, circulant_matrix_task);
+*/
+}
+
+
+void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+			   Context ctx, HighLevelRuntime *runtime) {
+
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  assert(task->arglen == sizeof(CirArg));
+
+  const CirArg cir_arg = *((const CirArg*)task->args);
+  int col_beg = cir_arg.col_beg;
+  int row_beg = cir_arg.row_beg;
+  int r       = cir_arg.r;
+  
+  IndexSpace is = task->regions[0].region.get_index_space();
+  Domain dom = runtime->get_index_space_domain(ctx, is);
+  Rect<2> rect = dom.get_rect<2>();
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+
+  double *ptr = regions[0].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect, subrect, offsets);
+  assert(rect == subrect);
+  assert(ptr  != NULL);
+  
+  int nrow = rect.dim_size(0);
+  int ncol = rect.dim_size(1);
+  assert( (ncol - col_beg) % r == 0 );
+    
+  for (int j=0; j<ncol - col_beg; j++) {
+    for (int i=0; i<nrow; i++) {
+      int value = (j+i+row_beg)%r;
+
+      int irow = i;
+      int icol = j+col_beg;
+      ptr[irow + icol*nrow] = value;
+      //int pt[2] = {i, j+col_beg};
+      //acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), value);
+    }
+  }
 }
 
 
@@ -881,17 +963,24 @@ void LeafData::set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context 
   Domain dom = runtime->get_index_space_domain(ctx, data.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
 
-  //assert(nrow == rect.dim_size(1));
-  int nrow = rect.dim_size(1);
-  assert(rhs_cols <= rect.dim_size(0));
-  
+  int nrow = rect.dim_size(0);
+  assert(rhs_cols <= rect.dim_size(1));
+
+  /*
+  for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
+    int value = mat[row_beg+i+j*rhs_rows];
+    acc.write(DomainPoint::from_point<2>( pir.p ), value);
+  }
+*/
+
   for (int j=0; j<rhs_cols; j++) {
     for (int i=0; i<nrow; i++) {
-      int pt[2] = {j, i};
+      int pt[2] = {i, j};
       acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), mat[row_beg+i+j*rhs_rows]);
     }
   }
-  
+
+    
   runtime->unmap_region(ctx, region);
 }
 
@@ -899,7 +988,7 @@ void LeafData::set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context 
 void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, HighLevelRuntime *runtime) {
   
   int lower[2] = {0,      0};
-  int upper[2] = {ncol-1, nrow-1}; // note the order and inclusive bound
+  int upper[2] = {nrow-1, ncol-1}; // inclusive bound
   Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
   IndexSpace is = runtime->create_index_space(ctx, Domain::from_rect<2>(rect));
   FieldSpace fs = runtime->create_field_space(ctx);
@@ -910,7 +999,7 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
 }
 
 
-void set_element(double x, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
+void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
   RegionRequirement req(matrix, WRITE_DISCARD, EXCLUSIVE, matrix);
   req.add_field(FID_X);
@@ -925,14 +1014,64 @@ void set_element(double x, LogicalRegion &matrix, Context ctx, HighLevelRuntime 
   Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
   for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
-    acc.write(DomainPoint::from_point<2>(pir.p), x);
+    acc.write(DomainPoint::from_point<2>(pir.p), 0);
 
   runtime->unmap_region(ctx, init_region);
+  
+  /*
+  assert(matrix != LogicalRegion::NO_REGION);
+  TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID, TaskArgument(NULL, 0));
+
+  zero_matrix_task.add_region_requirement(RegionRequirement(matrix, WRITE_DISCARD, EXCLUSIVE, matrix));
+      
+  zero_matrix_task.region_requirements[0].add_field(FID_X);
+
+  runtime->execute_task(ctx, zero_matrix_task);
+  */
 }
+
+
+void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+	       Context ctx, HighLevelRuntime *runtime) {
+
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  assert(task->arglen == 0);
+
+  IndexSpace is = task->regions[0].region.get_index_space();
+  Domain dom = runtime->get_index_space_domain(ctx, is);
+  Rect<2> rect = dom.get_rect<2>();
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+
+  double *ptr = regions[0].get_field_accessor(FID_X).typeify<double>().raw_rect_ptr<2>(rect, subrect, offsets);
+  assert(rect == subrect);
+  assert(ptr  != NULL);
+  
+  int nrow = rect.dim_size(0);
+  int ncol = rect.dim_size(1);
+  int size = nrow * ncol;
+
+  memset(ptr, 0, size*sizeof(double));
+}
+
+  /*
+  RegionAccessor<AccessorType::Generic, double> acc =
+    init_region.get_field_accessor(FID_X).typeify<double>();
+
+  Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
+  Rect<2> rect = dom.get_rect<2>();
+  for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
+    // the lowest dimension, i.e. 0-d increases first
+    acc.write(DomainPoint::from_point<2>(pir.p), x);
+  */
 
 
 void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
+  assert(false);
+  /*
   RegionRequirement req(matrix, READ_WRITE, EXCLUSIVE, matrix);
   req.add_field(FID_X);
 
@@ -946,11 +1085,12 @@ void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRunt
   Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
   for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
+    // the lowest dimension, i.e. 0-d increases first
     double x = acc.read(DomainPoint::from_point<2>(pir.p));
     acc.write(DomainPoint::from_point<2>(pir.p), beta * x);
   }
-
   runtime->unmap_region(ctx, init_region);
+  */
 }
 
 
@@ -969,18 +1109,14 @@ void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string file
   Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
 
-  int nrow = rect.dim_size(1);
-
-  //int ncol = rect.dim_size(0);
-
-
   Rect<2> subrect;
   ByteOffset offsets[2];
 
   double *ptr = acc.raw_rect_ptr<2>(rect, subrect, offsets);
   assert(rect == subrect);
 
-  double *x = ptr + col_beg * rect.dim_size(0);
+  int nrow = rect.dim_size(0);
+  double *x = ptr + col_beg * nrow; // to be double checked
 
   //GenericPointInRectIterator<2> pir(rect);
 
@@ -988,14 +1124,8 @@ void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string file
   outputFile<<nrow<<std::endl;
   outputFile<<ncol<<std::endl;
 
-  for (int i=0; i<nrow; i++) {
-    for (int j=0; j<ncol; j++) {
-      //assert(pir.p[1] < nrow);
-      //assert(pir.p[0] < ncol);
-
-      //double x = acc.read(DomainPoint::from_point<2>(pir.p));
-      //outputFile << x << '\t';
-      //pir++;
+  for (int j=0; j<ncol; j++) {
+    for (int i=0; i<nrow; i++) {
       outputFile << std::setprecision(20) << x[i+j*nrow] << '\t';
     }
     outputFile << std::endl;
@@ -1021,15 +1151,14 @@ void save_region(LogicalRegion & matrix, std::string filename, Context ctx, High
   Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
 
-  int nrow = rect.dim_size(1);
-  int ncol = rect.dim_size(0);
-
-  GenericPointInRectIterator<2> pir(rect);
+  int nrow = rect.dim_size(0);
+  int ncol = rect.dim_size(1);
 
   std::ofstream outputFile(filename.c_str(), std::ios_base::app);
   outputFile<<nrow<<std::endl;
   outputFile<<ncol<<std::endl;
 
+  GenericPointInRectIterator<2> pir(rect);
   for (int i=0; i<nrow; i++) {
     for (int j=0; j<ncol; j++) {
       assert(pir.p[1] < nrow);
@@ -1063,7 +1192,6 @@ void save_region(FSTreeNode * node, range rg, std::string filename, Context ctx,
 void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime) {
 
   if (node->isLegionLeaf == true) {
-    //save_region(node->matrix->data, filename, ctx, runtime);
     
     TaskLauncher save_task(SAVE_REGION_TASK_ID, TaskArgument(&filename[0], filename.size()+1));
 
@@ -1075,8 +1203,7 @@ void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevel
   } else {
     save_region(node->lchild, filename, ctx, runtime);
     save_region(node->rchild, filename, ctx, runtime);
-  }
-  
+  }  
 }
 
 
@@ -1085,7 +1212,6 @@ void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
-  //assert(task->arglen == 0);
   char* filename = (char *)task->args;
 
   IndexSpace is_u = task->regions[0].region.get_index_space();
@@ -1102,15 +1228,14 @@ void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
   assert(rect_u == subrect);
 
 
-  int nrow = rect_u.dim_size(1);
-  int ncol = rect_u.dim_size(0);
-
-  GenericPointInRectIterator<2> pir(rect_u);
+  int nrow = rect_u.dim_size(0);
+  int ncol = rect_u.dim_size(1);
 
   std::ofstream outputFile(filename, std::ios_base::app);
   outputFile<<nrow<<std::endl;
   outputFile<<ncol<<std::endl;
 
+  GenericPointInRectIterator<2> pir(rect_u);
   for (int i=0; i<nrow; i++) {
     for (int j=0; j<ncol; j++) {
       assert(pir.p[1] < nrow);
@@ -1122,9 +1247,7 @@ void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
     }
     outputFile << std::endl;
   }
-
-  outputFile.close();  
-
+  outputFile.close();
 }
 
 
@@ -1172,8 +1295,7 @@ void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRu
   } else {
     save_kmat(node->lchild, filename, ctx, runtime);
     save_kmat(node->rchild, filename, ctx, runtime);
-  }
-  
+  }  
 }
 
 
@@ -1244,8 +1366,8 @@ void LR_Matrix::get_soln_from_region(double *soln, FSTreeNode *node, int row_beg
     Domain dom = runtime->get_index_space_domain(ctx, node->matrix->data.get_index_space());
     Rect<2> rect = dom.get_rect<2>();
 
-    int nrow = rect.dim_size(1);
-    int ncol = rect.dim_size(0);
+    int nrow = rect.dim_size(0);
+    //int ncol = rect.dim_size(1);
 
     Rect<2> subrect;
     ByteOffset offsets[2];

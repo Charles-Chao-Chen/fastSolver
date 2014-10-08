@@ -1,8 +1,10 @@
 DONE: Support multiple right hand side
 
-TODO: Avoid using eigen. Make a generic interface to use standard lib.
+DONE: Avoid using eigen. 
 
-Note: Legion rect has highest dimension increasing frist in memory, but the
+TODO: Make a generic interface to use standard lib.
+
+Note: Legion rect has lowest dimension increasing frist in memory, but the
 	generic interator increase the lowest dimension first.
 
 TODO: OOP design.
@@ -10,10 +12,10 @@ TODO: OOP design.
 TODO: traverse_legion_tree() for row_beg should be inside
 	set_legion_leaf().
 
-TODO: use get_accessor() in gemm().
+DONE: use get_accessor() in gemm().
 
 Assume: All data in region are column major for using blas and lapack,
-	so rect.dim_size(1) is the row size and likewise rect.dim_size(0)
+	so rect.dim_size(0) is the row size and likewise rect.dim_size(1)
 	is the column size.
 
 TODO: Deconstruction function to be implemented.

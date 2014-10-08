@@ -7,7 +7,14 @@
 
 void register_solver_task() {
   
-  HighLevelRuntime::register_legion_task<leaf_task>(LEAF_TASK_ID, Processor::LOC_PROC, true, true, AUTO_GENERATE_ID, TaskConfigOptions(true/*leaf*/), "leaf_task");
+  HighLevelRuntime::register_legion_task<leaf_task>(LEAF_TASK_ID,
+						    Processor::LOC_PROC,
+						    true,
+						    true,
+						    AUTO_GENERATE_ID,
+						    TaskConfigOptions(true/*leaf*/),
+						    "leaf_task");
+  
   HighLevelRuntime::register_legion_task<lu_solve_task>(LU_SOLVE_TASK_ID, Processor::LOC_PROC, true, true, AUTO_GENERATE_ID, TaskConfigOptions(true/*leaf*/), "lu_task");
 }
 
@@ -197,24 +204,31 @@ void leaf_task(const Task *task, const std::vector<PhysicalRegion> &regions,
    double *u_ptr = acc_u.raw_rect_ptr<2>(rect_u, subrect, offsets);
    assert(u_ptr != NULL);
    assert(rect_u == subrect);
-   std::cout << "U Offset: " << offsets[0].offset
-   	     << ", "         << offsets[1].offset << std::endl;
-   
-   double *v_ptr = acc_v.raw_rect_ptr<2>(rect_v, subrect, offsets);
-   assert(u_ptr != NULL);
-   assert(rect_v == subrect);
-   std::cout << "V Offset: " << offsets[0].offset
-   	     << ", "         << offsets[1].offset << std::endl;
+
+   //printf("U size: %d x %d\n", rect_u.dim_size(0), rect_u.dim_size(1));
+   //std::cout << "U Offset: " << offsets[0].offset
+   //	     << ", "         << offsets[1].offset << std::endl;
+
+   double *v_ptr = NULL;
+   if (rect_v.volume() != 0) {
+     // if legion leaf coinsides real leaf, no V is needed
+     v_ptr = acc_v.raw_rect_ptr<2>(rect_v, subrect, offsets);
+     assert(v_ptr != NULL);
+     assert(rect_v == subrect);
+     //std::cout << "V Offset: " << offsets[0].offset
+     //	     << ", "         << offsets[1].offset << std::endl;
+   }
    
    double *k_ptr = acc_k.raw_rect_ptr<2>(rect_k, subrect, offsets);
-   assert(u_ptr != NULL);
+   assert(k_ptr != NULL);
    assert(rect_k == subrect);
-   std::cout << "K Offset: " << offsets[0].offset
-   	     << ", "         << offsets[1].offset << std::endl;
+   //std::cout << "K Offset: " << offsets[0].offset
+   //	     << ", "         << offsets[1].offset << std::endl;
 
-   int row_size = offsets[0].offset / sizeof(double);
-   //printf("region row size: %d\n", row_size);
-   recLU_leaf_solve(uroot, vroot, u_ptr, v_ptr, k_ptr, row_size);
+   int l_dim  = offsets[1].offset / sizeof(double);
+   int u_nrow = rect_u.dim_size(0);
+   assert( l_dim == u_nrow );   
+   recLU_leaf_solve(uroot, vroot, u_ptr, v_ptr, k_ptr, l_dim);
 }
 
 
@@ -299,16 +313,10 @@ void recLU_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode, double * u_ptr, do
       
     int INFO;
     int IPIV[N];
-
-    //printf("U 2x2: %f, %f, %f, %f.\n", B[0], B[1], B[LDA], B[LDA+1]);
-
-    printf("LU in leaf solve with K. LDA = %d.\n", LDA);
+    
     lapack::dgesv_(&N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
     assert(INFO == 0);
-    //printf("LU Solve: %d\n", INFO);
 
-    //intf("K 2x2: %f, %f, %f, %f.\n", A[0], A[1], A[LDA], A[LDA+1]);
-    //printf("U 2x2: %f, %f, %f, %f.\n", B[0], B[1], B[LDA], B[LDA+1]);
     return;
   }
 
@@ -377,7 +385,6 @@ void recLU_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode, double * u_ptr, do
   int IPIV[S_size];
   assert(d0_cols == d1_cols);
 
-  printf("LU in leaf solve for Shur.\n");
   lapack::dgesv_(&S_size, &d0_cols, S, &S_size, IPIV, S_RHS, &S_size, &INFO);
   assert(INFO == 0);
 
@@ -506,14 +513,14 @@ void lu_solve_task(const Task *task, const std::vector<PhysicalRegion> &regions,
   assert(rect_V1Td1 == subrect);
 
 
-  int V0Tu0_rows = rect_V0Tu0.dim_size(1);
-  int V0Tu0_cols = rect_V0Tu0.dim_size(0);
-  int V1Tu1_rows = rect_V1Tu1.dim_size(1);
-  int V1Tu1_cols = rect_V1Tu1.dim_size(0);
-  int V0Td0_rows = rect_V0Td0.dim_size(1);
-  int V0Td0_cols = rect_V0Td0.dim_size(0);
-  int V1Td1_rows = rect_V1Td1.dim_size(1);
-  int V1Td1_cols = rect_V1Td1.dim_size(0);
+  int V0Tu0_rows = rect_V0Tu0.dim_size(0);
+  int V0Tu0_cols = rect_V0Tu0.dim_size(1);
+  int V1Tu1_rows = rect_V1Tu1.dim_size(0);
+  int V1Tu1_cols = rect_V1Tu1.dim_size(1);
+  int V0Td0_rows = rect_V0Td0.dim_size(0);
+  int V0Td0_cols = rect_V0Td0.dim_size(1);
+  int V1Td1_rows = rect_V1Td1.dim_size(0);
+  int V1Td1_cols = rect_V1Td1.dim_size(1);
 
   assert(V0Td0_cols == V1Td1_cols);
   assert(V0Tu0_rows + V1Tu1_rows == V0Tu0_cols + V1Tu1_cols);
@@ -586,7 +593,6 @@ void lu_solve_task(const Task *task, const std::vector<PhysicalRegion> &regions,
     }
   }
 
-  printf("LU solve task.\n");
   lapack::dgesv_(&N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
   assert(INFO == 0);
 
