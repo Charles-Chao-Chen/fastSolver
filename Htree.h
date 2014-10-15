@@ -24,6 +24,7 @@ enum {
   SAVE_REGION_TASK_ID = 10,
   ZERO_MATRIX_TASK_ID = 20,
   CIRCULANT_MATRIX_TASK_ID = 30,
+  CIRCULANT_KMAT_TASK_ID = 40,
 };
 
 enum MatrixType {
@@ -45,6 +46,13 @@ struct CirArg {
 };
 
 
+struct CirKmatArg {
+  int row_beg;
+  int r;
+  double diag;
+};
+
+
 struct LeafData {
 
   //friend void set_element(double x, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime);
@@ -60,7 +68,10 @@ struct LeafData {
 
   void set_circulant_matrix_data(int col_beg, int row_beg, int r, Context ctx, HighLevelRuntime *runtime);
 
-    
+void set_circulant_kmat(CirKmatArg arg,
+			Context ctx, HighLevelRuntime *runtime);
+
+  
   //int col_beg; // begin index in the region
   //int row_beg;
   int cols;
@@ -203,6 +214,7 @@ void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevel
 void register_save_task();
 void register_zero_matrix_task();
 void register_circulant_matrix_task();
+void register_circulant_kmat_task();
 
 void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime);
@@ -231,6 +243,8 @@ void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regio
 void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime);
 
+void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+	       Context ctx, HighLevelRuntime *runtime);
 
 
 int  tree_to_array(FSTreeNode *, FSTreeNode *, int);

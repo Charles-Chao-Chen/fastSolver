@@ -23,11 +23,23 @@ void register_zero_matrix_task() {
 void register_circulant_matrix_task() {
   
   HighLevelRuntime::register_legion_task<circulant_matrix_task>(CIRCULANT_MATRIX_TASK_ID,
-							   Processor::LOC_PROC,
-							   true, true,
-							   AUTO_GENERATE_ID,
-							   TaskConfigOptions(true/*leaf*/),
-							   "circulant_matrix_task");
+								Processor::LOC_PROC,
+								true, true,
+								AUTO_GENERATE_ID,
+								TaskConfigOptions(true/*leaf*/),
+								"circulant_matrix_task");
+
+}
+
+
+void register_circulant_kmat_task() {
+  
+  HighLevelRuntime::register_legion_task<circulant_kmat_task>(CIRCULANT_KMAT_TASK_ID,
+								Processor::LOC_PROC,
+								true, true,
+								AUTO_GENERATE_ID,
+								TaskConfigOptions(true/*leaf*/),
+								"circulant_kmat_task");
 
 }
 
@@ -60,7 +72,7 @@ LR_Matrix::LR_Matrix(int nleaf_per_legion_node, Context ctx_, HighLevelRuntime *
 
 
 /*
-void LR_Matrix::initialize(HODLR_Tree::node *HODLRroot, Eigen::VectorXd &RHS) {
+  void LR_Matrix::initialize(HODLR_Tree::node *HODLRroot, Eigen::VectorXd &RHS) {
 
   assert(HODLRroot != NULL);
 
@@ -90,7 +102,7 @@ void LR_Matrix::initialize(HODLR_Tree::node *HODLRroot, Eigen::VectorXd &RHS) {
 
   Eigen::MatrixXd vmat(RHS.rows(), 0);
   init_Vmat(HODLRroot, vroot, vmat);  
-}
+  }
 */
 
 /* Input:
@@ -172,29 +184,29 @@ void create_default_tree(FSTreeNode *node, int r, int threshold) {
 
 
 /*
-void LR_Matrix::init_RHS(Eigen::MatrixXd &RHS) {
+  void LR_Matrix::init_RHS(Eigen::MatrixXd &RHS) {
   assert(uroot->nrow == RHS.rows());
   init_RHS(uroot, RHS);
-}
+  }
 
 
-void LR_Matrix::init_RHS(FSTreeNode *node, Eigen::MatrixXd &RHS) {
+  void LR_Matrix::init_RHS(FSTreeNode *node, Eigen::MatrixXd &RHS) {
 
   if (node->isLegionLeaf == true) {
 
-    assert(node->matrix != NULL);
-    // initialize region as RHS
-    node->matrix->set_matrix_data(RHS, ctx, runtime);  
-    return;
+  assert(node->matrix != NULL);
+  // initialize region as RHS
+  node->matrix->set_matrix_data(RHS, ctx, runtime);  
+  return;
     
   } else { // recursively split RHS
-    Eigen::MatrixXd RHS1 = RHS.topRows(node->lchild->nrow);
-    Eigen::MatrixXd RHS2 = RHS.bottomRows(node->rchild->nrow);
+  Eigen::MatrixXd RHS1 = RHS.topRows(node->lchild->nrow);
+  Eigen::MatrixXd RHS2 = RHS.bottomRows(node->rchild->nrow);
     
-    init_RHS(node->lchild, RHS1);
-    init_RHS(node->rchild, RHS2);
+  init_RHS(node->lchild, RHS1);
+  init_RHS(node->rchild, RHS2);
   }  
-}
+  }
 */
 
 
@@ -249,14 +261,17 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, int row_beg) {
     int nrow = node->kmat->rows;
     int ncol = node->kmat->cols;
 
+    /*
+      double *K = (double *) calloc(nrow*ncol, sizeof(double));
+      fill_circulant_kmat(node, row_beg, r, diag, K, nrow);
+      node->kmat->set_matrix_data(K, nrow, ncol, ctx, runtime);
+      free(K);
+    */
 
-    double *K = (double *) calloc(nrow*ncol, sizeof(double));
-    fill_circulant_kmat(node, row_beg, r, diag, K, nrow);
-    node->kmat->set_matrix_data(K, nrow, ncol, ctx, runtime);
-    free(K);
-
-    
-    //node->kmat->set_circulant_kmat(, nrow, ncol, ctx, runtime);
+    // only support real leaf currently
+    assert(node->lchild == NULL && node->rchild == NULL);
+    CirKmatArg arg = {row_beg, r, diag};
+    node->kmat->set_circulant_kmat(arg, ctx, runtime);
 
     
   } else {
@@ -314,31 +329,31 @@ void LR_Matrix::save_solution(std::string filename) {
 // This function constructs the Legion tree and computes the begin column index of every node.
 void LR_Matrix::create_legion_tree(HODLR_Tree::node *HODLRnode, FSTreeNode *Lnode) {
 
-  Lnode -> lchild = new FSTreeNode;
-  Lnode -> rchild = new FSTreeNode;
+Lnode -> lchild = new FSTreeNode;
+Lnode -> rchild = new FSTreeNode;
 
-  Lnode -> lchild -> col_beg = Lnode -> col_beg + Lnode -> ncol;
-  Lnode -> rchild -> col_beg = Lnode -> col_beg + Lnode -> ncol;
+Lnode -> lchild -> col_beg = Lnode -> col_beg + Lnode -> ncol;
+Lnode -> rchild -> col_beg = Lnode -> col_beg + Lnode -> ncol;
 
-  assert(HODLRnode -> splitIndex_i - HODLRnode -> min_i + 1 == HODLRnode->topOffDiagU.rows());
-  assert(HODLRnode -> topOffDiagRank                    == HODLRnode->topOffDiagU.cols());
-  Lnode -> lchild -> nrow = HODLRnode -> splitIndex_i - HODLRnode -> min_i + 1;
-  Lnode -> lchild -> ncol = HODLRnode -> topOffDiagRank;
+assert(HODLRnode -> splitIndex_i - HODLRnode -> min_i + 1 == HODLRnode->topOffDiagU.rows());
+assert(HODLRnode -> topOffDiagRank                    == HODLRnode->topOffDiagU.cols());
+Lnode -> lchild -> nrow = HODLRnode -> splitIndex_i - HODLRnode -> min_i + 1;
+Lnode -> lchild -> ncol = HODLRnode -> topOffDiagRank;
 
-  assert(HODLRnode -> max_i - HODLRnode -> splitIndex_i == HODLRnode->bottOffDiagU.rows());
-  assert(HODLRnode -> bottOffDiagRank               == HODLRnode->bottOffDiagU.cols());
-  Lnode -> rchild -> nrow = HODLRnode -> max_i - HODLRnode -> splitIndex_i;
-  Lnode -> rchild -> ncol = HODLRnode -> bottOffDiagRank;
+assert(HODLRnode -> max_i - HODLRnode -> splitIndex_i == HODLRnode->bottOffDiagU.rows());
+assert(HODLRnode -> bottOffDiagRank               == HODLRnode->bottOffDiagU.cols());
+Lnode -> rchild -> nrow = HODLRnode -> max_i - HODLRnode -> splitIndex_i;
+Lnode -> rchild -> ncol = HODLRnode -> bottOffDiagRank;
   
-  if (HODLRnode -> left -> isLeaf == false)
-    create_legion_tree(HODLRnode->left, Lnode->lchild);
-  else
-    Lnode -> lchild -> lchild = Lnode -> lchild -> rchild = NULL;
+if (HODLRnode -> left -> isLeaf == false)
+create_legion_tree(HODLRnode->left, Lnode->lchild);
+else
+Lnode -> lchild -> lchild = Lnode -> lchild -> rchild = NULL;
   
-  if (HODLRnode -> right -> isLeaf == false)
-    create_legion_tree(HODLRnode->right, Lnode->rchild);
-  else
-    Lnode -> rchild -> lchild = Lnode -> rchild -> rchild = NULL;  
+if (HODLRnode -> right -> isLeaf == false)
+create_legion_tree(HODLRnode->right, Lnode->rchild);
+else
+Lnode -> rchild -> lchild = Lnode -> rchild -> rchild = NULL;  
 }
 */
 
@@ -531,13 +546,13 @@ void LR_Matrix::create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode) {
     int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
 
     //if (vcol > 0) {
-      // when the legion leaf is the real leaf, there is
-      // no data here.
-      vnode->matrix = new LeafData;
-      vnode->matrix->rows = vrow;
-      vnode->matrix->cols = vcol;
-      create_matrix(vnode->matrix->data, vrow, vcol, ctx, runtime);
-      //}
+    // when the legion leaf is the real leaf, there is
+    // no data here.
+    vnode->matrix = new LeafData;
+    vnode->matrix->rows = vrow;
+    vnode->matrix->cols = vcol;
+    create_matrix(vnode->matrix->data, vrow, vcol, ctx, runtime);
+    //}
 
     // create K matrix
     vnode->kmat = new LeafData;
@@ -549,22 +564,22 @@ void LR_Matrix::create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode) {
 
 
 /*
-template <MatrixType matType>
-void append_matrix(HODLR_Tree::node *HODLRnode, FSTreeNode *node, Eigen::MatrixXd & pmat) {
+  template <MatrixType matType>
+  void append_matrix(HODLR_Tree::node *HODLRnode, FSTreeNode *node, Eigen::MatrixXd & pmat) {
 
   if (node->lchild == NULL && node->rchild == NULL) {
-    assert(HODLRnode->isLeaf == true);
-    return;
+  assert(HODLRnode->isLeaf == true);
+  return;
   }
 
   Eigen::MatrixXd lmat, rmat;
   if (matType == UMatrix) {
-    lmat = HODLRnode->topOffDiagU;
-    rmat = HODLRnode->bottOffDiagU;
+  lmat = HODLRnode->topOffDiagU;
+  rmat = HODLRnode->bottOffDiagU;
   }
   else if (matType == VMatrix) {
-    rmat = HODLRnode->topOffDiagV;
-    lmat = HODLRnode->bottOffDiagV;
+  rmat = HODLRnode->topOffDiagV;
+  lmat = HODLRnode->bottOffDiagV;
   } else assert(false);
   
   assert(node->lchild->nrow == lmat.rows());
@@ -577,32 +592,32 @@ void append_matrix(HODLR_Tree::node *HODLRnode, FSTreeNode *node, Eigen::MatrixX
 
   append_matrix<matType>(HODLRnode->left,  node->lchild, pmat);
   append_matrix<matType>(HODLRnode->right, node->rchild, pmat);
-}
+  }
 
 
-// the left most columns in umat are the right hand side
-void LR_Matrix::init_Umat(HODLR_Tree::node *HODLRnode, FSTreeNode *unode, Eigen::MatrixXd &umat) {
+  // the left most columns in umat are the right hand side
+  void LR_Matrix::init_Umat(HODLR_Tree::node *HODLRnode, FSTreeNode *unode, Eigen::MatrixXd &umat) {
 
   if (unode->isLegionLeaf == true) {
 
-    //assert(vnode->isLegionLeaf == true);
-    Eigen::MatrixXd u(unode->matrix->rows, unode->matrix->cols);
-    //Eigen::MatrixXd v(vnode->matrix->rows, vnode->matrix->cols);
+  //assert(vnode->isLegionLeaf == true);
+  Eigen::MatrixXd u(unode->matrix->rows, unode->matrix->cols);
+  //Eigen::MatrixXd v(vnode->matrix->rows, vnode->matrix->cols);
 
-    assert(unode->col_beg + unode->ncol == umat.cols());
-    //assert(vnode->col_beg + vnode->ncol == vmat.cols());
-    assert(unode->nrow == umat.rows());
-    //assert(vnode->nrow == vmat.rows());
+  assert(unode->col_beg + unode->ncol == umat.cols());
+  //assert(vnode->col_beg + vnode->ncol == vmat.cols());
+  assert(unode->nrow == umat.rows());
+  //assert(vnode->nrow == vmat.rows());
     
-    u.leftCols(unode->col_beg + unode->ncol) = umat;
-    //v.leftCols(vnode->col_beg + vnode->ncol) = ;
-    append_matrix<UMatrix>(HODLRnode, unode, u);
-    //append_matrix(HODLRnode, HODLRnode->bottOffDiagV, HODLRnode->topOffDiagV,  vnode, v);
+  u.leftCols(unode->col_beg + unode->ncol) = umat;
+  //v.leftCols(vnode->col_beg + vnode->ncol) = ;
+  append_matrix<UMatrix>(HODLRnode, unode, u);
+  //append_matrix(HODLRnode, HODLRnode->bottOffDiagV, HODLRnode->topOffDiagV,  vnode, v);
 
-    //saveMatrixToText(u, "BigU2.txt");
-    unode->matrix->set_matrix_data(u, ctx, runtime);
-    //vnode->matrix->set_matrix_data(v, ctx, runtime);
-    return;
+  //saveMatrixToText(u, "BigU2.txt");
+  unode->matrix->set_matrix_data(u, ctx, runtime);
+  //vnode->matrix->set_matrix_data(v, ctx, runtime);
+  return;
   }
   
   Eigen::MatrixXd ul, ur;
@@ -612,37 +627,37 @@ void LR_Matrix::init_Umat(HODLR_Tree::node *HODLRnode, FSTreeNode *unode, Eigen:
   //accumulate_matrix(vmat, HODLRnode->bottOffDiagV, HODLRnode->topOffDiagV,  vl, vnode->lchild, vr, vnode->rchild);
   init_Umat(HODLRnode->left,  unode->lchild, ul);
   init_Umat(HODLRnode->right, unode->rchild, ur);
-}
+  }
 
 
-void LR_Matrix::init_Vmat(HODLR_Tree::node *HODLRnode, FSTreeNode *node, Eigen::MatrixXd & vmat) {
+  void LR_Matrix::init_Vmat(HODLR_Tree::node *HODLRnode, FSTreeNode *node, Eigen::MatrixXd & vmat) {
 
   if (node->Hmat != NULL) // skip vroot
-    set_Hmatrix_data(node->Hmat, vmat);
+  set_Hmatrix_data(node->Hmat, vmat);
   
   if (node->isLegionLeaf == true) {
 
-    assert(node->matrix->rows == vmat.rows());
-    //assert(node->ncol == vmat.cols());    
-    //assert(node->nrow == vmat.rows());
-    //v.leftCols(node->ncol) = vmat;
+  assert(node->matrix->rows == vmat.rows());
+  //assert(node->ncol == vmat.cols());    
+  //assert(node->nrow == vmat.rows());
+  //v.leftCols(node->ncol) = vmat;
     
-    Eigen::MatrixXd v(node->matrix->rows, node->matrix->cols);    
-    append_matrix<VMatrix>(HODLRnode, node, v);
-    node->matrix->set_matrix_data(v, ctx, runtime);
+  Eigen::MatrixXd v(node->matrix->rows, node->matrix->cols);    
+  append_matrix<VMatrix>(HODLRnode, node, v);
+  node->matrix->set_matrix_data(v, ctx, runtime);
 
-    Eigen::MatrixXd k(node->kmat->rows, node->kmat->cols);
-    fill_kmat(HODLRnode, node, k);
-    node->kmat->set_matrix_data(k, ctx, runtime);
+  Eigen::MatrixXd k(node->kmat->rows, node->kmat->cols);
+  fill_kmat(HODLRnode, node, k);
+  node->kmat->set_matrix_data(k, ctx, runtime);
 
   } else {
-    init_Vmat(HODLRnode->left,  node->lchild, HODLRnode->bottOffDiagV);
-    init_Vmat(HODLRnode->right, node->rchild, HODLRnode->topOffDiagV);
+  init_Vmat(HODLRnode->left,  node->lchild, HODLRnode->bottOffDiagV);
+  init_Vmat(HODLRnode->right, node->rchild, HODLRnode->topOffDiagV);
   }
-}
+  }
 
 
-void LR_Matrix::accumulate_matrix(Eigen::MatrixXd &pmat, Eigen::MatrixXd &LR_lmat, Eigen::MatrixXd &LR_rmat, Eigen::MatrixXd &lmat, FSTreeNode *lchild, Eigen::MatrixXd &rmat, FSTreeNode *rchild) {
+  void LR_Matrix::accumulate_matrix(Eigen::MatrixXd &pmat, Eigen::MatrixXd &LR_lmat, Eigen::MatrixXd &LR_rmat, Eigen::MatrixXd &lmat, FSTreeNode *lchild, Eigen::MatrixXd &rmat, FSTreeNode *rchild) {
   
   assert(lchild->col_beg == rchild->col_beg);
   assert(lchild->col_beg == pmat.cols());
@@ -661,25 +676,25 @@ void LR_Matrix::accumulate_matrix(Eigen::MatrixXd &pmat, Eigen::MatrixXd &LR_lma
   assert(rchild->ncol == LR_rmat.cols());
   lmat.rightCols(lchild->ncol) = LR_lmat;
   rmat.rightCols(rchild->ncol) = LR_rmat;
-}
+  }
 
 
-void LR_Matrix::fill_kmat(HODLR_Tree::node * HODLRnode, FSTreeNode * vnode, Eigen::MatrixXd & k) {
+  void LR_Matrix::fill_kmat(HODLR_Tree::node * HODLRnode, FSTreeNode * vnode, Eigen::MatrixXd & k) {
 
   if (HODLRnode->isLeaf == true) {
 
-    assert(vnode->lchild == NULL && vnode->rchild == NULL);
+  assert(vnode->lchild == NULL && vnode->rchild == NULL);
 
-    int ksize = vnode->nrow;
-    assert(ksize == HODLRnode->leafMatrix.rows());
+  int ksize = vnode->nrow;
+  assert(ksize == HODLRnode->leafMatrix.rows());
 
-    k.block(vnode->row_beg, 0, ksize, ksize) = HODLRnode->leafMatrix;
-    return;
+  k.block(vnode->row_beg, 0, ksize, ksize) = HODLRnode->leafMatrix;
+  return;
   }
 
   fill_kmat(HODLRnode->left,  vnode->lchild, k);
   fill_kmat(HODLRnode->right, vnode->rchild, k);
-}
+  }
 */
 
 void LR_Matrix::fill_circulant_kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {
@@ -772,23 +787,23 @@ void LR_Matrix::create_Hmatrix(FSTreeNode *node, FSTreeNode * Hmat, int ncol) {
 
 
 /*
-void LR_Matrix::set_Hmatrix_data(FSTreeNode * Hmat, Eigen::MatrixXd & vmat) {
+  void LR_Matrix::set_Hmatrix_data(FSTreeNode * Hmat, Eigen::MatrixXd & vmat) {
 
   if (Hmat->lchild == NULL && Hmat->rchild == NULL) {
 
-    assert(Hmat->row_beg < vmat.rows());
-    int nrow = Hmat->matrix->rows;
-    int ncol = Hmat->matrix->cols;
-    int row_beg = Hmat->row_beg;
-    int col_beg = 0;
-    Eigen::MatrixXd v_block = vmat.block(row_beg, col_beg, nrow, ncol);
-    Hmat->matrix->set_matrix_data(v_block, ctx, runtime);
+  assert(Hmat->row_beg < vmat.rows());
+  int nrow = Hmat->matrix->rows;
+  int ncol = Hmat->matrix->cols;
+  int row_beg = Hmat->row_beg;
+  int col_beg = 0;
+  Eigen::MatrixXd v_block = vmat.block(row_beg, col_beg, nrow, ncol);
+  Hmat->matrix->set_matrix_data(v_block, ctx, runtime);
     
   } else {
-    set_Hmatrix_data(Hmat->lchild, vmat);
-    set_Hmatrix_data(Hmat->rchild, vmat);
+  set_Hmatrix_data(Hmat->lchild, vmat);
+  set_Hmatrix_data(Hmat->rchild, vmat);
   }  
-}
+  }
 */
 
 void LR_Matrix::set_circulant_Hmatrix_data(FSTreeNode * Hmat, int row_beg) {
@@ -841,33 +856,33 @@ void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
 void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Context ctx, HighLevelRuntime *runtime) {
 
   /*
-  InlineLauncher launcher(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
+    InlineLauncher launcher(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
   
-  launcher.requirement.add_field(FID_X);
+    launcher.requirement.add_field(FID_X);
   
-  PhysicalRegion region = runtime->map_region(ctx, launcher);
+    PhysicalRegion region = runtime->map_region(ctx, launcher);
   
-  RegionAccessor<AccessorType::Generic, double> acc = 
+    RegionAccessor<AccessorType::Generic, double> acc = 
     region.get_field_accessor(FID_X).typeify<double>();
  
-  Domain dom = runtime->get_index_space_domain(ctx, data.get_index_space());
-  Rect<2> rect = dom.get_rect<2>();
+    Domain dom = runtime->get_index_space_domain(ctx, data.get_index_space());
+    Rect<2> rect = dom.get_rect<2>();
 
-  int nrow = rect.dim_size(0);
-  int ncol = rect.dim_size(1);
-  assert( (ncol - col_beg) % r == 0 );
-  GenericPointInRectIterator<2> pir(rect);
+    int nrow = rect.dim_size(0);
+    int ncol = rect.dim_size(1);
+    assert( (ncol - col_beg) % r == 0 );
+    GenericPointInRectIterator<2> pir(rect);
 
-  for (int j=0; j<ncol - col_beg; j++) {
+    for (int j=0; j<ncol - col_beg; j++) {
     for (int i=0; i<nrow; i++, pir++) {
-      int value = (j+i+row_beg)%r;
-      int pt[2] = {i, j+col_beg};
-      acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), value);
+    int value = (j+i+row_beg)%r;
+    int pt[2] = {i, j+col_beg};
+    acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), value);
     }
-  }
+    }
   
-  runtime->unmap_region(ctx, region);
-*/
+    runtime->unmap_region(ctx, region);
+  */
     
 
   CirArg cir_arg = {col_beg, row_beg, r};
@@ -927,36 +942,36 @@ void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &
 // TODO: implement col_beg
 void LeafData::set_matrix_data(Eigen::MatrixXd &mat, Context ctx, HighLevelRuntime *runtime, int col_beg) {
 
-  InlineLauncher launcher(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
+InlineLauncher launcher(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
   
-  launcher.requirement.add_field(FID_X);
+launcher.requirement.add_field(FID_X);
   
-  PhysicalRegion region = runtime->map_region(ctx, launcher);
+PhysicalRegion region = runtime->map_region(ctx, launcher);
   
-  RegionAccessor<AccessorType::Generic, double> acc = 
-    region.get_field_accessor(FID_X).typeify<double>();
+RegionAccessor<AccessorType::Generic, double> acc = 
+region.get_field_accessor(FID_X).typeify<double>();
  
-  Domain dom = runtime->get_index_space_domain(ctx, data.get_index_space());
-  Rect<2> rect = dom.get_rect<2>();
+Domain dom = runtime->get_index_space_domain(ctx, data.get_index_space());
+Rect<2> rect = dom.get_rect<2>();
 
-  assert(mat.rows() == rect.dim_size(1));
-  assert(mat.cols() <= rect.dim_size(0));
+assert(mat.rows() == rect.dim_size(1));
+assert(mat.cols() <= rect.dim_size(0));
   
-  //for (; pir; pir++) {
-  //GenericPointInRectIterator<2> pir(rect);
-  //for (int i=0; i<mat.rows()*mat.cols(); i++, pir++) {
-  for (int j=0; j<mat.cols(); j++) {
-    for (int i=0; i<mat.rows(); i++) {
+//for (; pir; pir++) {
+//GenericPointInRectIterator<2> pir(rect);
+//for (int i=0; i<mat.rows()*mat.cols(); i++, pir++) {
+for (int j=0; j<mat.cols(); j++) {
+for (int i=0; i<mat.rows(); i++) {
 
-      //assert(pir.p[1] < mat.rows());
-      //assert(pir.p[0] < mat.cols());
-      int pt[2] = {j, i};
-      //acc.write(DomainPoint::from_point<2>(pir.p), mat(pir.p[1], pir.p[0]));
-      acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), mat(i, j));
-    }
-  }
+//assert(pir.p[1] < mat.rows());
+//assert(pir.p[0] < mat.cols());
+int pt[2] = {j, i};
+//acc.write(DomainPoint::from_point<2>(pir.p), mat(pir.p[1], pir.p[0]));
+acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), mat(i, j));
+}
+}
   
-  runtime->unmap_region(ctx, region);
+runtime->unmap_region(ctx, region);
 }
 */
 
@@ -979,11 +994,11 @@ void LeafData::set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context 
   assert(rhs_cols <= rect.dim_size(1));
 
   /*
-  for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
+    for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
     int value = mat[row_beg+i+j*rhs_rows];
     acc.write(DomainPoint::from_point<2>( pir.p ), value);
-  }
-*/
+    }
+  */
 
   for (int j=0; j<rhs_cols; j++) {
     for (int i=0; i<nrow; i++) {
@@ -1014,22 +1029,22 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
 void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
   /*
-  RegionRequirement req(matrix, WRITE_DISCARD, EXCLUSIVE, matrix);
-  req.add_field(FID_X);
+    RegionRequirement req(matrix, WRITE_DISCARD, EXCLUSIVE, matrix);
+    req.add_field(FID_X);
 
-  InlineLauncher init(req);
-  PhysicalRegion init_region = runtime->map_region(ctx, init);
-  init_region.wait_until_valid();
+    InlineLauncher init(req);
+    PhysicalRegion init_region = runtime->map_region(ctx, init);
+    init_region.wait_until_valid();
 
-  RegionAccessor<AccessorType::Generic, double> acc =
+    RegionAccessor<AccessorType::Generic, double> acc =
     init_region.get_field_accessor(FID_X).typeify<double>();
 
-  Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
-  Rect<2> rect = dom.get_rect<2>();
-  for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
+    Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
+    Rect<2> rect = dom.get_rect<2>();
+    for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
     acc.write(DomainPoint::from_point<2>(pir.p), 0);
 
-  runtime->unmap_region(ctx, init_region);
+    runtime->unmap_region(ctx, init_region);
   */
 
   assert(matrix != LogicalRegion::NO_REGION);
@@ -1045,7 +1060,7 @@ void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) 
 
 
 void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
-	       Context ctx, HighLevelRuntime *runtime) {
+		      Context ctx, HighLevelRuntime *runtime) {
 
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
@@ -1069,40 +1084,40 @@ void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regio
   memset(ptr, 0, size*sizeof(double));
 }
 
-  /*
+/*
   RegionAccessor<AccessorType::Generic, double> acc =
-    init_region.get_field_accessor(FID_X).typeify<double>();
+  init_region.get_field_accessor(FID_X).typeify<double>();
 
   Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
   Rect<2> rect = dom.get_rect<2>();
   for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
-    // the lowest dimension, i.e. 0-d increases first
-    acc.write(DomainPoint::from_point<2>(pir.p), x);
-  */
+  // the lowest dimension, i.e. 0-d increases first
+  acc.write(DomainPoint::from_point<2>(pir.p), x);
+*/
 
 
 void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
   assert(false);
   /*
-  RegionRequirement req(matrix, READ_WRITE, EXCLUSIVE, matrix);
-  req.add_field(FID_X);
+    RegionRequirement req(matrix, READ_WRITE, EXCLUSIVE, matrix);
+    req.add_field(FID_X);
 
-  InlineLauncher init(req);
-  PhysicalRegion init_region = runtime->map_region(ctx, init);
-  init_region.wait_until_valid();
+    InlineLauncher init(req);
+    PhysicalRegion init_region = runtime->map_region(ctx, init);
+    init_region.wait_until_valid();
 
-  RegionAccessor<AccessorType::Generic, double> acc =
+    RegionAccessor<AccessorType::Generic, double> acc =
     init_region.get_field_accessor(FID_X).typeify<double>();
 
-  Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
-  Rect<2> rect = dom.get_rect<2>();
-  for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
+    Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
+    Rect<2> rect = dom.get_rect<2>();
+    for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
     // the lowest dimension, i.e. 0-d increases first
     double x = acc.read(DomainPoint::from_point<2>(pir.p));
     acc.write(DomainPoint::from_point<2>(pir.p), beta * x);
-  }
-  runtime->unmap_region(ctx, init_region);
+    }
+    runtime->unmap_region(ctx, init_region);
   */
 }
 
@@ -1314,45 +1329,45 @@ void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRu
 
 /* --- save solution to matrix --- */
 /*
-void get_soln_from_region(Eigen::MatrixXd &soln, FSTreeNode *node, Context ctx, HighLevelRuntime *runtime, int row_beg) {
+  void get_soln_from_region(Eigen::MatrixXd &soln, FSTreeNode *node, Context ctx, HighLevelRuntime *runtime, int row_beg) {
 
   if (node->isLegionLeaf == true) {
 
-    RegionRequirement req(node->matrix->data, READ_ONLY, EXCLUSIVE, node->matrix->data);
-    req.add_field(FID_X);
+  RegionRequirement req(node->matrix->data, READ_ONLY, EXCLUSIVE, node->matrix->data);
+  req.add_field(FID_X);
     
-    InlineLauncher ilaunch(req);
-    PhysicalRegion region = runtime->map_region(ctx, ilaunch);
-    region.wait_until_valid();
+  InlineLauncher ilaunch(req);
+  PhysicalRegion region = runtime->map_region(ctx, ilaunch);
+  region.wait_until_valid();
 
-    RegionAccessor<AccessorType::Generic, double> acc =
-      region.get_field_accessor(FID_X).typeify<double>();
+  RegionAccessor<AccessorType::Generic, double> acc =
+  region.get_field_accessor(FID_X).typeify<double>();
 
-    Domain dom = runtime->get_index_space_domain(ctx, node->matrix->data.get_index_space());
-    Rect<2> rect = dom.get_rect<2>();
+  Domain dom = runtime->get_index_space_domain(ctx, node->matrix->data.get_index_space());
+  Rect<2> rect = dom.get_rect<2>();
 
-    int nrow = rect.dim_size(1);
-    int ncol = rect.dim_size(0);
+  int nrow = rect.dim_size(1);
+  int ncol = rect.dim_size(0);
 
-    Rect<2> subrect;
-    ByteOffset offsets[2];
+  Rect<2> subrect;
+  ByteOffset offsets[2];
 
-    double *ptr = acc.raw_rect_ptr<2>(rect, subrect, offsets);
-    assert(rect == subrect);
+  double *ptr = acc.raw_rect_ptr<2>(rect, subrect, offsets);
+  assert(rect == subrect);
 
-    int cols = soln.cols();
-    for (int j=0; j<cols; j++)
-      for (int i=0; i<nrow; i++) {
-	soln(i + row_beg, j) = ptr[i+j*nrow];
-      }
+  int cols = soln.cols();
+  for (int j=0; j<cols; j++)
+  for (int i=0; i<nrow; i++) {
+  soln(i + row_beg, j) = ptr[i+j*nrow];
+  }
 
-    runtime->unmap_region(ctx, region);
+  runtime->unmap_region(ctx, region);
   
   } else {
-    get_soln_from_region(soln, node->lchild, ctx, runtime, row_beg);
-    get_soln_from_region(soln, node->rchild, ctx, runtime, row_beg+node->lchild->nrow);
+  get_soln_from_region(soln, node->lchild, ctx, runtime, row_beg);
+  get_soln_from_region(soln, node->rchild, ctx, runtime, row_beg+node->lchild->nrow);
   }
-}
+  }
 */
 
 
@@ -1470,3 +1485,83 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
   array_to_tree(arg, 2*idx+2);
 }
 
+
+// assume at the real leaf
+void LeafData::set_circulant_kmat(CirKmatArg arg, Context ctx, HighLevelRuntime *runtime) {
+    
+  TaskLauncher circulant_kmat_task(CIRCULANT_KMAT_TASK_ID, TaskArgument(&arg, sizeof(CirKmatArg)));
+
+  // k region
+  circulant_kmat_task.add_region_requirement(RegionRequirement(data,
+							       WRITE_DISCARD,
+							       EXCLUSIVE, data));
+  circulant_kmat_task.region_requirements[0].add_field(FID_X);
+
+  runtime->execute_task(ctx, circulant_kmat_task);
+}
+
+
+void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime) {
+
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  CirKmatArg *arg = (CirKmatArg *)task->args;
+
+  int row_beg = arg->row_beg;
+  int r       = arg->r;
+  double diag = arg->diag;
+
+  
+  RegionAccessor<AccessorType::Generic, double> acc_k = 
+    regions[0].get_field_accessor(FID_X).typeify<double>();
+
+  IndexSpace is_k = task->regions[0].region.get_index_space();
+  Domain dom_k = runtime->get_index_space_domain(ctx, is_k);
+  Rect<2> rect_k = dom_k.get_rect<2>();
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+   
+  double *k_ptr = acc_k.raw_rect_ptr<2>(rect_k, subrect, offsets);
+  assert(k_ptr != NULL);
+  assert(rect_k == subrect);
+
+  int nrow = rect_k.dim_size(0);
+  int ncol = rect_k.dim_size(1);
+  assert(nrow == ncol);
+
+  int ksize = nrow;
+  int LD    = nrow;
+
+  // init U as a circulant matrix
+  double *U = (double *) malloc(ksize*r * sizeof(double));
+  for (int j=0; j<r; j++) {
+    for (int i=0; i<ksize; i++) {
+      U[i+j*ksize] = (row_beg+i+j) % r;
+    }
+  }
+
+  // init kmat to 0
+  memset(k_ptr, 0, nrow*ncol*sizeof(double));
+  
+  // init the diagonal entries
+  for (int i=0; i<ksize; i++)
+    k_ptr[i + LD*i] = diag;
+    
+  char transa = 'n';
+  char transb = 't';
+  int  m = ksize;
+  int  n = ksize;
+  int  k = r;
+  int  lda = ksize;
+  int  ldb = ksize;
+  int  ldc = LD;
+  double alpha = 1.0;
+  double beta  = 1.0;
+  double *A = U;
+  double *B = U;
+  double *C = k_ptr;
+  blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+
+}

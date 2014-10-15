@@ -24,9 +24,9 @@ void top_level_task(const Task *task,
 
 
   // make sure the dense block is bigger than r
-  int r = 30; //500;
-  int N = 1000; //10000; //18000;
-  int threshold = 100; //800; //1000;
+  int r = 60; //500;
+  int N = 5000; //10000; //18000;
+  int threshold = 500; //800; //1000;
   int nleaf_per_legion_node = 1;
   double diag = 1e5; 
   
@@ -61,14 +61,14 @@ void top_level_task(const Task *task,
   printf("Init Time: %f.\n", (double)(t1-t0)/CLOCKS_PER_SEC);
 
 
-
+  /*
   double *Soln = (double *) malloc(N*rhs_cols*sizeof(double));
   lr_mat.get_soln_from_region(Soln);
 
 
   dirct_circulant_solve(Soln, rhs, rhs_rows, rhs_cols, r, diag);
   free(Soln); Soln = NULL;
-
+*/
 
 
   
@@ -113,6 +113,7 @@ int main(int argc, char *argv[]) {
   register_save_task();
   register_zero_matrix_task();
   register_circulant_matrix_task();
+  register_circulant_kmat_task();
   
   HighLevelRuntime::set_registration_callback(mapper_registration);
 
