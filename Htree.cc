@@ -240,16 +240,24 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, int row_beg) {
   if (node->isLegionLeaf == true) {
 
     // init V
-    node->matrix->set_circulant_matrix_data(0, row_beg, r, ctx, runtime);
+    if (node->matrix->cols > 0)
+      // when the legion leaf is the real leaf, there is
+      // no data here.
+      node->matrix->set_circulant_matrix_data(0, row_beg, r, ctx, runtime);
 
     // init K
     int nrow = node->kmat->rows;
     int ncol = node->kmat->cols;
+
+
     double *K = (double *) calloc(nrow*ncol, sizeof(double));
-    
     fill_circulant_kmat(node, row_beg, r, diag, K, nrow);
     node->kmat->set_matrix_data(K, nrow, ncol, ctx, runtime);
     free(K);
+
+    
+    //node->kmat->set_circulant_kmat(, nrow, ncol, ctx, runtime);
+
     
   } else {
     init_Vmat(node->lchild, diag, row_beg);
@@ -522,10 +530,14 @@ void LR_Matrix::create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode) {
     int vrow = urow;
     int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
 
-    vnode->matrix = new LeafData;
-    vnode->matrix->rows = vrow;
-    vnode->matrix->cols = vcol;
-    create_matrix(vnode->matrix->data, vrow, vcol, ctx, runtime);
+    //if (vcol > 0) {
+      // when the legion leaf is the real leaf, there is
+      // no data here.
+      vnode->matrix = new LeafData;
+      vnode->matrix->rows = vrow;
+      vnode->matrix->cols = vcol;
+      create_matrix(vnode->matrix->data, vrow, vcol, ctx, runtime);
+      //}
 
     // create K matrix
     vnode->kmat = new LeafData;
@@ -828,7 +840,7 @@ void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
 
 void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Context ctx, HighLevelRuntime *runtime) {
 
-
+  /*
   InlineLauncher launcher(RegionRequirement(data, WRITE_DISCARD, EXCLUSIVE, data));
   
   launcher.requirement.add_field(FID_X);
@@ -855,9 +867,9 @@ void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Contex
   }
   
   runtime->unmap_region(ctx, region);
-
+*/
     
-  /*
+
   CirArg cir_arg = {col_beg, row_beg, r};
   TaskLauncher circulant_matrix_task(CIRCULANT_MATRIX_TASK_ID, TaskArgument(&cir_arg, sizeof(CirArg)));
 
@@ -865,7 +877,7 @@ void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Contex
   circulant_matrix_task.region_requirements[0].add_field(FID_X);
 
   runtime->execute_task(ctx, circulant_matrix_task);
-*/
+
 }
 
 
@@ -1387,5 +1399,74 @@ void LR_Matrix::get_soln_from_region(double *soln, FSTreeNode *node, int row_beg
     get_soln_from_region(soln, node->lchild, row_beg);
     get_soln_from_region(soln, node->rchild, row_beg+node->lchild->nrow);
   }
+}
+
+
+//int FastSolver::tree_to_array(FSTreeNode * leaf, FSTreeNode * arg,
+//int idx) {
+int tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx) {
+
+  if (leaf->lchild != NULL && leaf->rchild != NULL) {
+
+    //assert(2*idx+2 < arg.size());
+    arg[ 2*idx+1 ] = *(leaf -> lchild);
+    arg[ 2*idx+2 ] = *(leaf -> rchild);
+    int nl = tree_to_array(leaf->lchild, arg, 2*idx+1);
+    int nr = tree_to_array(leaf->rchild, arg, 2*idx+2);
+    return nl + nr + 1;
+    
+  } else return 1;
+}
+
+
+//void FastSolver::tree_to_array(FSTreeNode * leaf, std::vector<FSTreeNode> & arg, int idx, int shift) {
+//void FastSolver::tree_to_array(FSTreeNode * leaf, FSTreeNode * arg,
+//int idx, int shift) {
+void tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx, int shift) {
+
+  if (leaf->lchild != NULL && leaf->rchild != NULL) {
+
+    //assert(2*idx+2+shift < arg.size());
+    arg[ 2*idx+1+shift ] = *(leaf -> lchild);
+    arg[ 2*idx+2+shift ] = *(leaf -> rchild);
+    tree_to_array(leaf->lchild, arg, 2*idx+1, shift);
+    tree_to_array(leaf->rchild, arg, 2*idx+2, shift); 
+  }
+}
+
+
+void array_to_tree(FSTreeNode *arg, int idx) {
+
+  if (arg[ idx ].lchild != NULL) {
+    
+    assert(arg[ idx ].rchild != NULL);
+    arg[ idx ].lchild = &arg[ 2*idx+1 ];
+    arg[ idx ].rchild = &arg[ 2*idx+2 ];
+    
+  } else {
+    assert(arg[ idx ].rchild == NULL);
+    return; 
+  }
+  
+  array_to_tree(arg, 2*idx+1);
+  array_to_tree(arg, 2*idx+2);
+}
+
+
+void array_to_tree(FSTreeNode *arg, int idx, int shift) {
+
+  if (arg[ idx+shift ].lchild != NULL) {
+    
+    assert(arg[ idx+shift ].rchild != NULL);
+    arg[ idx+shift ].lchild = &arg[ 2*idx+1+shift ];
+    arg[ idx+shift ].rchild = &arg[ 2*idx+2+shift ];
+    
+  } else {
+    assert(arg[ idx+shift ].rchild == NULL);
+    return;
+  }
+
+  array_to_tree(arg, 2*idx+1);
+  array_to_tree(arg, 2*idx+2);
 }
 

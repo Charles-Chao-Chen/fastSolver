@@ -232,4 +232,11 @@ void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &
 	       Context ctx, HighLevelRuntime *runtime);
 
 
+
+int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
+void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
+void array_to_tree(FSTreeNode *arg, int idx);
+void array_to_tree(FSTreeNode *arg, int idx, int shift);
+
+
 #endif // __LEGIONTREE_

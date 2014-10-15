@@ -1,3 +1,7 @@
+TODO: create matrix inside fill_circulant_Kmat
+
+BUG: nleaf_per_legion_node = 1.
+
 DONE: Support multiple right hand side
 
 DONE: Avoid using eigen. 

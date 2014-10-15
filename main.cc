@@ -61,6 +61,7 @@ void top_level_task(const Task *task,
   printf("Init Time: %f.\n", (double)(t1-t0)/CLOCKS_PER_SEC);
 
 
+
   double *Soln = (double *) malloc(N*rhs_cols*sizeof(double));
   lr_mat.get_soln_from_region(Soln);
 

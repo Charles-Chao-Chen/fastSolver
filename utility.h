@@ -1,3 +1,6 @@
+#ifndef __UTILITY_H
+#define __UTILITY_H
+
 #include <stdlib.h>
 
 /* Uniform random number generator */
@@ -49,3 +52,6 @@ namespace lapack {
 }
 
 
+
+
+#endif // __UTILITY_H

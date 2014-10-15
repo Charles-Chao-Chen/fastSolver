@@ -40,10 +40,10 @@ class FastSolver {
  private:
 
   void solve_legion_leaf(FSTreeNode *, FSTreeNode *);
-  int  tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int);
-  void tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int, int);
-  int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
-  void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
+  //int  tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int);
+  //void tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int, int);
+  //int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
+  //void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
 
 
   
@@ -62,9 +62,6 @@ class FastSolver {
 
 void register_solver_task();
 
-
-void array_to_tree(FSTreeNode *arg, int idx);
-void array_to_tree(FSTreeNode *arg, int idx, int shift);
 
 void leaf_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime);

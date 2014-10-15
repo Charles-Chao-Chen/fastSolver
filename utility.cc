@@ -47,3 +47,4 @@ void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols
   free(A);
 }
 
+
