@@ -3,8 +3,21 @@
 
 void register_gemm_task() {
 
-  HighLevelRuntime::register_legion_task<gemm_task>(GEMM_TASK_ID, Processor::LOC_PROC, true, true, AUTO_GENERATE_ID, TaskConfigOptions(true/*leaf*/), "gemm1");
-  HighLevelRuntime::register_legion_task<gemm2_task>(GEMM2_TASK_ID, Processor::LOC_PROC, true, true, AUTO_GENERATE_ID, TaskConfigOptions(true/*leaf*/), "gemm2");
+  HighLevelRuntime::register_legion_task<gemm_task>(GEMM_TASK_ID,
+						    Processor::LOC_PROC,
+						    true,
+						    true,
+						    AUTO_GENERATE_ID,
+						    TaskConfigOptions(true/*leaf*/),
+						    "gemm_reduction");
+  
+  HighLevelRuntime::register_legion_task<gemm2_task>(GEMM2_TASK_ID,
+						     Processor::LOC_PROC,
+						     true,
+						     true,
+						     AUTO_GENERATE_ID,
+						     TaskConfigOptions(true/*leaf*/),
+						     "gemm_broadcast");
 
   HighLevelRuntime::register_reduction_op<EntrySum>(REDUCE_ID);
 }
@@ -127,19 +140,19 @@ void gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u, int col_beg, i
     assert(u->isLegionLeaf == true);
 
     gemmArg arg = {alpha, col_beg, ncol};
-    TaskLauncher gemm_task(GEMM_TASK_ID, TaskArgument(&arg, sizeof(gemmArg)));
+    TaskLauncher gemm_task1(GEMM_TASK_ID, TaskArgument(&arg, sizeof(gemmArg)));
 
     assert(v->matrix->data != LogicalRegion::NO_REGION);
     assert(u->matrix->data != LogicalRegion::NO_REGION);
     assert(res             != LogicalRegion::NO_REGION);
-    gemm_task.add_region_requirement(RegionRequirement(v->matrix->data, READ_ONLY, EXCLUSIVE,    v->matrix->data)); // v
-    gemm_task.add_region_requirement(RegionRequirement(u->matrix->data, READ_ONLY, EXCLUSIVE,    u->matrix->data)); // u
-    gemm_task.add_region_requirement(RegionRequirement(res,             REDUCE_ID, SIMULTANEOUS, res));             // res
-    gemm_task.region_requirements[0].add_field(FID_X);
-    gemm_task.region_requirements[1].add_field(FID_X);
-    gemm_task.region_requirements[2].add_field(FID_X);
+    gemm_task1.add_region_requirement(RegionRequirement(v->matrix->data, READ_ONLY, EXCLUSIVE,    v->matrix->data)); // v
+    gemm_task1.add_region_requirement(RegionRequirement(u->matrix->data, READ_ONLY, EXCLUSIVE,    u->matrix->data)); // u
+    gemm_task1.add_region_requirement(RegionRequirement(res,             REDUCE_ID, SIMULTANEOUS, res));             // res
+    gemm_task1.region_requirements[0].add_field(FID_X);
+    gemm_task1.region_requirements[1].add_field(FID_X);
+    gemm_task1.region_requirements[2].add_field(FID_X);
 
-    runtime->execute_task(ctx, gemm_task);
+    runtime->execute_task(ctx, gemm_task1);
 
   } else {
     gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol, res, ctx, runtime);

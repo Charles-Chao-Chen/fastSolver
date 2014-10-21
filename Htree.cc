@@ -15,7 +15,7 @@ void register_zero_matrix_task() {
 							   true, true,
 							   AUTO_GENERATE_ID,
 							   TaskConfigOptions(true/*leaf*/),
-							   "zero_matrix_task");
+							   "init_zero_matrix");
 
 }
 
@@ -27,7 +27,7 @@ void register_circulant_matrix_task() {
 								true, true,
 								AUTO_GENERATE_ID,
 								TaskConfigOptions(true/*leaf*/),
-								"circulant_matrix_task");
+								"init_circulant_matrix");
 
 }
 
@@ -35,11 +35,11 @@ void register_circulant_matrix_task() {
 void register_circulant_kmat_task() {
   
   HighLevelRuntime::register_legion_task<circulant_kmat_task>(CIRCULANT_KMAT_TASK_ID,
-								Processor::LOC_PROC,
-								true, true,
-								AUTO_GENERATE_ID,
-								TaskConfigOptions(true/*leaf*/),
-								"circulant_kmat_task");
+							      Processor::LOC_PROC,
+							      true, true,
+							      AUTO_GENERATE_ID,
+							      TaskConfigOptions(true/*leaf*/),
+							      "init_circulant_kmat");
 
 }
 
@@ -71,47 +71,19 @@ LR_Matrix::LR_Matrix(int nleaf_per_legion_node, Context ctx_, HighLevelRuntime *
 }
 
 
-/*
-  void LR_Matrix::initialize(HODLR_Tree::node *HODLRroot, Eigen::VectorXd &RHS) {
-
-  assert(HODLRroot != NULL);
-
-  uroot  = new FSTreeNode;
-  uroot -> nrow = RHS.rows();
-  uroot -> ncol = RHS.cols();
-
-  create_legion_tree(HODLRroot, uroot);
-
-
-  int nLegionLeaf = 0;
-  create_legion_leaf(uroot, nleaf_per_node, nLegionLeaf);
-  std::cout << "Number of legion leaves: " << nLegionLeaf << std::endl;
-
-  create_matrix_region(uroot);
-
-  //print_legion_tree(uroot);
-
-  
-  vroot =  new FSTreeNode;
-  vroot -> nrow = RHS.rows();
-  create_vnode_from_unode(uroot, vroot);
-
-
-  Eigen::MatrixXd umat = RHS; //exactSoln; 
-  init_Umat(HODLRroot, uroot, umat);
-
-  Eigen::MatrixXd vmat(RHS.rows(), 0);
-  init_Vmat(HODLRroot, vroot, vmat);  
-  }
-*/
-
 /* Input:
  *   N - problem size
  *   r - every off-diagonal block has the same rank
  *   rhs_cols  - column size of the right hand side
  *   threshold - size of dense blocks at the leaf level
  */
-LR_Matrix::LR_Matrix(int N, int threshold, int rhs_cols_, int r_, Context ctx_, HighLevelRuntime *runtime_): rhs_rows(N), rhs_cols(rhs_cols_), r(r_), ctx(ctx_), runtime(runtime_) {
+LR_Matrix::LR_Matrix(int N, int threshold, int rhs_cols_, int r_,
+		     Context ctx_, HighLevelRuntime *runtime_): rhs_rows(N),
+								rhs_cols(rhs_cols_),
+								r(r_),
+								ctx(ctx_),
+								runtime(runtime_) {
+  
 
   uroot  = new FSTreeNode;
   uroot -> nrow = N;
@@ -181,33 +153,6 @@ void create_default_tree(FSTreeNode *node, int r, int threshold) {
   }
 
 }
-
-
-/*
-  void LR_Matrix::init_RHS(Eigen::MatrixXd &RHS) {
-  assert(uroot->nrow == RHS.rows());
-  init_RHS(uroot, RHS);
-  }
-
-
-  void LR_Matrix::init_RHS(FSTreeNode *node, Eigen::MatrixXd &RHS) {
-
-  if (node->isLegionLeaf == true) {
-
-  assert(node->matrix != NULL);
-  // initialize region as RHS
-  node->matrix->set_matrix_data(RHS, ctx, runtime);  
-  return;
-    
-  } else { // recursively split RHS
-  Eigen::MatrixXd RHS1 = RHS.topRows(node->lchild->nrow);
-  Eigen::MatrixXd RHS2 = RHS.bottomRows(node->rchild->nrow);
-    
-  init_RHS(node->lchild, RHS1);
-  init_RHS(node->rchild, RHS2);
-  }  
-  }
-*/
 
 
 void LR_Matrix::init_RHS(double *RHS) {
@@ -1028,25 +973,6 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
 
 void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
-  /*
-    RegionRequirement req(matrix, WRITE_DISCARD, EXCLUSIVE, matrix);
-    req.add_field(FID_X);
-
-    InlineLauncher init(req);
-    PhysicalRegion init_region = runtime->map_region(ctx, init);
-    init_region.wait_until_valid();
-
-    RegionAccessor<AccessorType::Generic, double> acc =
-    init_region.get_field_accessor(FID_X).typeify<double>();
-
-    Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
-    Rect<2> rect = dom.get_rect<2>();
-    for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
-    acc.write(DomainPoint::from_point<2>(pir.p), 0);
-
-    runtime->unmap_region(ctx, init_region);
-  */
-
   assert(matrix != LogicalRegion::NO_REGION);
   TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID, TaskArgument(NULL, 0));
 
@@ -1055,7 +981,6 @@ void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) 
   zero_matrix_task.region_requirements[0].add_field(FID_X);
 
   runtime->execute_task(ctx, zero_matrix_task);
-
 }
 
 
@@ -1084,41 +1009,11 @@ void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regio
   memset(ptr, 0, size*sizeof(double));
 }
 
-/*
-  RegionAccessor<AccessorType::Generic, double> acc =
-  init_region.get_field_accessor(FID_X).typeify<double>();
-
-  Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
-  Rect<2> rect = dom.get_rect<2>();
-  for (GenericPointInRectIterator<2> pir(rect); pir; pir++)
-  // the lowest dimension, i.e. 0-d increases first
-  acc.write(DomainPoint::from_point<2>(pir.p), x);
-*/
-
 
 void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
 
   assert(false);
-  /*
-    RegionRequirement req(matrix, READ_WRITE, EXCLUSIVE, matrix);
-    req.add_field(FID_X);
 
-    InlineLauncher init(req);
-    PhysicalRegion init_region = runtime->map_region(ctx, init);
-    init_region.wait_until_valid();
-
-    RegionAccessor<AccessorType::Generic, double> acc =
-    init_region.get_field_accessor(FID_X).typeify<double>();
-
-    Domain dom = runtime->get_index_space_domain(ctx, matrix.get_index_space());
-    Rect<2> rect = dom.get_rect<2>();
-    for (GenericPointInRectIterator<2> pir(rect); pir; pir++) {
-    // the lowest dimension, i.e. 0-d increases first
-    double x = acc.read(DomainPoint::from_point<2>(pir.p));
-    acc.write(DomainPoint::from_point<2>(pir.p), beta * x);
-    }
-    runtime->unmap_region(ctx, init_region);
-  */
 }
 
 
@@ -1564,4 +1459,10 @@ void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &re
   double *C = k_ptr;
   blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
 
+
+  // pre-compute the LU factorization
+  int INFO;
+  int IPIV[ksize];
+  lapack::dgetrf_(&ksize, &ksize, C, &ldc, IPIV, &INFO);
+  assert(INFO == 0);
 }

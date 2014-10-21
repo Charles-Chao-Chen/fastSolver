@@ -13,9 +13,15 @@ void register_solver_task() {
 						    true,
 						    AUTO_GENERATE_ID,
 						    TaskConfigOptions(true/*leaf*/),
-						    "leaf_task");
+						    "leaf_direct_solve");
   
-  HighLevelRuntime::register_legion_task<lu_solve_task>(LU_SOLVE_TASK_ID, Processor::LOC_PROC, true, true, AUTO_GENERATE_ID, TaskConfigOptions(true/*leaf*/), "lu_task");
+  HighLevelRuntime::register_legion_task<lu_solve_task>(LU_SOLVE_TASK_ID,
+							Processor::LOC_PROC,
+							true,
+							true,
+							AUTO_GENERATE_ID,
+							TaskConfigOptions(true/*leaf*/),
+							"lu_solve");
 }
 
 
@@ -248,8 +254,27 @@ void recLU_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode, double * u_ptr, do
       
     int INFO;
     int IPIV[N];
+
+    //assume no pivoting
+    for (int i=0; i<N; i++)
+      IPIV[i] = i+1;
     
-    lapack::dgesv_(&N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
+    //lapack::dgesv_(&N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
+
+    
+    //lapack::dgetrf_(&N, &N, A, &LDA, IPIV, &INFO);
+
+    char TRANS = 'n';
+    lapack::dgetrs_(&TRANS, &N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
+
+
+    /*
+    printf("Pivoting:\n");
+    for (int i=0; i<N; i++)
+      if (IPIV[i] != i+1)
+	printf("(%d, %d) ", i, IPIV[i]);
+    printf("\n");
+    */
     assert(INFO == 0);
 
     return;
@@ -478,25 +503,6 @@ void lu_solve_task(const Task *task, const std::vector<PhysicalRegion> &regions,
      and the solutions eta0 and eta1 overwrite
      V1Td1 and V0Td0. (Note the reversed order)
    */
-
-  /*
-  for (int j=0; j<V0Tu0_cols; j++) {
-    for (int i=0; i<V0Tu0_rows; i++) {
-      A[i+j*N] = V0Tu0_ptr[i+j*V0Tu0_rows];
-    }
-  }
-
-  for (int j=0; j<V1Tu1_cols; j++) {
-    for (int i=0; i<V1Tu1_rows; i++) {
-      A[(V0Tu0_rows+i)+(V0Tu0_cols+j)*N] = V1Tu1_ptr[i+j*V1Tu1_rows];
-    }
-  }
-
-  // two identity matrices on the off-diagonal blocks
-  for (int i=0; i<N; i++) {
-    A[ (V0Tu0_rows+i)%N + i*N] = 1.0;
-  }
-  */
 
   // two identity matrices on the diagonal
   for (int i=0; i<N; i++) {

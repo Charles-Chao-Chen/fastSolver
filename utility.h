@@ -47,7 +47,15 @@ namespace blas {
 namespace lapack {
   extern "C" {
     // Declaration for lapack LU solve routine
-    void dgesv_(int *N, int *NRHS, double *A, int *LDA, int *IPIV, double *B, int *LDB, int *INFO);
+    void dgesv_(int *N, int *NRHS, double *A, int *LDA, int *IPIV,
+		double *B, int *LDB, int *INFO);
+
+    void dgetrf_(int *M, int *N, double *A, int *LDA, int *IPIV,
+		 int *INFO);
+    
+    void dgetrs_(char *TRANS, int *N, int *NRHS, double *A, int *LDA,
+		 int *IPIV, double *B, int *LDB, int *INFO);
+    
   }
 }
 
