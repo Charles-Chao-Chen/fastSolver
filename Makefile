@@ -4,7 +4,7 @@ $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
 #Flags for directing the runtime makefile what to include
-DEBUG=0                   # Include debugging symbols
+DEBUG=1                   # Include debugging symbols
 OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 SHARED_LOWLEVEL=0	  # Use the shared low level
 USE_CUDA=0
@@ -19,7 +19,7 @@ GEN_GPU_SRC	:=				# .cu files
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
 #CC_FLAGS	:= -g -std=c++11 -I ./ -DLEGION_PROF -DLEGION_SPY
-CC_FLAGS	:= -g -I ./ -DLEGION_PROF -DLEGION_SPY -DNDEBUG
+CC_FLAGS	:= -g -I ./ -DLEGION_PROF -DLEGION_SPY
 NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 LD_FLAGS	:= -L /usr/lib/	-l :liblapack.so.3 -l :libblas.so.3 -lm
@@ -114,6 +114,12 @@ clean:
 
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
+
+run_one:
+	mpirun -H n0001 -n 1 -x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 ./main -level 5
+
+r2n:
+	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 ./main -level 5
 
 tar:	
 	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h Htree.cc Htree.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h

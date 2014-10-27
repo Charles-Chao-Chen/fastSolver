@@ -240,8 +240,16 @@ void AdversarialMapper::select_task_options(Task *task)
   task->profile_task = false;
   task->task_priority = 0;
   const std::set<Processor> &all_procs = machine->get_all_processors();
-  task->target_proc = 
-    DefaultMapper::select_random_processor(all_procs, Processor::LOC_PROC, machine);
+  task->target_proc = DefaultMapper::select_random_processor(all_procs,
+							     Processor::LOC_PROC,
+							     machine);
+
+  /*
+  const std::set<Processor>& loc_procs =
+    machine->get_local_processors( task->target_proc );
+    
+  task->additional_procs.insert(loc_procs.begin(), loc_procs.end());
+  */
 }
 
 

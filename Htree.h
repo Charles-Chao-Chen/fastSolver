@@ -39,6 +39,12 @@ struct range {
 };
 
 
+struct ColRange {
+  int col_beg;
+  int ncol;
+};
+
+
 struct CirArg {
   int col_beg;
   int row_beg;
@@ -121,6 +127,7 @@ class LR_Matrix {
 
   //void init_RHS(Eigen::MatrixXd &RHS);
   void init_RHS(double *);
+  void init_RHS(int, bool wait = false);
   
   void init_circulant_matrix(double diag);
   
@@ -132,6 +139,10 @@ class LR_Matrix {
   /* --- save solution to matrix --- */
   void get_soln_from_region(double *);
   void get_soln_from_region(double *soln, FSTreeNode *node, int row_beg = 0);
+
+  /* --- output V --- */
+  void print_Vmat(FSTreeNode *, std::string);
+
   
   /* --- tree root --- */
   int nleaf_per_node;
@@ -146,14 +157,10 @@ class LR_Matrix {
   void create_vnode_from_unode(FSTreeNode *, FSTreeNode *);
 
   /* --- populate data --- */
-  /*
-  void init_Umat(HODLR_Tree::node *, FSTreeNode *, Eigen::MatrixXd &);
-  void init_Vmat(HODLR_Tree::node *, FSTreeNode *, Eigen::MatrixXd &);
-  void init_RHS(FSTreeNode*, Eigen::MatrixXd &RHS);
-  */
-    
-  void init_RHS(FSTreeNode*, double *, int row_beg = 0);
  
+  void init_RHS(FSTreeNode*, double *, int row_beg = 0);
+  void init_RHS(FSTreeNode *, int, bool, int row_beg = 0);
+   
   void init_Umat(FSTreeNode *node, int row_beg = 0);
   void init_Vmat(FSTreeNode *node, double, int row_beg = 0);
     
@@ -174,8 +181,6 @@ class LR_Matrix {
   //void fill_kmat(HODLR_Tree::node *, FSTreeNode *, Eigen::MatrixXd &);
   void fill_circulant_kmat(FSTreeNode * vnode, int, int r, double diag, double *Kmat, int LD);
 
-  /* --- output V --- */
-  void print_Vmat(FSTreeNode *, std::string);
   
   /* --- private attributes --- */
   int r; // only if every block has the same rank
@@ -207,7 +212,8 @@ void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string file
 
 void save_region(LogicalRegion & matrix, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
-void save_region(FSTreeNode * node, range rg, std::string filename, Context ctx, HighLevelRuntime *runtime);
+void save_region(FSTreeNode * node, ColRange rg, std::string filename,
+		 Context ctx, HighLevelRuntime *runtime, bool wait = false);
 
 void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
@@ -251,6 +257,53 @@ int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
 void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
 void array_to_tree(FSTreeNode *arg, int idx);
 void array_to_tree(FSTreeNode *arg, int idx, int shift);
+
+
+
+class SaveRegionTask : public TaskLauncher {
+public:
+  struct TaskArgs {
+    ColRange col_range;
+    char filename[25];
+  };
+
+  SaveRegionTask(TaskArgument arg,
+		 Predicate pred = Predicate::TRUE_PRED,
+		 MapperID id = 0,
+		 MappingTagID tag = 0);
+  
+  static int TASKID;
+
+  static void register_tasks(void);
+
+public:
+  static void cpu_task(const Task *task,
+		       const std::vector<PhysicalRegion> &regions,
+		       Context ctx, HighLevelRuntime *runtime);
+};
+
+
+class InitRHSTask : public TaskLauncher {
+public:
+  struct TaskArgs {
+    int rand_seed;
+    //char filename[25];
+  };
+
+  InitRHSTask(TaskArgument arg,
+	      Predicate pred = Predicate::TRUE_PRED,
+	      MapperID id = 0,
+	      MappingTagID tag = 0);
+  
+  static int TASKID;
+
+  static void register_tasks(void);
+
+public:
+  static void cpu_task(const Task *task,
+		       const std::vector<PhysicalRegion> &regions,
+		       Context ctx, HighLevelRuntime *runtime);
+};
 
 
 #endif // __LEGIONTREE_
