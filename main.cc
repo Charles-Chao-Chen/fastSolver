@@ -93,7 +93,7 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
   
   
   FastSolver fs(ctx, runtime);
-  //fs.recLU_solve(lr_mat);
+  fs.recLU_solve(lr_mat);
 
 
   // write the solution to file

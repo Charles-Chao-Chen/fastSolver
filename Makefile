@@ -115,7 +115,7 @@ clean:
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
 
-run_one:
+r1n:
 	mpirun -H n0001 -n 1 -x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 ./main -level 5
 
 r2n:
