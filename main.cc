@@ -17,8 +17,8 @@ void top_level_task(const Task *task,
 		    const std::vector<PhysicalRegion> &regions,
 		    Context ctx, HighLevelRuntime *runtime) {
   
-  test_accuracy(ctx, runtime);
-  //test_performance(ctx, runtime);
+  //test_accuracy(ctx, runtime);
+  test_performance(ctx, runtime);
 
   return;
 }
@@ -40,6 +40,8 @@ int main(int argc, char *argv[]) {
   
   SaveRegionTask::register_tasks();
   InitRHSTask::register_tasks();
+  LUSolveTask::register_tasks();
+
   
   HighLevelRuntime::set_registration_callback(mapper_registration);
 
@@ -102,7 +104,7 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
   if (rm == 0)
     std::cout << "Removed solution file." << std::endl;
   
-  //lr_mat.save_solution(soln_file);
+  lr_mat.save_solution(soln_file);
   //save_region(lr_mat.uroot, "Umat.txt", ctx, runtime);
 
   
@@ -116,7 +118,7 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
   assert( N%threshold == 0);
   //dirct_circulant_solve(Soln, rand_seed, rhs_rows, N/threshold, rhs_cols, r, diag);
 
-  //dirct_circulant_solve(soln_file, rand_seed, rhs_rows, N/threshold, rhs_cols, r, diag);
+  dirct_circulant_solve(soln_file, rand_seed, rhs_rows, N/threshold, rhs_cols, r, diag);
   
   free(Soln); Soln = NULL;
   free(rhs); rhs = NULL;
@@ -134,7 +136,7 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
 
   // make sure the dense block is bigger than r
   int r = 150;
-  int N = 20000;
+  int N = 12800;
   int threshold = 400;
   int nleaf_per_legion_node = 1;
   double diag = 1e5; 
@@ -148,12 +150,12 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
   int rhs_cols = 1;
   int rhs_rows = N;
 
-    /*
+  /*
   double *rhs = (double*) malloc(rhs_cols*rhs_rows*sizeof(double));
   for (int j=0; j<rhs_cols; j++)
     for (int i=0; i<rhs_rows; i++)
       rhs[i+j*rhs_rows] = frand(0, 1);
-  */
+*/
 
     
   LR_Matrix lr_mat(N, threshold, rhs_cols, r, ctx, runtime);

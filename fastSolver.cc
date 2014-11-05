@@ -31,25 +31,6 @@ FastSolver::FastSolver(Context ctx, HighLevelRuntime *runtime) {
 }
 
 
-/*
-void FastSolver::initialize() {
-
-}
-
-
-void FastSolver::recLU_solve() {
-  recLU_solve(uroot, vroot);
-
-
-  // output the result, i.e. the first column
-  range ru = {0, 1};
-  save_region(uroot, ru, "solution_out.txt", ctx, runtime);
-
-  //save_region(uroot, "solution_out.txt", ctx, runtime);
-}
-*/
-
-
 void FastSolver::recLU_solve(LR_Matrix &lr_mat) {
   recLU_solve(lr_mat.uroot, lr_mat.vroot);
 }
@@ -404,6 +385,22 @@ void save_matrix(double *A, int nRows, int nCols, int LD, std::string filename) 
 void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1, LogicalRegion & V0Td0, LogicalRegion & V1Td1,
 		       Context ctx, HighLevelRuntime *runtime) {
 
+  LUSolveTask launcher(TaskArgument(NULL, 0));
+    
+  launcher.add_region_requirement(RegionRequirement(V0Tu0, READ_ONLY,  EXCLUSIVE, V0Tu0));
+  launcher.add_region_requirement(RegionRequirement(V1Tu1, READ_ONLY,  EXCLUSIVE, V1Tu1));
+  launcher.add_region_requirement(RegionRequirement(V0Td0, READ_WRITE, EXCLUSIVE, V0Td0));
+  launcher.add_region_requirement(RegionRequirement(V1Td1, READ_WRITE, EXCLUSIVE, V1Td1));
+  
+  launcher.region_requirements[0].add_field(FID_X);
+  launcher.region_requirements[1].add_field(FID_X);
+  launcher.region_requirements[2].add_field(FID_X);
+  launcher.region_requirements[3].add_field(FID_X);
+
+  runtime->execute_task(ctx, launcher);
+
+  
+    /*
   TaskLauncher lu_solve_task(LU_SOLVE_TASK_ID, TaskArgument(NULL, 0));
 
   assert(V0Tu0 != LogicalRegion::NO_REGION);
@@ -422,6 +419,7 @@ void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1, LogicalRegi
   lu_solve_task.region_requirements[3].add_field(FID_X);
 
   runtime->execute_task(ctx, lu_solve_task);
+  */
 }
 
 
@@ -580,4 +578,151 @@ int count_leaf(FSTreeNode *node) {
     int n2 = count_leaf(node->rchild);
     return n1+n2;
   }
+}
+
+
+/* ---- LU_Solve implementation ---- */
+
+/*static*/
+int LUSolveTask::TASKID;
+
+LUSolveTask::LUSolveTask(TaskArgument arg,
+		   Predicate pred /*= Predicate::TRUE_PRED*/,
+		   MapperID id /*= 0*/,
+		   MappingTagID tag /*= 0*/)
+  : TaskLauncher(TASKID, arg, pred, id, tag)
+{
+}
+
+/*static*/
+void LUSolveTask::register_tasks(void)
+{
+  TASKID = HighLevelRuntime::register_legion_task<LUSolveTask::cpu_task>(AUTO_GENERATE_ID,
+								      Processor::LOC_PROC, 
+								      true,
+								      true,
+								      AUTO_GENERATE_ID,
+								      TaskConfigOptions(true/*leaf*/),
+								      "LU_Solve");
+  printf("registered as task id %d\n", TASKID);
+}
+
+void LUSolveTask::cpu_task(const Task *task,
+			const std::vector<PhysicalRegion> &regions,
+			Context ctx, HighLevelRuntime *runtime) {
+  
+  assert(regions.size() == 4);
+  assert(task->regions.size() == 4);
+  assert(task->arglen == 0);
+  
+  IndexSpace is_V0Tu0 = task->regions[0].region.get_index_space();
+  IndexSpace is_V1Tu1 = task->regions[1].region.get_index_space();
+  IndexSpace is_V0Td0 = task->regions[2].region.get_index_space();
+  IndexSpace is_V1Td1 = task->regions[3].region.get_index_space();
+
+  Domain dom_V0Tu0 = runtime->get_index_space_domain(ctx, is_V0Tu0);
+  Domain dom_V1Tu1 = runtime->get_index_space_domain(ctx, is_V1Tu1);
+  Domain dom_V0Td0 = runtime->get_index_space_domain(ctx, is_V0Td0);
+  Domain dom_V1Td1 = runtime->get_index_space_domain(ctx, is_V1Td1);
+
+  Rect<2> rect_V0Tu0 = dom_V0Tu0.get_rect<2>();
+  Rect<2> rect_V1Tu1 = dom_V1Tu1.get_rect<2>();
+  Rect<2> rect_V0Td0 = dom_V0Td0.get_rect<2>();
+  Rect<2> rect_V1Td1 = dom_V1Td1.get_rect<2>();
+
+  RegionAccessor<AccessorType::Generic, double> acc_V0Tu0 =
+    regions[0].get_field_accessor(FID_X).typeify<double>();
+  RegionAccessor<AccessorType::Generic, double> acc_V1Tu1 =
+    regions[1].get_field_accessor(FID_X).typeify<double>();
+  RegionAccessor<AccessorType::Generic, double> acc_V0Td0 =
+    regions[2].get_field_accessor(FID_X).typeify<double>();
+  RegionAccessor<AccessorType::Generic, double> acc_V1Td1 =
+    regions[3].get_field_accessor(FID_X).typeify<double>();
+    
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+  
+  double *V0Tu0 = acc_V0Tu0.raw_rect_ptr<2>(rect_V0Tu0, subrect, offsets);
+  assert(rect_V0Tu0 == subrect);
+
+  double *V1Tu1 = acc_V1Tu1.raw_rect_ptr<2>(rect_V1Tu1, subrect, offsets);
+  assert(rect_V1Tu1 == subrect);
+  
+  double *V0Td0 = acc_V0Td0.raw_rect_ptr<2>(rect_V0Td0, subrect, offsets);
+  assert(rect_V0Td0 == subrect);
+
+  double *V1Td1 = acc_V1Td1.raw_rect_ptr<2>(rect_V1Td1, subrect, offsets);
+  assert(rect_V1Td1 == subrect);
+
+
+  int V0Tu0_rows = rect_V0Tu0.dim_size(0);
+  int V0Tu0_cols = rect_V0Tu0.dim_size(1);
+  int V1Tu1_rows = rect_V1Tu1.dim_size(0);
+  int V1Tu1_cols = rect_V1Tu1.dim_size(1);
+  int V0Td0_rows = rect_V0Td0.dim_size(0);
+  int V0Td0_cols = rect_V0Td0.dim_size(1);
+  int V1Td1_rows = rect_V1Td1.dim_size(0);
+  int V1Td1_cols = rect_V1Td1.dim_size(1);
+
+  assert(V0Td0_cols == V1Td1_cols);
+  assert(V0Tu0_rows + V1Tu1_rows == V0Tu0_cols + V1Tu1_cols);
+  assert(V0Tu0_rows + V1Tu1_rows == V0Td0_rows + V1Td1_rows);
+
+
+  /* form the Shur complement:
+     --            --
+     |  I    V0Tu0  | 
+     | V1Tu1  I     |
+     --            --
+     and the solutions eta0 and eta1 overwrite
+     V1Td1 and V0Td0. (Note the reversed order)
+  */
+
+  
+  // Solve: S * eta0 = V1Td1 - V1Tu1 * V0Td0
+  // where S = I - V1Tu1 * V0Tu0
+  // Note:  eta0 overwrites V1Td1
+  
+  // Solve: I * eta1 = V0Td0 - V0Tu0 * eta0
+  // where no solve happens because of the indenty coefficience
+  // Note:  eta1 overwrites V0Td0
+  
+  char transa  = 'n';
+  char transb  = 'n';
+  double alpha = -1.;
+  double beta  =  1.;
+
+  assert(V1Tu1_cols == V0Td0_rows);
+  assert(V1Td1_rows == V1Tu1_rows);
+  blas::dgemm_(&transa, &transb, &V1Tu1_rows, &V0Td0_cols, &V1Tu1_cols,
+	       &alpha,   V1Tu1,  &V1Tu1_rows,
+	                 V0Td0,  &V0Td0_rows,
+	       &beta,    V1Td1,  &V1Td1_rows);
+
+
+  int N = V1Tu1_rows;
+  double *S = (double*) calloc( N*N, sizeof(double) );
+  // initialize the indentity matrix
+  for (int i=0; i<N; i++)
+    S[i*(N+1)] = 1.;
+
+  assert(V1Tu1_cols == V0Tu0_rows);
+  blas::dgemm_(&transa, &transb, &V1Tu1_rows, &V0Tu0_cols, &V1Tu1_cols,
+	       &alpha,   V1Tu1,  &V1Tu1_rows,
+	                 V0Tu0,  &V0Tu0_rows,
+	       &beta,    S,      &N);
+
+  int INFO;
+  int IPIV[N];
+  assert(V0Td0_cols == V1Td1_cols);
+  lapack::dgesv_(&N, &V1Td1_cols, S, &N, IPIV, V1Td1, &V1Td1_rows, &INFO);
+  assert(INFO == 0);
+
+  assert(V0Tu0_cols == V1Td1_rows);
+  blas::dgemm_(&transa, &transb, &V0Tu0_rows, &V1Td1_cols, &V0Tu0_cols,
+	       &alpha,   V0Tu0,  &V0Tu0_rows,
+	                 V1Td1,  &V1Td1_rows,
+	       &beta,    V0Td0,  &V0Td0_rows);  
+  
+  free(S);
 }

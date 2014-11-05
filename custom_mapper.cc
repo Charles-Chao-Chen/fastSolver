@@ -244,12 +244,12 @@ void AdversarialMapper::select_task_options(Task *task)
 							     Processor::LOC_PROC,
 							     machine);
 
-  /*
+
   const std::set<Processor>& loc_procs =
     machine->get_local_processors( task->target_proc );
     
   task->additional_procs.insert(loc_procs.begin(), loc_procs.end());
-  */
+ 
 }
 
 

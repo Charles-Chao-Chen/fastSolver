@@ -60,6 +60,30 @@ class FastSolver {
   HighLevelRuntime *runtime;
 };
 
+
+
+class LUSolveTask : public TaskLauncher {
+public:
+
+  LUSolveTask(TaskArgument arg,
+	      Predicate pred = Predicate::TRUE_PRED,
+	      MapperID id = 0,
+	      MappingTagID tag = 0);
+  
+  static int TASKID;
+
+  static void register_tasks(void);
+
+public:
+  static void cpu_task(const Task *task,
+		       const std::vector<PhysicalRegion> &regions,
+		       Context ctx, HighLevelRuntime *runtime);
+};
+
+
+
+
+
 void register_solver_task();
 
 
