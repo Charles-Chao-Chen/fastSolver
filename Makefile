@@ -4,7 +4,7 @@ $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
 #Flags for directing the runtime makefile what to include
-DEBUG=1                   # Include debugging symbols
+DEBUG=0                   # Include debugging symbols
 OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 SHARED_LOWLEVEL=0	  # Use the shared low level
 USE_CUDA=0
@@ -125,12 +125,15 @@ prof1:
 	600 -ll:cpu 12 -ll:csize 8000
 
 r2n:
-	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 ./main -level 5
+	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
+	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 12
+
 
 prof2:
 	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 5  \
-
+	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
+	-ll:cpu 6 -ll:csize 8000 \
+	-hl:sched 300
 
 
 tar:	

@@ -33,9 +33,16 @@ enum MatrixType {
 };
 
 
+
 struct range {
   int col_beg;
   int ncol;
+};
+
+
+struct Range {
+  int begin;
+  int size;
 };
 
 

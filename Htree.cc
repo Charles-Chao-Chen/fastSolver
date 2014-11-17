@@ -131,7 +131,6 @@ void LR_Matrix::init_circulant_matrix(double diag) {
   init_Umat(uroot);       // row_beg = 0
   init_Vmat(vroot, diag); // row_beg = 0
 
-  //save_region(uroot, "init_Umat.txt", this->ctx, this->runtime);
 }
 
 
@@ -598,7 +597,8 @@ void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Contex
   circulant_matrix_task.region_requirements[0].add_field(FID_X);
 
   runtime->execute_task(ctx, circulant_matrix_task);
-
+  //Future fm = runtime->execute_task(ctx, circulant_matrix_task);
+  //fm.get_void_result();
 }
 
 
@@ -1080,6 +1080,8 @@ void LeafData::set_circulant_kmat(CirKmatArg arg, Context ctx, HighLevelRuntime 
   circulant_kmat_task.region_requirements[0].add_field(FID_X);
 
   runtime->execute_task(ctx, circulant_kmat_task);
+  //Future fm = runtime->execute_task(ctx, circulant_kmat_task);
+  //fm.get_void_result();
 }
 
 

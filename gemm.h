@@ -73,9 +73,24 @@ range(int lb_, int ub_) : lb(lb_), ub(ub_) {};
 
 void gemm_recursive(double, FSTreeNode *, FSTreeNode *, int, int, LogicalRegion &, Context, HighLevelRuntime *);
 
+void gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u, int
+		    col_beg, int ncol, LogicalRegion & res, Range tag,
+		    Context ctx, HighLevelRuntime * runtime);
+
+  
 void gemm(double, FSTreeNode *, FSTreeNode *, range, double, LogicalRegion &, Context, HighLevelRuntime *);
 
+void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double
+	  beta, LogicalRegion & res, Range task_tag,
+	  Context ctx, HighLevelRuntime *runtime);
+
+  
 void gemm2(double, FSTreeNode *, range, LogicalRegion &, double, FSTreeNode *, range, Context, HighLevelRuntime *);
+
+void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion &
+	   eta, double beta, FSTreeNode * v, range rv, Range tag,
+	   Context ctx, HighLevelRuntime *runtime);
+
   
 void gemm_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime);

@@ -1,6 +1,5 @@
 #include "fastSolver.h"
 
-
 #include <algorithm>
 #include <assert.h>
 #include <iomanip>
@@ -34,6 +33,13 @@ FastSolver::FastSolver(Context ctx, HighLevelRuntime *runtime) {
 void FastSolver::recLU_solve(LR_Matrix &lr_mat) {
   recLU_solve(lr_mat.uroot, lr_mat.vroot);
 }
+
+
+void FastSolver::recLU_solve(LR_Matrix &lr_mat, int tag_size) {
+  Range tag = {0, tag_size};
+  recLU_solve(lr_mat.uroot, lr_mat.vroot, tag);
+}
+
 
 void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode) {
 
@@ -72,37 +78,68 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode) {
   gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, ctx, runtime);
   gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, ctx, runtime);
 
-
-  //save_region(V0Tu0, "V0Tu0.txt", ctx, runtime);
-  //save_region(V1Td1, "V1Td1.txt", ctx, runtime);
-  
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1
   // eta1 = V0Td0
-  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, ctx, runtime);
-
-  //save_region(V0Td0, "eta1.txt", ctx, runtime);
-  //save_region(V1Td1, "eta0.txt", ctx, runtime);
-  
+  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, ctx, runtime);  
 
   // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
   // Assemble x from d0 and d1: merge two trees
   gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, ctx, runtime);
   gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, ctx, runtime);
-
-  //save_region(b0, rd0, "d0.txt", ctx, runtime);
-  //save_region(b1, rd1, "d1.txt", ctx, runtime);
+}
 
 
-  //save_region(unode, "solution_in.txt", ctx, runtime);
-  //save_region(unode, "solution1_in.txt", ctx, runtime);
-  //save_region(unode, "solution2_in.txt", ctx, runtime);
+void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
+			     Range tag) {
+
+  if (unode->isLegionLeaf) {
+
+    assert(vnode->isLegionLeaf);
+
+    // pick a task tag id from tag_beg to tag_end.
+    // here the first tag is picked.
+    solve_legion_leaf(unode, vnode, tag); 
+
+    return;
+  }
+
+  int   half = tag.size/2;
+  Range tag0 = {tag.begin,      half};
+  Range tag1 = {tag.begin+half, half};
   
-  
-  //range ru = {0, 1};
-  //save_region(unode, ru, "solution_in.txt", ctx, runtime);
-  //printf("col_beg: %d, ncol: %d.\n", unode->col_beg, unode->ncol);
+  FSTreeNode * b0 = unode->lchild;
+  FSTreeNode * b1 = unode->rchild;
+  FSTreeNode * V0 = vnode->lchild;
+  FSTreeNode * V1 = vnode->rchild;
 
+  recLU_solve(b0, V0, tag0);
+  recLU_solve(b1, V1, tag1);
+
+  assert(unode->isLegionLeaf == false);
+  assert(V0->Hmat != NULL);
+  assert(V1->Hmat != NULL);
+
+  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
+  // from leaves to root in the H tree.
+  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  range ru0 = {b0->col_beg, b0->ncol};
+  range ru1 = {b1->col_beg, b1->ncol};
+  range rd0 = {0,           b0->col_beg};
+  range rd1 = {0,           b1->col_beg};
+  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
+  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
+  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
+  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
+
+  // V0Td0 and V1Td1 contain the solution on output.
+  // eta0 = V1Td1, eta1 = V0Td0.
+  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, tag, ctx, runtime);
+
+  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
+  // Assemble x from d0 and d1: merge two trees
+  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
+  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
 }
 
 
@@ -127,6 +164,50 @@ void FastSolver::solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf) {
   arg[0].col_beg = max_tree_size;
     
   TaskLauncher leaf_task(LEAF_TASK_ID, TaskArgument(&arg[0], sizeof(FSTreeNode)*(max_tree_size*2)));
+
+  // u region
+  leaf_task.add_region_requirement(RegionRequirement(uleaf->matrix->data, READ_WRITE, EXCLUSIVE, uleaf->matrix->data));
+  leaf_task.region_requirements[0].add_field(FID_X);
+
+  // v region
+  leaf_task.add_region_requirement(RegionRequirement(vleaf->matrix->data, READ_ONLY,  EXCLUSIVE, vleaf->matrix->data));
+  leaf_task.region_requirements[1].add_field(FID_X);
+
+  // k region
+  leaf_task.add_region_requirement(RegionRequirement(vleaf->kmat->data,   READ_ONLY,  EXCLUSIVE, vleaf->kmat->data));
+  leaf_task.region_requirements[2].add_field(FID_X);
+
+  runtime->execute_task(ctx, leaf_task);
+}
+
+
+
+// this function launches leaf tasks
+void FastSolver::solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode *
+				   vleaf, Range task_tag) {
+  
+  int nleaf = count_leaf(uleaf);
+  //assert(nleaf == nleaf_per_node);
+  //int max_tree_size = nleaf_per_node * 2;
+  int max_tree_size = nleaf * 2;
+  FSTreeNode arg[max_tree_size*2];
+
+  arg[0] = *vleaf;
+  int tree_size = tree_to_array(vleaf, arg, 0);
+  //std::cout << "Tree size: " << tree_size << std::endl;
+  assert(tree_size < max_tree_size);
+
+  arg[max_tree_size] = *uleaf;
+  tree_to_array(uleaf, arg, 0, max_tree_size);
+
+  // encode the array size
+  arg[0].col_beg = max_tree_size;
+    
+  TaskLauncher leaf_task(LEAF_TASK_ID, TaskArgument(&arg[0],
+						    sizeof(FSTreeNode)*(max_tree_size*2)),
+			 Predicate::TRUE_PRED,
+			 0,
+			 task_tag.begin);
 
   // u region
   leaf_task.add_region_requirement(RegionRequirement(uleaf->matrix->data, READ_WRITE, EXCLUSIVE, uleaf->matrix->data));
@@ -385,6 +466,8 @@ void save_matrix(double *A, int nRows, int nCols, int LD, std::string filename) 
 void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1, LogicalRegion & V0Td0, LogicalRegion & V1Td1,
 		       Context ctx, HighLevelRuntime *runtime) {
 
+  // this task can be indexed by any tag in the range.
+  // the first tag is picked here.
   LUSolveTask launcher(TaskArgument(NULL, 0));
     
   launcher.add_region_requirement(RegionRequirement(V0Tu0, READ_ONLY,  EXCLUSIVE, V0Tu0));
@@ -398,29 +481,31 @@ void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1, LogicalRegi
   launcher.region_requirements[3].add_field(FID_X);
 
   runtime->execute_task(ctx, launcher);
-
-  
-    /*
-  TaskLauncher lu_solve_task(LU_SOLVE_TASK_ID, TaskArgument(NULL, 0));
-
-  assert(V0Tu0 != LogicalRegion::NO_REGION);
-  assert(V1Tu1 != LogicalRegion::NO_REGION);
-  assert(V0Td0 != LogicalRegion::NO_REGION);
-  assert(V1Td1 != LogicalRegion::NO_REGION);
-
-  lu_solve_task.add_region_requirement(RegionRequirement(V0Tu0, READ_ONLY,  EXCLUSIVE, V0Tu0));
-  lu_solve_task.add_region_requirement(RegionRequirement(V1Tu1, READ_ONLY,  EXCLUSIVE, V1Tu1));
-  lu_solve_task.add_region_requirement(RegionRequirement(V0Td0, READ_WRITE, EXCLUSIVE, V0Td0));
-  lu_solve_task.add_region_requirement(RegionRequirement(V1Td1, READ_WRITE, EXCLUSIVE, V1Td1));
-  
-  lu_solve_task.region_requirements[0].add_field(FID_X);
-  lu_solve_task.region_requirements[1].add_field(FID_X);
-  lu_solve_task.region_requirements[2].add_field(FID_X);
-  lu_solve_task.region_requirements[3].add_field(FID_X);
-
-  runtime->execute_task(ctx, lu_solve_task);
-  */
 }
+
+
+
+void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1, LogicalRegion & V0Td0, LogicalRegion & V1Td1,
+Range task_tag, Context ctx, HighLevelRuntime *runtime) {
+
+  // this task can be indexed by any tag in the range.
+  // the first tag is picked here.
+  LUSolveTask launcher(TaskArgument(NULL, 0), Predicate::TRUE_PRED, 0,
+		       task_tag.begin);
+    
+  launcher.add_region_requirement(RegionRequirement(V0Tu0, READ_ONLY,  EXCLUSIVE, V0Tu0));
+  launcher.add_region_requirement(RegionRequirement(V1Tu1, READ_ONLY,  EXCLUSIVE, V1Tu1));
+  launcher.add_region_requirement(RegionRequirement(V0Td0, READ_WRITE, EXCLUSIVE, V0Td0));
+  launcher.add_region_requirement(RegionRequirement(V1Td1, READ_WRITE, EXCLUSIVE, V1Td1));
+  
+  launcher.region_requirements[0].add_field(FID_X);
+  launcher.region_requirements[1].add_field(FID_X);
+  launcher.region_requirements[2].add_field(FID_X);
+  launcher.region_requirements[3].add_field(FID_X);
+
+  runtime->execute_task(ctx, launcher);
+}
+
 
 
 // solve the system for Shur complement

@@ -34,12 +34,18 @@ class FastSolver {
   void recLU_solve();
   void recLU_solve(LR_Matrix &);
   void recLU_solve(FSTreeNode *, FSTreeNode *);
+  void recLU_solve(LR_Matrix &lr_mat, int tag_size);
+  void recLU_solve(FSTreeNode * unode, FSTreeNode * vnode, Range tag);
 
+  
   //void save_soln_from_region(FSTreeNode *);
   
  private:
 
   void solve_legion_leaf(FSTreeNode *, FSTreeNode *);
+
+  void solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf, Range task_tag);
+ 
   //int  tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int);
   //void tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int, int);
   //int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
@@ -97,13 +103,18 @@ void save_matrix(double *A, int nRows, int nCols, int LD, std::string filename);
 
 void solve_node_matrix(LogicalRegion &, LogicalRegion &, LogicalRegion &, LogicalRegion &, Context, HighLevelRuntime *);
 
+void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
+		       LogicalRegion & V0Td0, LogicalRegion & V1Td1,
+		       Range task_tag, Context ctx, HighLevelRuntime
+		       *runtime);
+
+
 void lu_solve_task(const Task *, const std::vector<PhysicalRegion> &,
 		   Context, HighLevelRuntime *);
 
 //void saveVectorToText(const std::string outputFileName, Eigen::VectorXd & inputVector);
 
 int count_leaf(FSTreeNode *node);
-
 
 
 #endif // __FASTSOLVER_

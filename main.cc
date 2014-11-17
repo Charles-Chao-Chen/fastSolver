@@ -95,7 +95,10 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
   
   
   FastSolver fs(ctx, runtime);
-  fs.recLU_solve(lr_mat);
+
+  int num_node = 2;
+  fs.recLU_solve(lr_mat, num_node);
+  //fs.recLU_solve(lr_mat);
 
 
   // write the solution to file
@@ -167,8 +170,9 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
   lr_mat.init_circulant_matrix(diag); 
 
   FastSolver fs(ctx, runtime);
-  fs.recLU_solve(lr_mat);
-
+  //fs.recLU_solve(lr_mat);
+  int num_node = 2;
+  fs.recLU_solve(lr_mat, num_node);
   
   clock_t t1 = clock();
   printf("Init Time: %f.\n", (double)(t1-t0)/CLOCKS_PER_SEC);
