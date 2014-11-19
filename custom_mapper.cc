@@ -235,7 +235,7 @@ void AdversarialMapper::select_task_options(Task *task)
 {
   task->inline_task = false;
   task->spawn_task = false;
-  task->map_locally = false;
+  task->map_locally = true; // avoid remote mapping
   task->profile_task = false;
   task->task_priority = 0;
   const std::set<Processor> &all_procs = machine->get_all_processors();

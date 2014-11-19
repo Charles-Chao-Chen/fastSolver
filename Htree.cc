@@ -130,7 +130,14 @@ void LR_Matrix::init_circulant_matrix(double diag) {
 
   init_Umat(uroot);       // row_beg = 0
   init_Vmat(vroot, diag); // row_beg = 0
+}
 
+
+void LR_Matrix::init_circulant_matrix(double diag, int num_node) {
+
+  Range tag = {0, num_node};
+  init_Umat(uroot, tag);       // row_beg = 0
+  init_Vmat(vroot, diag, tag); // row_beg = 0
 }
 
 
@@ -170,7 +177,15 @@ void LR_Matrix::init_RHS(double *RHS) {
 void LR_Matrix::init_RHS(int rand_seed, bool wait /*=false*/) {
 
   assert(rhs_cols == 1);
-  init_RHS(uroot, rand_seed, wait); // row_beg = 0
+  init_RHS(uroot, rand_seed, wait /*, row_beg = 0*/);
+}
+
+
+void LR_Matrix::init_RHS(int rand_seed, int node_num, bool wait /*=false*/) {
+
+  assert(rhs_cols == 1);
+  Range tag = {0, node_num};
+  init_RHS(uroot, rand_seed, tag, wait /*, row_beg = 0*/); 
 }
 
 
@@ -205,15 +220,46 @@ void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, bool wait, int row_beg
 
     Future fm = runtime->execute_task(ctx, launcher);
 
+    /*
     if(wait) {
       fm.get_void_result();
     }
-    
+    */
     return;
     
   } else { // recursively split RHS    
     init_RHS(node->lchild, rand_seed, wait, row_beg);
     init_RHS(node->rchild, rand_seed, wait, row_beg+node->lchild->nrow);
+  }  
+}
+
+
+void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, Range tag, bool wait, int row_beg) {
+
+  if (node->isLegionLeaf == true) {
+    assert(node->matrix != NULL);
+
+    typename InitRHSTask::TaskArgs args;
+    args.rand_seed = rand_seed;
+
+    InitRHSTask launcher(TaskArgument(&args, sizeof(args)),
+			 Predicate::TRUE_PRED,
+			 0,
+			 tag.begin);
+    
+    launcher.add_region_requirement(RegionRequirement(node->matrix->data,
+						      WRITE_DISCARD,
+						      EXCLUSIVE,
+						      node->matrix->data).add_field(FID_X));
+    runtime->execute_task(ctx, launcher);
+    
+  } else { // recursively split RHS
+    
+    int   half = tag.size/2;
+    Range ltag = {tag.begin,      half};
+    Range rtag = {tag.begin+half, half};
+    init_RHS(node->lchild, rand_seed, ltag, wait, row_beg);
+    init_RHS(node->rchild, rand_seed, rtag, wait, row_beg+node->lchild->nrow);
   }  
 }
 
@@ -229,6 +275,27 @@ void LR_Matrix::init_Umat(FSTreeNode *node, int row_beg) {
   } else {
     init_Umat(node->lchild, row_beg);
     init_Umat(node->rchild, row_beg + node->lchild->nrow);
+  }  
+}
+
+
+void LR_Matrix::init_Umat(FSTreeNode *node, Range tag, int row_beg) {
+
+  if (node->isLegionLeaf == true) {
+
+    assert(node->matrix != NULL); // initialize region here
+    node->matrix->set_circulant_matrix_data(rhs_cols,
+					    row_beg,
+					    r,
+					    tag,
+					    ctx,
+					    runtime);
+  } else {
+    int   half = tag.size/2;
+    Range ltag = {tag.begin,      half};
+    Range rtag = {tag.begin+half, half};
+    init_Umat(node->lchild, ltag, row_beg);
+    init_Umat(node->rchild, rtag, row_beg + node->lchild->nrow);
   }  
 }
 
@@ -250,22 +317,45 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, int row_beg) {
     int nrow = node->kmat->rows;
     int ncol = node->kmat->cols;
 
-    /*
-      double *K = (double *) calloc(nrow*ncol, sizeof(double));
-      fill_circulant_kmat(node, row_beg, r, diag, K, nrow);
-      node->kmat->set_matrix_data(K, nrow, ncol, ctx, runtime);
-      free(K);
-    */
-
     // only support real leaf currently
     assert(node->lchild == NULL && node->rchild == NULL);
     CirKmatArg arg = {row_beg, r, diag};
     node->kmat->set_circulant_kmat(arg, ctx, runtime);
 
-    
   } else {
     init_Vmat(node->lchild, diag, row_beg);
     init_Vmat(node->rchild, diag, row_beg+node->lchild->nrow);
+  }
+}
+
+
+void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, Range tag, int row_beg) {
+
+  if (node->Hmat != NULL) // skip vroot
+    set_circulant_Hmatrix_data(node->Hmat, tag, row_beg);
+
+  if (node->isLegionLeaf == true) {
+
+    // init V
+    // when the legion leaf is the real leaf, there is no data here.
+    if (node->matrix->cols > 0)
+      node->matrix->set_circulant_matrix_data(0, row_beg, r, tag, ctx, runtime);
+
+    // init K
+    int nrow = node->kmat->rows;
+    int ncol = node->kmat->cols;
+
+    // only support real leaf currently
+    assert(node->lchild == NULL && node->rchild == NULL);
+    CirKmatArg arg = {row_beg, r, diag};
+    node->kmat->set_circulant_kmat(arg, tag, ctx, runtime);
+    
+  } else {
+    int   half = tag.size/2;
+    Range ltag = {tag.begin,      half};
+    Range rtag = {tag.begin+half, half};
+    init_Vmat(node->lchild, diag, ltag, row_beg);
+    init_Vmat(node->rchild, diag, rtag, row_beg+node->lchild->nrow);
   }
 }
 
@@ -569,6 +659,26 @@ void LR_Matrix::set_circulant_Hmatrix_data(FSTreeNode * Hmat, int row_beg) {
 }
 
 
+void LR_Matrix::set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range
+					   tag, int row_beg) {
+
+  if (Hmat->lchild == NULL && Hmat->rchild == NULL) {
+
+    int glo = row_beg;
+    int loc = Hmat->row_beg;
+    assert(Hmat->ncol == r);
+    Hmat->matrix->set_circulant_matrix_data(0, glo + loc, r, tag, ctx, runtime);
+    
+  } else {
+    int   half = tag.size/2;
+    Range ltag = {tag.begin,      half};
+    Range rtag = {tag.begin+half, half};
+    set_circulant_Hmatrix_data(Hmat->lchild, ltag, row_beg);
+    set_circulant_Hmatrix_data(Hmat->rchild, rtag, row_beg);
+  }  
+}
+
+
 void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
 
   //  if (node == vroot)
@@ -599,6 +709,22 @@ void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Contex
   runtime->execute_task(ctx, circulant_matrix_task);
   //Future fm = runtime->execute_task(ctx, circulant_matrix_task);
   //fm.get_void_result();
+}
+
+
+void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int
+					 r, Range tag, Context ctx, HighLevelRuntime *runtime) {    
+
+  CirArg cir_arg = {col_beg, row_beg, r};
+  TaskLauncher circulant_matrix_task(CIRCULANT_MATRIX_TASK_ID,
+				     TaskArgument(&cir_arg,
+						  sizeof(CirArg)),
+				     Predicate::TRUE_PRED,
+				     0,
+				     tag.begin);
+  circulant_matrix_task.add_region_requirement(RegionRequirement(data, READ_WRITE, EXCLUSIVE, data));
+  circulant_matrix_task.region_requirements[0].add_field(FID_X);
+  runtime->execute_task(ctx, circulant_matrix_task);
 }
 
 
@@ -667,15 +793,12 @@ void LeafData::set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context 
       int pt[2] = {i, j};
       acc.write(DomainPoint::from_point<2>( Point<2> (pt) ), mat[row_beg+i+j*rhs_rows]);
     }
-  }
-
-    
+  }    
   runtime->unmap_region(ctx, region);
 }
 
 
-void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, HighLevelRuntime *runtime) {
-  
+void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, HighLevelRuntime *runtime) {  
   int lower[2] = {0,      0};
   int upper[2] = {nrow-1, ncol-1}; // inclusive bound
   Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
@@ -689,14 +812,21 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
 
 
 void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
-
   assert(matrix != LogicalRegion::NO_REGION);
   TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID, TaskArgument(NULL, 0));
-
   zero_matrix_task.add_region_requirement(RegionRequirement(matrix, WRITE_DISCARD, EXCLUSIVE, matrix));
-      
   zero_matrix_task.region_requirements[0].add_field(FID_X);
+  runtime->execute_task(ctx, zero_matrix_task);
+}
 
+
+void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx, HighLevelRuntime *runtime) {
+  assert(matrix != LogicalRegion::NO_REGION);
+  TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID,
+				TaskArgument(NULL, 0),
+				Predicate::TRUE_PRED, 0, tag.begin);
+  zero_matrix_task.add_region_requirement(RegionRequirement(matrix, WRITE_DISCARD, EXCLUSIVE, matrix));
+  zero_matrix_task.region_requirements[0].add_field(FID_X);
   runtime->execute_task(ctx, zero_matrix_task);
 }
 
@@ -1082,6 +1212,25 @@ void LeafData::set_circulant_kmat(CirKmatArg arg, Context ctx, HighLevelRuntime 
   runtime->execute_task(ctx, circulant_kmat_task);
   //Future fm = runtime->execute_task(ctx, circulant_kmat_task);
   //fm.get_void_result();
+}
+
+
+// assume at the real leaf
+void LeafData::set_circulant_kmat(CirKmatArg arg, Range tag, Context ctx, HighLevelRuntime *runtime) {
+    
+  TaskLauncher circulant_kmat_task(CIRCULANT_KMAT_TASK_ID,
+				   TaskArgument(&arg,
+						sizeof(CirKmatArg)),
+				   Predicate::TRUE_PRED,
+				   0,
+				   tag.begin);
+
+  // k region
+  circulant_kmat_task.add_region_requirement(RegionRequirement(data,
+							       WRITE_DISCARD,
+							       EXCLUSIVE, data));
+  circulant_kmat_task.region_requirements[0].add_field(FID_X);
+  runtime->execute_task(ctx, circulant_kmat_task);
 }
 
 

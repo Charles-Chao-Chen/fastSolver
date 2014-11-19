@@ -172,7 +172,8 @@ col_beg, int ncol, LogicalRegion & res, Range tag, Context ctx, HighLevelRuntime
 
     gemmArg arg = {alpha, col_beg, ncol};
     TaskLauncher gemm_task1(GEMM_TASK_ID, TaskArgument(&arg,
-    sizeof(gemmArg)), Predicate::TRUE_PRED, 0, tag.begin);
+						       sizeof(gemmArg)),
+			    Predicate::TRUE_PRED, 0, tag.begin);
 
     assert(v->matrix->data != LogicalRegion::NO_REGION);
     assert(u->matrix->data != LogicalRegion::NO_REGION);
@@ -183,7 +184,6 @@ col_beg, int ncol, LogicalRegion & res, Range tag, Context ctx, HighLevelRuntime
     gemm_task1.region_requirements[0].add_field(FID_X);
     gemm_task1.region_requirements[1].add_field(FID_X);
     gemm_task1.region_requirements[2].add_field(FID_X);
-
     runtime->execute_task(ctx, gemm_task1);
 
   } else {
@@ -191,14 +191,12 @@ col_beg, int ncol, LogicalRegion & res, Range tag, Context ctx, HighLevelRuntime
     int   half = tag.size/2;
     Range tag0 = {tag.begin,      half};
     Range tag1 = {tag.begin+half, half};
-
     gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol, res,
-      tag0, ctx, runtime);
+		   tag0, ctx, runtime);
     gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol, res,
-      tag1, ctx, runtime);
+		   tag1, ctx, runtime);
   }
 }
-
 
 
 void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double beta, LogicalRegion & res,
@@ -231,7 +229,7 @@ void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double
     int ncol = ru.ncol;
     assert(v->nrow == u->nrow);
     create_matrix(res, nrow, ncol, ctx, runtime);
-    zero_matrix(res, ctx, runtime);
+    zero_matrix(res, task_tag, ctx, runtime);
     
   } else scale_matrix(beta, res, ctx, runtime);
 
@@ -331,14 +329,16 @@ void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion & eta, double b
 
 // d = beta * d + alpha* u * eta 
 void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion &
-eta, double beta, FSTreeNode * v, range rv, Range tag, Context ctx, HighLevelRuntime *runtime) {
+	   eta, double beta, FSTreeNode * v, range rv, Range tag,
+	   Context ctx, HighLevelRuntime *runtime) {
 
   if (u->isLegionLeaf == true) {
   
     assert(v->isLegionLeaf == true);    
     gemm2Arg arg = {alpha, beta, ru.col_beg, ru.ncol, rv.col_beg, rv.ncol};
     TaskLauncher gemm2_task(GEMM2_TASK_ID, TaskArgument(&arg,
-    sizeof(gemm2Arg)), Predicate::TRUE_PRED, 0, tag.begin);
+							sizeof(gemm2Arg)),
+			    Predicate::TRUE_PRED, 0, tag.begin);
 
     assert(u->matrix->data == v->matrix->data);
     gemm2_task.add_region_requirement(RegionRequirement(u->matrix->data, READ_WRITE, EXCLUSIVE, u->matrix->data));

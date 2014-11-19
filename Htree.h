@@ -79,11 +79,17 @@ struct LeafData {
   //void set_matrix_data(Eigen::MatrixXd &, Context, HighLevelRuntime *, int col_beg = 0);
   void set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context ctx, HighLevelRuntime *runtime, int row_beg = 0);
 
-  void set_circulant_matrix_data(int col_beg, int row_beg, int r, Context ctx, HighLevelRuntime *runtime);
+  void set_circulant_matrix_data(int col_beg, int row_beg, int r,
+				 Context ctx, HighLevelRuntime *runtime);
+  void set_circulant_matrix_data(int col_beg, int row_beg, int
+				 r, Range tag, Context ctx, HighLevelRuntime *runtime);
 
-void set_circulant_kmat(CirKmatArg arg,
-			Context ctx, HighLevelRuntime *runtime);
-
+  
+  void set_circulant_kmat(CirKmatArg arg,
+			  Context ctx, HighLevelRuntime *runtime);
+  void set_circulant_kmat(CirKmatArg arg, Range tag, Context ctx,
+			  HighLevelRuntime *runtime);
+  
   
   //int col_beg; // begin index in the region
   //int row_beg;
@@ -126,18 +132,16 @@ class LR_Matrix {
  public:
   LR_Matrix(int, Context ctx_, HighLevelRuntime *runtime_);
   LR_Matrix(int N, int threshold, int rhs_cols, int r, Context ctx_, HighLevelRuntime *runtime_);
-
-  //void initialize(HODLR_Tree::node *, Eigen::VectorXd &);
-
   
   void create_legion_leaf(int nleaf_per_legion_node);
 
   //void init_RHS(Eigen::MatrixXd &RHS);
   void init_RHS(double *);
   void init_RHS(int, bool wait = false);
+  void init_RHS(int, int, bool wait = false);
   
   void init_circulant_matrix(double diag);
-  
+  void init_circulant_matrix(double diag, int num_node);
   
 
   /* --- save solution --- */
@@ -167,9 +171,15 @@ class LR_Matrix {
  
   void init_RHS(FSTreeNode*, double *, int row_beg = 0);
   void init_RHS(FSTreeNode *, int, bool, int row_beg = 0);
-   
+  void init_RHS(FSTreeNode *node, int rand_seed, Range tag,
+		bool wait, int row_beg = 0);
+  
   void init_Umat(FSTreeNode *node, int row_beg = 0);
-  void init_Vmat(FSTreeNode *node, double, int row_beg = 0);
+  void init_Vmat(FSTreeNode *node, double diag, int row_beg = 0);
+
+  void init_Umat(FSTreeNode *node, Range tag, int row_beg = 0);
+  void init_Vmat(FSTreeNode *node, double diag, Range tag, int row_beg = 0);
+
     
   /*--- helper functions ---*/
 
@@ -178,12 +188,10 @@ class LR_Matrix {
   
   //void create_matrix(LogicalRegion &, int, int);
   void create_Hmatrix(FSTreeNode *, FSTreeNode *, int);
-  //void set_Hmatrix_data(FSTreeNode *, Eigen::MatrixXd &);
   void set_circulant_Hmatrix_data(FSTreeNode * Hmat, int nrow);
+  void set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range
+				  tag, int row_beg);
   
-  //void accumulate_matrix(Eigen::MatrixXd &, Eigen::MatrixXd &, Eigen::MatrixXd &, Eigen::MatrixXd &, FSTreeNode *, Eigen::MatrixXd &, FSTreeNode *);
-  
-
   //void init_kmat(HODLR_Tree::node *, FSTreeNode *);
   //void fill_kmat(HODLR_Tree::node *, FSTreeNode *, Eigen::MatrixXd &);
   void fill_circulant_kmat(FSTreeNode * vnode, int, int r, double diag, double *Kmat, int LD);
@@ -204,11 +212,13 @@ class LR_Matrix {
 //void create_matrix(LogicalRegion &matrix, int nrow, int ncol,
 //		   Context ctx, HighLevelRuntime *runtime);
 
-void create_matrix(LogicalRegion &, int, int, Context, HighLevelRuntime *);
+void create_matrix(LogicalRegion &, int, int, Context,
+		   HighLevelRuntime *);
 
 void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime
-*runtime);
-
+		 *runtime);
+void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx,
+		 HighLevelRuntime *runtime);
 
 //void set_element(double x, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime);
 
@@ -266,7 +276,6 @@ void array_to_tree(FSTreeNode *arg, int idx);
 void array_to_tree(FSTreeNode *arg, int idx, int shift);
 
 
-
 class SaveRegionTask : public TaskLauncher {
 public:
   struct TaskArgs {
@@ -280,7 +289,6 @@ public:
 		 MappingTagID tag = 0);
   
   static int TASKID;
-
   static void register_tasks(void);
 
 public:
@@ -303,7 +311,6 @@ public:
 	      MappingTagID tag = 0);
   
   static int TASKID;
-
   static void register_tasks(void);
 
 public:

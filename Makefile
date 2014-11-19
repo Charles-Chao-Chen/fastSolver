@@ -116,7 +116,7 @@ cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
 
 r1n:
-	mpirun -H n0001 -bind-to none -x GASNET_IB_SPAWNER -x \
+	./main -x GASNET_IB_SPAWNER -x \
 	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 4
 
 prof1:
@@ -126,14 +126,22 @@ prof1:
 
 r2n:
 	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 12
-
+	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 12 -ll:csize 30000
 
 prof2:
 	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
 	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
-	-ll:cpu 6 -ll:csize 8000 \
-	-hl:sched 300
+	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
+
+prof4:
+	numactl -m 0 -N 0 mpirun -H n0000 -H n0001 -H n0002 -H n0003 -bind-to none -x GASNET_IB_SPAWNER -x \
+	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
+	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
+
+spy2:
+	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
+	GASNET_BACKTRACE=1 ./main -cat legion_spy -level 2 \
+	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
 
 
 tar:	

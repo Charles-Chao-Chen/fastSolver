@@ -60,7 +60,7 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
 
   // make sure the dense block is bigger than r
   int r = 10;
-  int N = 200;
+  int N = 800;
   int threshold = 50;
   int nleaf_per_legion_node = 1;
   double diag = 1e5; 
@@ -71,23 +71,24 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
   //const InputArgs &command_args = HighLevelRuntime::get_input_args();
   //diag = atof(command_args.argv[1]);
 
-
+  int num_node = 4;
   int rhs_cols = 1;
   int rhs_rows = N;
   double *rhs = (double*) malloc(rhs_cols*rhs_rows*sizeof(double));
   for (int j=0; j<rhs_cols; j++)
     for (int i=0; i<rhs_rows; i++)
       rhs[i+j*rhs_rows] = frand(0, 1);
-    
+
   LR_Matrix lr_mat(N, threshold, rhs_cols, r, ctx, runtime);
   lr_mat.create_legion_leaf(nleaf_per_legion_node);  
-  lr_mat.init_RHS( rand_seed, true /*wait*/ );
+  //lr_mat.init_RHS( rand_seed, true /*wait*/ );
   //lr_mat.init_RHS(rhs);
-  
+  lr_mat.init_RHS( rand_seed, num_node );
   
   // A = U U^T + diag and U is a circulant matrix
-  lr_mat.init_circulant_matrix(diag); 
-
+  //lr_mat.init_circulant_matrix(diag); 
+  lr_mat.init_circulant_matrix(diag, num_node);
+  
   //lr_mat.save_solution("rhs.txt");
   //save_region(lr_mat.uroot, "Umat.txt", ctx, runtime);
   //lr_mat.print_Vmat(lr_mat.vroot, "Vmat.txt");
@@ -95,8 +96,6 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
   
   
   FastSolver fs(ctx, runtime);
-
-  int num_node = 2;
   fs.recLU_solve(lr_mat, num_node);
   //fs.recLU_solve(lr_mat);
 
@@ -134,13 +133,13 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
 
   // set random seed
   //srand( time(NULL) );
-  clock_t t0 = clock();  
+  clock_t t0 = clock();
 
 
   // make sure the dense block is bigger than r
   int r = 150;
-  int N = 12800;
-  int threshold = 400;
+  int N = 1<<14;
+  int threshold = 1<<8;
   int nleaf_per_legion_node = 1;
   double diag = 1e5; 
   
@@ -148,35 +147,26 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
   //const InputArgs &command_args = HighLevelRuntime::get_input_args();
   //diag = atof(command_args.argv[1]);
 
-
-
+  int num_node = 2;
   int rhs_cols = 1;
   int rhs_rows = N;
-
-  /*
-  double *rhs = (double*) malloc(rhs_cols*rhs_rows*sizeof(double));
-  for (int j=0; j<rhs_cols; j++)
-    for (int i=0; i<rhs_rows; i++)
-      rhs[i+j*rhs_rows] = frand(0, 1);
-*/
-
-    
+  
   LR_Matrix lr_mat(N, threshold, rhs_cols, r, ctx, runtime);
   lr_mat.create_legion_leaf(nleaf_per_legion_node);  
   //lr_mat.init_RHS(rhs);
-  lr_mat.init_RHS(1234);
+  //lr_mat.init_RHS(1234);
+  lr_mat.init_RHS(1234, num_node);
   
   // A = U U^T + diag and U is a circulant matrix
-  lr_mat.init_circulant_matrix(diag); 
+  //lr_mat.init_circulant_matrix(diag);
+  lr_mat.init_circulant_matrix(diag, num_node); 
 
   FastSolver fs(ctx, runtime);
   //fs.recLU_solve(lr_mat);
-  int num_node = 2;
   fs.recLU_solve(lr_mat, num_node);
   
   clock_t t1 = clock();
   printf("Init Time: %f.\n", (double)(t1-t0)/CLOCKS_PER_SEC);
 
   //free(rhs); rhs = NULL;
-
 }
