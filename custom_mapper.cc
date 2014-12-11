@@ -257,6 +257,11 @@ void AdversarialMapper::select_task_options(Task *task)
 
   //assert(task->tag < valid_mems.size());
   int mem_idx = task->tag % valid_mems.size();
+
+  
+  //mem_idx = 1- mem_idx;
+
+  
   Memory mem = valid_mems[mem_idx];
   const std::set<Processor> & options = machine->get_shared_processors(mem);
   //printf("There are %d option processors.\n", options.size());

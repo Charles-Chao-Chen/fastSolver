@@ -5,9 +5,6 @@
 #include "legion.h"
 #include "utility.h"
 
-//#include "HODLR_Files/helperFunctions.hpp"
-//#include <Eigen/Dense>
-
 #include <string>
 #include <fstream>
 
@@ -15,6 +12,7 @@
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
+#define MAX_TREE_SIZE 15 // used in InitCirculantKmatTask::TaskArgs
 
 enum {
   FID_X,
@@ -40,7 +38,11 @@ struct range {
 };
 
 
-struct Range {
+class Range {
+ public:
+  Range lchild();
+  Range rchild();
+ public:
   int begin;
   int size;
 };
@@ -194,7 +196,6 @@ class LR_Matrix {
   
   //void init_kmat(HODLR_Tree::node *, FSTreeNode *);
   //void fill_kmat(HODLR_Tree::node *, FSTreeNode *, Eigen::MatrixXd &);
-  void fill_circulant_kmat(FSTreeNode * vnode, int, int r, double diag, double *Kmat, int LD);
 
   
   /* --- private attributes --- */
@@ -319,5 +320,40 @@ public:
 		       Context ctx, HighLevelRuntime *runtime);
 };
 
+
+class InitCirculantKmatTask : public TaskLauncher {
+public:
+  template <int N>
+  struct TaskArgs {
+    //int treeSize;
+    int row_beg_global;
+    int rank;
+    //int LD; // leading dimension
+    double diag;
+    FSTreeNode treeArray[N];
+  };
+  
+  InitCirculantKmatTask(TaskArgument arg,
+			Predicate pred = Predicate::TRUE_PRED,
+			MapperID id = 0,
+			MappingTagID tag = 0);
+  
+  static int TASKID;
+  static void register_tasks(void);
+
+public:
+  static void cpu_task(const Task *task,
+		       const std::vector<PhysicalRegion> &regions,
+		       Context ctx, HighLevelRuntime *runtime);
+};
+
+void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
+			 double diag, Range mapping_tag, Context ctx,
+			 HighLevelRuntime *runtime);
+
+int count_leaf(FSTreeNode *node);
+
+void fill_circulant_Kmat(FSTreeNode * vnode, int, int r, double diag,
+double *Kmat, int LD);
 
 #endif // __LEGIONTREE_

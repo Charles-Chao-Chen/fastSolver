@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
   
   SaveRegionTask::register_tasks();
   InitRHSTask::register_tasks();
+  InitCirculantKmatTask::register_tasks();
   LUSolveTask::register_tasks();
 
   
@@ -107,13 +108,13 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
     std::cout << "Removed solution file." << std::endl;
   
   lr_mat.save_solution(soln_file);
-  //save_region(lr_mat.uroot, "Umat.txt", ctx, runtime);
+  //save_region(lr_mat.uroot, "Umat_2.txt", ctx, runtime);
 
   
   clock_t t1 = clock();
   printf("Init Time: %f.\n", (double)(t1-t0)/CLOCKS_PER_SEC);
 
-  double *Soln = (double *) malloc(N*rhs_cols*sizeof(double));
+  //double *Soln = (double *) malloc(N*rhs_cols*sizeof(double));
   //lr_mat.get_soln_from_region(Soln);
 
   //dirct_circulant_solve(Soln, rhs, rhs_rows, rhs_cols, r, diag);
@@ -122,7 +123,7 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
 
   dirct_circulant_solve(soln_file, rand_seed, rhs_rows, N/threshold, rhs_cols, r, diag);
   
-  free(Soln); Soln = NULL;
+  //free(Soln); Soln = NULL;
   free(rhs); rhs = NULL;
 
 }
@@ -147,7 +148,7 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
   //const InputArgs &command_args = HighLevelRuntime::get_input_args();
   //diag = atof(command_args.argv[1]);
 
-  int num_node = 2;
+  int num_node = 4;
   int rhs_cols = 1;
   int rhs_rows = N;
   
@@ -162,7 +163,6 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
   lr_mat.init_circulant_matrix(diag, num_node); 
 
   FastSolver fs(ctx, runtime);
-  //fs.recLU_solve(lr_mat);
   fs.recLU_solve(lr_mat, num_node);
   
   clock_t t1 = clock();

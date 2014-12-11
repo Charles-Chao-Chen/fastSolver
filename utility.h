@@ -7,6 +7,7 @@
 #define frand(xmin,xmax) ((double)xmin+(double)(xmax-xmin)*rand()/ \
 			  (double)RAND_MAX) 
 
+
 void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag);
 
 void dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,

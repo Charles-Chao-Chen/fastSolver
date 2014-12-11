@@ -99,7 +99,7 @@ LR_Matrix::LR_Matrix(int N, int threshold, int rhs_cols_, int r_,
   //print_legion_tree(uroot);
 
   // postpone creating V tree after setting the legion leaf
-}
+								}
 
 
 void LR_Matrix::create_legion_leaf(int nleaf_per_legion_node) {
@@ -138,6 +138,9 @@ void LR_Matrix::init_circulant_matrix(double diag, int num_node) {
   Range tag = {0, num_node};
   init_Umat(uroot, tag);       // row_beg = 0
   init_Vmat(vroot, diag, tag); // row_beg = 0
+
+  //print_legion_tree(uroot);
+  //print_legion_tree(vroot);
 }
 
 
@@ -221,9 +224,9 @@ void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, bool wait, int row_beg
     Future fm = runtime->execute_task(ctx, launcher);
 
     /*
-    if(wait) {
+      if(wait) {
       fm.get_void_result();
-    }
+      }
     */
     return;
     
@@ -316,7 +319,7 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, int row_beg) {
     // init K
     int nrow = node->kmat->rows;
     int ncol = node->kmat->cols;
-
+   
     // only support real leaf currently
     assert(node->lchild == NULL && node->rchild == NULL);
     CirKmatArg arg = {row_beg, r, diag};
@@ -346,9 +349,12 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, Range tag, int row_beg)
     int ncol = node->kmat->cols;
 
     // only support real leaf currently
-    assert(node->lchild == NULL && node->rchild == NULL);
-    CirKmatArg arg = {row_beg, r, diag};
-    node->kmat->set_circulant_kmat(arg, tag, ctx, runtime);
+    /*
+      assert(node->lchild == NULL && node->rchild == NULL);
+      CirKmatArg arg = {row_beg, r, diag};
+      node->kmat->set_circulant_kmat(arg, tag, ctx, runtime);
+    */
+    init_circulant_Kmat(node, row_beg, r, diag, tag, ctx, runtime);
     
   } else {
     int   half = tag.size/2;
@@ -357,6 +363,39 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, Range tag, int row_beg)
     init_Vmat(node->lchild, diag, ltag, row_beg);
     init_Vmat(node->rchild, diag, rtag, row_beg+node->lchild->nrow);
   }
+}
+
+
+void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
+			 double diag, Range mapping_tag, Context ctx,
+			 HighLevelRuntime *runtime)
+{
+  int nleaf = count_leaf(V_legion_leaf);
+  int max_tree_size = nleaf * 2;
+  assert(max_tree_size < MAX_TREE_SIZE);
+  
+  typename InitCirculantKmatTask::TaskArgs<MAX_TREE_SIZE> args;
+  //FSTreeNode arg[max_tree_size];
+
+  args.treeArray[0] = *V_legion_leaf;
+  int size = tree_to_array(V_legion_leaf, args.treeArray, 0);
+  assert(size < max_tree_size);
+
+  // encode the array size
+  //args.treeArray[0].col_beg = max_tree_size;
+  //args.treeSize = max_tree_size;
+  args.row_beg_global = row_beg_glo;
+  args.rank = rank;
+  args.diag = diag;
+  InitCirculantKmatTask launcher(TaskArgument(&args, sizeof(args)),
+				 Predicate::TRUE_PRED,
+				 0,
+				 mapping_tag.begin);
+  
+  // k region
+  launcher.add_region_requirement(RegionRequirement(V_legion_leaf->kmat->data, WRITE_DISCARD, EXCLUSIVE, V_legion_leaf->kmat->data).add_field(FID_X));
+
+  runtime->execute_task(ctx, launcher);
 }
 
 
@@ -573,12 +612,12 @@ void LR_Matrix::create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode) {
 }
 
 
-void LR_Matrix::fill_circulant_kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {
+void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {
 
   if (vnode->lchild == NULL && vnode->rchild == NULL) {
 
     int ksize = vnode->nrow;
-
+    
     // init U as a circulant matrix
     double *U = (double *) malloc(ksize*r * sizeof(double));
     for (int j=0; j<r; j++) {
@@ -586,7 +625,7 @@ void LR_Matrix::fill_circulant_kmat(FSTreeNode * vnode, int row_beg_glo, int r, 
 	U[i+j*ksize] = (vnode->row_beg+row_beg_glo+i+j) % r;
       }
     }
-        
+
     // init the diagonal entries
     for (int i=0; i<ksize; i++)
       Kmat[vnode->row_beg + i + LD*i] = diag;
@@ -606,12 +645,22 @@ void LR_Matrix::fill_circulant_kmat(FSTreeNode * vnode, int row_beg_glo, int r, 
     double *C = Kmat + vnode->row_beg;
     blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
 
+    /*
+    std::cout << "Kmat: " << std::endl;
+    for (int j=0; j<ksize; j++)
+      for (int i=0; i<ksize; i++)
+	std::cout << Kmat[vnode->row_beg + i + LD*j] << "\t";
+    std::cout << std::endl;
+    */
+
+    //printf("After init Kmat.\n");
+    
     free(U);
     return;
   }
 
-  fill_circulant_kmat(vnode->lchild, row_beg_glo, r, diag, Kmat, LD);
-  fill_circulant_kmat(vnode->rchild, row_beg_glo, r, diag, Kmat, LD);
+  fill_circulant_Kmat(vnode->lchild, row_beg_glo, r, diag, Kmat, LD);
+  fill_circulant_Kmat(vnode->rchild, row_beg_glo, r, diag, Kmat, LD);
 }
 
 
@@ -947,7 +996,7 @@ void save_region(LogicalRegion & matrix, std::string filename, Context ctx, High
 
 
 void save_region(FSTreeNode * node, ColRange rg, std::string filename,
-		 Context ctx, HighLevelRuntime *runtime, bool wait/*false*/) {
+		 Context ctx, HighLevelRuntime *runtime, bool wait) {
 
   if (node->isLegionLeaf == true) {
 
@@ -1019,6 +1068,8 @@ void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
   int ncol = rect_u.dim_size(1);
 
   std::ofstream outputFile(filename, std::ios_base::app);
+  if (!outputFile.is_open())
+    std::cout << "Error opening file." << std::endl;
   outputFile<<nrow<<std::endl;
   outputFile<<ncol<<std::endl;
 
@@ -1299,10 +1350,17 @@ void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &re
 
 
   // pre-compute the LU factorization
+  // this is confusing (hard to notice) when writing
+  // another function to initialize kmat
+  /*
   int INFO;
   int IPIV[ksize];
   lapack::dgetrf_(&ksize, &ksize, C, &ldc, IPIV, &INFO);
   assert(INFO == 0);
+  // assert no pivoting
+  for (int i=0; i<ksize; i++)
+    assert(IPIV[i] = i+1);
+  */
 }
 
 /* ---- SaveRegionTask implementation ---- */
@@ -1445,3 +1503,94 @@ void InitRHSTask::cpu_task(const Task *task,
     ptr[ row_idx + col_idx*nrow ] = frand(0, 1);
   }
 }
+
+
+/* ---- InitCirculantKmatTask implementation ---- */
+
+/*static*/
+int InitCirculantKmatTask::TASKID;
+
+InitCirculantKmatTask::InitCirculantKmatTask(TaskArgument arg,
+					     Predicate pred /*= Predicate::TRUE_PRED*/,
+					     MapperID id /*= 0*/,
+					     MappingTagID tag /*= 0*/)
+  : TaskLauncher(TASKID, arg, pred, id, tag)
+{
+}
+
+/*static*/
+void InitCirculantKmatTask::register_tasks(void)
+{
+  TASKID = HighLevelRuntime::register_legion_task<InitCirculantKmatTask::cpu_task>(AUTO_GENERATE_ID,
+										   Processor::LOC_PROC, 
+										   true,
+										   true,
+										   AUTO_GENERATE_ID,
+										   TaskConfigOptions(true/*leaf*/),
+										   "init_Kmat");
+  printf("registered as task id %d\n", TASKID);
+}
+
+void InitCirculantKmatTask::cpu_task(const Task *task,
+				     const std::vector<PhysicalRegion> &regions,
+				     Context ctx, HighLevelRuntime *runtime)
+{
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+
+  TaskArgs<MAX_TREE_SIZE> *args = (TaskArgs<MAX_TREE_SIZE> *)task->args;
+  int row_beg_global = args->row_beg_global;
+  int rank = args->rank;
+  double diag = args->diag;
+  FSTreeNode *treeArray = args->treeArray;
+  assert(task->arglen == sizeof(TaskArgs<MAX_TREE_SIZE>));
+
+  FSTreeNode *vroot = treeArray;
+  array_to_tree(treeArray, 0);
+  
+  RegionAccessor<AccessorType::Generic, double> acc_k = 
+    regions[0].get_field_accessor(FID_X).typeify<double>();
+  IndexSpace is_k = task->regions[0].region.get_index_space();
+  Domain dom_k = runtime->get_index_space_domain(ctx, is_k);
+  Rect<2> rect_k = dom_k.get_rect<2>();
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+
+  double *k_ptr = acc_k.raw_rect_ptr<2>(rect_k, subrect, offsets);
+  assert(k_ptr != NULL);
+  assert(rect_k == subrect);
+
+  int leading_dimension  = offsets[1].offset / sizeof(double);
+  int k_nrow = rect_k.dim_size(0);
+  assert( leading_dimension == k_nrow );
+  // initialize Kmat
+  memset(k_ptr, 0, rect_k.dim_size(0)*rect_k.dim_size(1)*sizeof(double));
+  fill_circulant_Kmat(vroot, row_beg_global, rank, diag, k_ptr, leading_dimension);
+}
+
+
+int count_leaf(FSTreeNode *node) {
+  if (node->lchild == NULL && node->rchild == NULL)
+    return 1;
+  else {
+    int n1 = count_leaf(node->lchild);
+    int n2 = count_leaf(node->rchild);
+    return n1+n2;
+  }
+}
+
+
+Range Range::lchild ()
+{
+  int half_size = size/2;
+  return (Range){begin, half_size};
+}
+
+
+Range Range::rchild ()
+{
+  int half_size = size/2;
+  return (Range){begin+half_size, half_size};
+}
+

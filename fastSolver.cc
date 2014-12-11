@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <list>
 #include <iomanip>
 
 void register_solver_task() {
@@ -38,6 +39,7 @@ void FastSolver::recLU_solve(LR_Matrix &lr_mat) {
 void FastSolver::recLU_solve(LR_Matrix &lr_mat, int tag_size) {
   Range tag = {0, tag_size};
   recLU_solve(lr_mat.uroot, lr_mat.vroot, tag);
+  //recLU_solve_bfs(lr_mat.uroot, lr_mat.vroot, tag);
 }
 
 
@@ -90,6 +92,168 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode) {
 }
 
 
+void FastSolver::recLU_solve_bfs(FSTreeNode * uroot, FSTreeNode * vroot) {
+
+  std::list<FSTreeNode *> ulist;
+  std::list<FSTreeNode *> vlist;
+  ulist.push_back(uroot);
+  vlist.push_back(vroot);
+
+  typedef std::list<FSTreeNode *>::iterator ITER;
+  typedef std::list<FSTreeNode *>::reverse_iterator RITER;
+  ITER uit = ulist.begin();
+  ITER vit = vlist.begin();
+  for (; uit != ulist.end(); uit++, vit++) {
+    FSTreeNode *ulchild = (*uit)->lchild;
+    FSTreeNode *urchild = (*uit)->rchild;
+    FSTreeNode *vlchild = (*vit)->lchild;
+    FSTreeNode *vrchild = (*vit)->rchild;
+    if ((*uit)->isLegionLeaf == false) {
+      assert((*vit)->isLegionLeaf == false);
+      ulist.push_back(ulchild);
+      ulist.push_back(urchild);
+      vlist.push_back(vlchild);
+      vlist.push_back(vrchild);
+    }
+  }
+
+  RITER ruit = ulist.rbegin();
+  RITER rvit = vlist.rbegin();
+  for (; ruit != ulist.rend(); ruit++, rvit++)
+    visit(*ruit, *rvit);
+
+}
+
+void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode) {
+  
+  if (unode->isLegionLeaf) {
+
+    assert(vnode->isLegionLeaf);
+    
+    solve_legion_leaf(unode, vnode);
+
+    return;
+  }
+
+
+  FSTreeNode * b0 = unode->lchild;
+  FSTreeNode * b1 = unode->rchild;
+  FSTreeNode * V0 = vnode->lchild;
+  FSTreeNode * V1 = vnode->rchild;
+
+
+  assert(unode->isLegionLeaf == false);
+  assert(V0->Hmat != NULL);
+  assert(V1->Hmat != NULL);
+
+  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
+  // from leaves to root in the H tree.
+  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  range ru0 = {b0->col_beg, b0->ncol};
+  range ru1 = {b1->col_beg, b1->ncol};
+  range rd0 = {0,           b0->col_beg};
+  range rd1 = {0,           b1->col_beg};
+  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, ctx, runtime);
+  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, ctx, runtime);
+  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, ctx, runtime);
+  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, ctx, runtime);
+
+  // V0Td0 and V1Td1 contain the solution on output.
+  // eta0 = V1Td1
+  // eta1 = V0Td0
+  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, ctx, runtime);  
+
+  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
+  // Assemble x from d0 and d1: merge two trees
+  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, ctx, runtime);
+  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, ctx, runtime);
+}
+
+
+void FastSolver::recLU_solve_bfs(FSTreeNode * uroot, FSTreeNode *
+vroot, Range mappingTag) {
+
+  std::list<FSTreeNode *> ulist;
+  std::list<FSTreeNode *> vlist;
+  ulist.push_back(uroot);
+  vlist.push_back(vroot);
+  
+  std::list<Range> rangeList;
+  rangeList.push_back(mappingTag);
+
+  typedef std::list<FSTreeNode *>::iterator ITER;
+  typedef std::list<FSTreeNode *>::reverse_iterator RITER;
+  typedef std::list<Range>::reverse_iterator RRITER;
+  ITER uit = ulist.begin();
+  ITER vit = vlist.begin();
+  for (; uit != ulist.end(); uit++, vit++) {
+    FSTreeNode *ulchild = (*uit)->lchild;
+    FSTreeNode *urchild = (*uit)->rchild;
+    FSTreeNode *vlchild = (*vit)->lchild;
+    FSTreeNode *vrchild = (*vit)->rchild;
+    if ((*uit)->isLegionLeaf == false) {
+      assert((*vit)->isLegionLeaf == false);
+      ulist.push_back(ulchild);
+      ulist.push_back(urchild);
+      vlist.push_back(vlchild);
+      vlist.push_back(vrchild);
+      rangeList.push_back(mappingTag.lchild());
+      rangeList.push_back(mappingTag.rchild());
+    }
+  }
+
+  RITER ruit = ulist.rbegin();
+  RITER rvit = vlist.rbegin();
+  RRITER rrit = rangeList.rbegin();
+  for (; ruit != ulist.rend(); ruit++, rvit++, rrit++)
+    visit(*ruit, *rvit, *rrit);
+
+}
+
+void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode, Range mappingTag) {
+  
+  if (unode->isLegionLeaf) {
+    assert(vnode->isLegionLeaf);
+    solve_legion_leaf(unode, vnode, mappingTag);
+    return;
+  }
+
+  FSTreeNode * b0 = unode->lchild;
+  FSTreeNode * b1 = unode->rchild;  
+  FSTreeNode * V0 = vnode->lchild;
+  FSTreeNode * V1 = vnode->rchild;
+
+  Range mappingTag0 = mappingTag.lchild();
+  Range mappingTag1 = mappingTag.rchild();
+
+  assert(unode->isLegionLeaf == false);
+  assert(V0->Hmat != NULL);
+  assert(V1->Hmat != NULL);
+
+  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
+  // from leaves to root in the H tree.
+  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  range ru0 = {b0->col_beg, b0->ncol};
+  range ru1 = {b1->col_beg, b1->ncol};
+  range rd0 = {0,           b0->col_beg};
+  range rd1 = {0,           b1->col_beg};
+  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, mappingTag0, ctx, runtime);
+  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, mappingTag1, ctx, runtime);
+  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, mappingTag0, ctx, runtime);
+  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, mappingTag1, ctx, runtime);
+
+  // V0Td0 and V1Td1 contain the solution on output.
+  // eta0 = V1Td1
+  // eta1 = V0Td0
+  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, mappingTag0, ctx, runtime);  
+
+  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
+  // Assemble x from d0 and d1: merge two trees
+  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, mappingTag0, ctx, runtime);
+  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, mappingTag1, ctx, runtime);
+}
+
+
 void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
 			     Range tag) {
 
@@ -97,10 +261,14 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
 
     assert(vnode->isLegionLeaf);
 
+    //save_region(unode, "UUmat.txt", ctx, runtime);
+	
     // pick a task tag id from tag_beg to tag_end.
     // here the first tag is picked.
     solve_legion_leaf(unode, vnode, tag); 
 
+    //save_region(unode, "Umat.txt", ctx, runtime);
+    
     return;
   }
 
@@ -190,7 +358,7 @@ void FastSolver::solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode *
   //assert(nleaf == nleaf_per_node);
   //int max_tree_size = nleaf_per_node * 2;
   int max_tree_size = nleaf * 2;
-  FSTreeNode arg[max_tree_size*2];
+  FSTreeNode arg[max_tree_size*2+2];
 
   arg[0] = *vleaf;
   int tree_size = tree_to_array(vleaf, arg, 0);
@@ -302,10 +470,14 @@ void leaf_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 
 void recLU_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode, double * u_ptr, double * v_ptr, double * k_ptr, int LD) {
 
+  //printf("lchild: %p, rchild: %p\n", vnode->lchild, vnode->rchild);
+  //printf("lchild: %p, rchild: %p\n", unode->lchild, unode->rchild);
+  //assert (unode->lchild == NULL && unode->rchild == NULL);
   if (unode->lchild == NULL && unode->rchild == NULL) {
     assert(vnode->lchild == NULL);
     assert(vnode->rchild == NULL);
 
+    //printf("u nrow: %d, v nrow: %d\n", unode->nrow, vnode->nrow);
     assert(unode->nrow == vnode->nrow);
     int N     = unode->nrow;
     int NRHS  = unode->col_beg + unode->ncol;
@@ -316,28 +488,18 @@ void recLU_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode, double * u_ptr, do
       
     int INFO;
     int IPIV[N];
-
+      
+    lapack::dgesv_(&N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
+    assert(INFO == 0);
+    
+    //lapack::dgetrf_(&N, &N, A, &LDA, IPIV, &INFO);
+    /*
     //assume no pivoting
     for (int i=0; i<N; i++)
       IPIV[i] = i+1;
-    
-    //lapack::dgesv_(&N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
-
-    
-    //lapack::dgetrf_(&N, &N, A, &LDA, IPIV, &INFO);
-
-    char TRANS = 'n';
-    lapack::dgetrs_(&TRANS, &N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
-
-
-    /*
-    printf("Pivoting:\n");
-    for (int i=0; i<N; i++)
-      if (IPIV[i] != i+1)
-	printf("(%d, %d) ", i, IPIV[i]);
-    printf("\n");
     */
-    assert(INFO == 0);
+    //char TRANS = 'n';
+    //lapack::dgetrs_(&TRANS, &N, &NRHS, A, &LDA, IPIV, B, &LDB, &INFO);
 
     return;
   }
@@ -367,10 +529,8 @@ void recLU_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode, double * u_ptr, do
   
   double *V0 = v_ptr + vnode->lchild->row_beg + vnode->lchild->col_beg*LD;
   double *V1 = v_ptr + vnode->rchild->row_beg + vnode->rchild->col_beg*LD;
-
   double *u0 = u_ptr + unode->lchild->row_beg + unode->lchild->col_beg*LD;
   double *u1 = u_ptr + unode->rchild->row_beg + unode->rchild->col_beg*LD;
-
   double *d0 = u_ptr + unode->lchild->row_beg;
   double *d1 = u_ptr + unode->rchild->row_beg;
 
@@ -637,32 +797,6 @@ void lu_solve_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 
   free(A);
   free(B);
-}
-
-
-/*
-void saveVectorToText(const std::string outputFileName, Eigen::VectorXd & inputVector){
-  std::ofstream outputFile;
-  outputFile.open(outputFileName.c_str());
-  if (!outputFile.is_open()){
-    std::cout<<"Error! Unable to open file for saving."<<std::endl;
-    exit(EXIT_FAILURE);
-  }
-  outputFile << inputVector.size() << std::endl;
-  for (unsigned int i = 0; i < inputVector.size(); i++)
-    outputFile<<std::setprecision(20)<<inputVector[i]<<" "<<std::endl;
-  outputFile.close();
-}
-*/
-
-int count_leaf(FSTreeNode *node) {
-  if (node->lchild == NULL && node->rchild == NULL)
-    return 1;
-  else {
-    int n1 = count_leaf(node->lchild);
-    int n2 = count_leaf(node->rchild);
-    return n1+n2;
-  }
 }
 
 
