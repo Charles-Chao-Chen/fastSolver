@@ -5,7 +5,7 @@
 #include <list>
 #include <iomanip>
 
-void register_solver_task() {
+void register_solver_tasks() {
   
   HighLevelRuntime::register_legion_task<leaf_task>(LEAF_TASK_ID,
 						    Processor::LOC_PROC,
@@ -22,6 +22,17 @@ void register_solver_task() {
 							AUTO_GENERATE_ID,
 							TaskConfigOptions(true/*leaf*/),
 							"lu_solve");
+
+  register_gemm_task();
+  register_save_task();
+  register_zero_matrix_task();
+  register_circulant_matrix_task();
+  register_circulant_kmat_task();
+  
+  SaveRegionTask::register_tasks();
+  InitRHSTask::register_tasks();
+  InitCirculantKmatTask::register_tasks();
+  LUSolveTask::register_tasks();
 }
 
 

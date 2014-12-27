@@ -93,7 +93,7 @@ public:
 
 
 
-void register_solver_task();
+void register_solver_tasks();
 
 
 void leaf_task(const Task *task, const std::vector<PhysicalRegion> &regions,

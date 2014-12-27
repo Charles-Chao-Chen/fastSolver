@@ -1,5 +1,8 @@
 #include "custom_mapper.h"
-//#include "mapper.h"
+
+void register_custom_mapper() {
+  HighLevelRuntime::set_registration_callback(mapper_registration);
+}
 
 // Here we override the DefaultMapper ID so that
 // all tasks that normally would have used the
@@ -12,8 +15,7 @@ void mapper_registration(Machine *machine, HighLevelRuntime *rt,
   for (std::set<Processor>::const_iterator it = local_procs.begin();
        it != local_procs.end(); it++)
     {
-      rt->replace_default_mapper(
-				 new AdversarialMapper(machine, rt, *it), *it);
+      rt->replace_default_mapper(new AdversarialMapper(machine, rt, *it), *it);
     }
 }
 

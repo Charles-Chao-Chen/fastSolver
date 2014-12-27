@@ -213,7 +213,7 @@ void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, bool wait, int row_beg
     //node->matrix->set_matrix_data(RHS, rhs_rows, rhs_cols, ctx,
     //runtime, row_beg);
 
-    typename InitRHSTask::TaskArgs args;
+    InitRHSTask::TaskArgs args;
     args.rand_seed = rand_seed;
 
     InitRHSTask launcher(TaskArgument(&args, sizeof(args)));
@@ -242,7 +242,8 @@ void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, Range tag, bool wait, 
   if (node->isLegionLeaf == true) {
     assert(node->matrix != NULL);
 
-    typename InitRHSTask::TaskArgs args;
+    //typename
+    InitRHSTask::TaskArgs args;
     args.rand_seed = rand_seed;
 
     InitRHSTask launcher(TaskArgument(&args, sizeof(args)),
@@ -374,7 +375,8 @@ void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
   int max_tree_size = nleaf * 2;
   assert(max_tree_size < MAX_TREE_SIZE);
   
-  typename InitCirculantKmatTask::TaskArgs<MAX_TREE_SIZE> args;
+  //typename
+  InitCirculantKmatTask::TaskArgs<MAX_TREE_SIZE> args;
   //FSTreeNode arg[max_tree_size];
 
   args.treeArray[0] = *V_legion_leaf;
@@ -1002,7 +1004,8 @@ void save_region(FSTreeNode * node, ColRange rg, std::string filename,
 
     //save_region(node->matrix->data, rg.col_beg, rg.ncol, filename, ctx, runtime);
 
-    typename SaveRegionTask::TaskArgs args;
+    //typename
+    SaveRegionTask::TaskArgs args;
     int len = filename.size();
     filename.copy(args.filename, len, 0);
     args.filename[len] = '\0';

@@ -1,8 +1,5 @@
 #include "default_mapper.h"
 
-
-
-
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 using namespace LegionRuntime::Arrays;
@@ -22,6 +19,7 @@ public:
 };
 
 
+void register_custom_mapper();
 void mapper_registration(Machine *machine, HighLevelRuntime *rt,
 			 const std::set<Processor> &local_procs);
 

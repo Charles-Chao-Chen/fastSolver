@@ -6,51 +6,117 @@
 #include "utility.h"
 
 enum {
-  TOP_LEVEL_TASK_ID = 0,
+  MASTER_TASK_ID = 0,
 };
 
+void run_test      (int rank, int N, int threshold,
+		    int nleaf_per_legion_node, double diag,
+		    bool compute_accuracy, Context ctx,
+		    HighLevelRuntime *runtime);
 
-void test_accuracy(Context ctx, HighLevelRuntime *runtime);
-void test_performance(Context ctx, HighLevelRuntime *runtime);
+void top_level_task(const Task *task,
+		    const std::vector<PhysicalRegion> &regions,
+		    Context ctx, HighLevelRuntime *runtime);
+
+int main(int argc, char *argv[]) {
+
+  // register top level task
+  HighLevelRuntime::set_top_level_task_id(MASTER_TASK_ID);
+  HighLevelRuntime::register_legion_task<top_level_task>(
+    MASTER_TASK_ID, /* task id */
+    Processor::LOC_PROC, /* proc kind */
+    true,  /* single */
+    false, /* index  */
+    AUTO_GENERATE_ID,
+    TaskConfigOptions(false /*leaf task*/),
+    "master-task"
+  );
+
+  // register fast solver tasks 
+  register_solver_tasks();
+    
+  // register customized mapper
+  register_custom_mapper();
+
+  // start legion master task
+  return HighLevelRuntime::start(argc, argv);
+}
+
 
 void top_level_task(const Task *task,
 		    const std::vector<PhysicalRegion> &regions,
 		    Context ctx, HighLevelRuntime *runtime) {
-  
+
+#if 1
   //test_accuracy(ctx, runtime);
-  test_performance(ctx, runtime);
+  run_test(10,   /* rank */
+	   800,  /* N */
+	   50,   /* threshold*/
+	   1,    /* nleaf_per_legion_node */
+	   1.e5, /* diagonal */
+	   true, /* compute accuracy */
+	   ctx,
+	   runtime);
+#else
+  //test_performance(ctx, runtime);
+  run_test(150,   /* rank */
+	   1<<12, /* N */
+	   1<<8,  /* threshold*/
+	   1,     /* nleaf_per_legion_node */
+	   1.e5,  /* diagonal */
+	   false, /* compute accuracy */
+	   ctx,
+	   runtime);
+#endif
 
   return;
 }
 
 
-int main(int argc, char *argv[]) {
 
-  HighLevelRuntime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
-  HighLevelRuntime::register_legion_task<top_level_task>(TOP_LEVEL_TASK_ID,
-							 Processor::LOC_PROC, true, false);
+void run_test(int rank, int N, int threshold,
+	      int nleaf_per_legion_node, double diag,
+	      bool compute_accuracy,
+	      Context ctx, HighLevelRuntime *runtime) {
 
-  register_solver_task();
-  register_gemm_task();
-  register_save_task();
-  register_zero_matrix_task();
-  register_circulant_matrix_task();
-  register_circulant_kmat_task();
+  clock_t t0 = clock();  
 
+  int rand_seed = 1123;
   
-  SaveRegionTask::register_tasks();
-  InitRHSTask::register_tasks();
-  InitCirculantKmatTask::register_tasks();
-  LUSolveTask::register_tasks();
-
+  int num_node = 4;
+  int rhs_cols = 1;
+  int rhs_rows = N;
   
-  HighLevelRuntime::set_registration_callback(mapper_registration);
-
+  LR_Matrix lr_mat(N, threshold, rhs_cols, rank, ctx, runtime);
+  lr_mat.create_legion_leaf(nleaf_per_legion_node);  
+  lr_mat.init_RHS(rand_seed, num_node);
+  
+  // A = U U^T + diag and U is a circulant matrix
+  lr_mat.init_circulant_matrix(diag, num_node);
+    
  
-  return HighLevelRuntime::start(argc, argv);
+  FastSolver fs(ctx, runtime);
+  fs.recLU_solve(lr_mat, num_node);
+
+  // display timing
+  clock_t t1 = clock();
+  printf("Init Time: %f.\n", (double)(t1-t0)/CLOCKS_PER_SEC);
+
+  if (compute_accuracy) {
+    // write the solution from fast solver
+    const char *soln_file = "solution.txt";
+    if (remove(soln_file) == 0)
+      std::cout << "Remove old solution file." << std::endl;
+  
+    lr_mat.save_solution(soln_file);
+  
+    assert( N%threshold == 0);
+    dirct_circulant_solve(soln_file, rand_seed, rhs_rows, N/threshold, rhs_cols, rank, diag);
+  }
 }
 
 
+/*
 void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
 
 
@@ -82,7 +148,7 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
 
   LR_Matrix lr_mat(N, threshold, rhs_cols, r, ctx, runtime);
   lr_mat.create_legion_leaf(nleaf_per_legion_node);  
-  //lr_mat.init_RHS( rand_seed, true /*wait*/ );
+  //lr_mat.init_RHS( rand_seed, true);
   //lr_mat.init_RHS(rhs);
   lr_mat.init_RHS( rand_seed, num_node );
   
@@ -139,7 +205,7 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
 
   // make sure the dense block is bigger than r
   int r = 150;
-  int N = 1<<14;
+  int N = 1<<12;
   int threshold = 1<<8;
   int nleaf_per_legion_node = 1;
   double diag = 1e5; 
@@ -170,3 +236,4 @@ void test_performance(Context ctx, HighLevelRuntime *runtime) {
 
   //free(rhs); rhs = NULL;
 }
+*/
