@@ -6,6 +6,9 @@
 using namespace LegionRuntime::HighLevel;
 
 
+void register_solver_operators();
+
+
 class LUSolveTask : public TaskLauncher {
 public:
 

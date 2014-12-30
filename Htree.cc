@@ -5,6 +5,16 @@
 #include "macros.h"
 
 
+void register_Htree_tasks() {
+
+  register_circulant_matrix_task();
+  
+  SaveRegionTask::register_tasks();
+  InitRHSTask::register_tasks();
+  InitCirculantKmatTask::register_tasks();
+}
+
+
 void register_save_task() {
   
   HighLevelRuntime::register_legion_task<save_task>(SAVE_REGION_TASK_ID,
@@ -13,18 +23,6 @@ void register_save_task() {
 						    AUTO_GENERATE_ID,
 						    TaskConfigOptions(true/*leaf*/),
 						    "save_region");
-}
-
-
-void register_zero_matrix_task() {
-  
-  HighLevelRuntime::register_legion_task<zero_matrix_task>(ZERO_MATRIX_TASK_ID,
-							   Processor::LOC_PROC,
-							   true, true,
-							   AUTO_GENERATE_ID,
-							   TaskConfigOptions(true/*leaf*/),
-							   "init_zero_matrix");
-
 }
 
 
@@ -861,59 +859,6 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
   allocator.allocate_field(sizeof(double), FID_X);
   matrix = runtime->create_logical_region(ctx, is, fs);
   assert(matrix != LogicalRegion::NO_REGION);
-}
-
-
-void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
-  assert(matrix != LogicalRegion::NO_REGION);
-  TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID, TaskArgument(NULL, 0));
-  zero_matrix_task.add_region_requirement(RegionRequirement(matrix, WRITE_DISCARD, EXCLUSIVE, matrix));
-  zero_matrix_task.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, zero_matrix_task);
-}
-
-
-void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx, HighLevelRuntime *runtime) {
-  assert(matrix != LogicalRegion::NO_REGION);
-  TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID,
-				TaskArgument(NULL, 0),
-				Predicate::TRUE_PRED, 0, tag.begin);
-  zero_matrix_task.add_region_requirement(RegionRequirement(matrix, WRITE_DISCARD, EXCLUSIVE, matrix));
-  zero_matrix_task.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, zero_matrix_task);
-}
-
-
-void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
-		      Context ctx, HighLevelRuntime *runtime) {
-
-  assert(regions.size() == 1);
-  assert(task->regions.size() == 1);
-  assert(task->arglen == 0);
-
-  IndexSpace is = task->regions[0].region.get_index_space();
-  Domain dom = runtime->get_index_space_domain(ctx, is);
-  Rect<2> rect = dom.get_rect<2>();
-
-  Rect<2> subrect;
-  ByteOffset offsets[2];
-
-  double *ptr = regions[0].get_field_accessor(FID_X).typeify<double>().raw_rect_ptr<2>(rect, subrect, offsets);
-  assert(rect == subrect);
-  assert(ptr  != NULL);
-  
-  int nrow = rect.dim_size(0);
-  int ncol = rect.dim_size(1);
-  int size = nrow * ncol;
-
-  memset(ptr, 0, size*sizeof(double));
-}
-
-
-void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
-
-  assert(false);
-
 }
 
 

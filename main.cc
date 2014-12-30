@@ -60,7 +60,7 @@ void top_level_task(const Task *task,
 #else
   //test_performance
   run_test(150,   /* rank */
-	   1<<12, /* N */
+	   1<<14, /* N */
 	   1<<8,  /* threshold*/
 	   1,     /* nleaf_per_legion_node */
 	   1.e5,  /* diagonal */

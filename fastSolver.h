@@ -1,25 +1,16 @@
-#ifndef __FASTSOLVER_
-#define __FASTSOLVER_
+#ifndef _FAST_SOLVER
+#define _FAST_SOLVER
 
 
 #include "legion.h"
 #include "Htree.h"
-#include "gemm.h"
 
 #include <string>
 #include <fstream>
 #include <vector>
 
 
-using namespace LegionRuntime::HighLevel;
-using namespace LegionRuntime::Accessor;
-
-
-/*
-enum {
-  LEAF_TASK_ID = 1,
-};
-*/
+void register_solver_tasks();
 
 class FastSolver {
 
@@ -66,9 +57,6 @@ class FastSolver {
 };
 
 
-void register_solver_tasks();
-
-
 void leaf_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime);
 
@@ -85,4 +73,4 @@ void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
 		       *runtime);
 
 
-#endif // __FASTSOLVER_
+#endif // _FAST_SOLVER

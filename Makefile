@@ -129,7 +129,7 @@ r1n:
 
 r2n:
 	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 1 -ll:csize 30000
+	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 12 -ll:csize 30000
 
 prof1:
 	mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \

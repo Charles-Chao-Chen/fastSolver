@@ -5,23 +5,14 @@
 
 #include "fastSolver.h"
 #include "solverTasks.h"
+#include "gemm.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
 void register_solver_tasks() {
-
-  LeafSolveTask::register_tasks();
-
-  LUSolveTask::register_tasks();
-
-  
-  register_gemm_task();
-  register_zero_matrix_task();
-  register_circulant_matrix_task();
-  
-  SaveRegionTask::register_tasks();
-  InitRHSTask::register_tasks();
-  InitCirculantKmatTask::register_tasks();
+  register_solver_operators();  
+  register_gemm_tasks();
+  register_Htree_tasks();
 }
 
 
@@ -31,142 +22,10 @@ FastSolver::FastSolver(Context ctx, HighLevelRuntime *runtime) {
 }
 
 
-void FastSolver::recLU_solve(LR_Matrix &lr_mat) {
-  recLU_solve(lr_mat.uroot, lr_mat.vroot);
-}
-
-
 void FastSolver::recLU_solve(LR_Matrix &lr_mat, int tag_size) {
   Range tag = {0, tag_size};
   recLU_solve(lr_mat.uroot, lr_mat.vroot, tag);
   //recLU_solve_bfs(lr_mat.uroot, lr_mat.vroot, tag);
-}
-
-
-void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode) {
-
-  if (unode->isLegionLeaf) {
-
-    assert(vnode->isLegionLeaf);
-    
-    solve_legion_leaf(unode, vnode);
-
-    return;
-  }
-
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;
-  recLU_solve(b0, vnode->lchild);
-  recLU_solve(b1, vnode->rchild);
-
-  
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
-
-
-  assert(unode->isLegionLeaf == false);
-  assert(V0->Hmat != NULL);
-  assert(V1->Hmat != NULL);
-
-  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
-  // from leaves to root in the H tree.
-  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
-  range ru0 = {b0->col_beg, b0->ncol};
-  range ru1 = {b1->col_beg, b1->ncol};
-  range rd0 = {0,           b0->col_beg};
-  range rd1 = {0,           b1->col_beg};
-  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, ctx, runtime);
-  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, ctx, runtime);
-
-  // V0Td0 and V1Td1 contain the solution on output.
-  // eta0 = V1Td1
-  // eta1 = V0Td0
-  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, ctx, runtime);  
-
-  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
-  // Assemble x from d0 and d1: merge two trees
-  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, ctx, runtime);
-  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, ctx, runtime);
-}
-
-
-void FastSolver::recLU_solve_bfs(FSTreeNode * uroot, FSTreeNode * vroot) {
-
-  std::list<FSTreeNode *> ulist;
-  std::list<FSTreeNode *> vlist;
-  ulist.push_back(uroot);
-  vlist.push_back(vroot);
-
-  typedef std::list<FSTreeNode *>::iterator ITER;
-  typedef std::list<FSTreeNode *>::reverse_iterator RITER;
-  ITER uit = ulist.begin();
-  ITER vit = vlist.begin();
-  for (; uit != ulist.end(); uit++, vit++) {
-    FSTreeNode *ulchild = (*uit)->lchild;
-    FSTreeNode *urchild = (*uit)->rchild;
-    FSTreeNode *vlchild = (*vit)->lchild;
-    FSTreeNode *vrchild = (*vit)->rchild;
-    if ((*uit)->isLegionLeaf == false) {
-      assert((*vit)->isLegionLeaf == false);
-      ulist.push_back(ulchild);
-      ulist.push_back(urchild);
-      vlist.push_back(vlchild);
-      vlist.push_back(vrchild);
-    }
-  }
-
-  RITER ruit = ulist.rbegin();
-  RITER rvit = vlist.rbegin();
-  for (; ruit != ulist.rend(); ruit++, rvit++)
-    visit(*ruit, *rvit);
-
-}
-
-void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode) {
-  
-  if (unode->isLegionLeaf) {
-
-    assert(vnode->isLegionLeaf);
-    
-    solve_legion_leaf(unode, vnode);
-
-    return;
-  }
-
-
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
-
-
-  assert(unode->isLegionLeaf == false);
-  assert(V0->Hmat != NULL);
-  assert(V1->Hmat != NULL);
-
-  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
-  // from leaves to root in the H tree.
-  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
-  range ru0 = {b0->col_beg, b0->ncol};
-  range ru1 = {b1->col_beg, b1->ncol};
-  range rd0 = {0,           b0->col_beg};
-  range rd1 = {0,           b1->col_beg};
-  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, ctx, runtime);
-  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, ctx, runtime);
-
-  // V0Td0 and V1Td1 contain the solution on output.
-  // eta0 = V1Td1
-  // eta1 = V0Td0
-  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, ctx, runtime);  
-
-  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
-  // Assemble x from d0 and d1: merge two trees
-  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, ctx, runtime);
-  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, ctx, runtime);
 }
 
 
@@ -385,7 +244,10 @@ void FastSolver::solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode *
   LeafSolveTask launcher(
 		  TaskArgument(
 		    &arg[0],
-		    sizeof(FSTreeNode)*(max_tree_size*2))
+		    sizeof(FSTreeNode)*(max_tree_size*2)),
+		  Predicate::TRUE_PRED,
+		  0,
+		  task_tag.begin
 		  );
 
   launcher.add_region_requirement(

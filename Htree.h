@@ -13,6 +13,8 @@ using namespace LegionRuntime::Accessor;
 #define MAX_TREE_SIZE 15 // used in InitCirculantKmatTask::TaskArgs
 
 
+void register_Htree_tasks();
+
 enum {
   SAVE_REGION_TASK_ID = 10,
   ZERO_MATRIX_TASK_ID = 20,
@@ -211,11 +213,6 @@ class LR_Matrix {
 void create_matrix(LogicalRegion &, int, int, Context,
 		   HighLevelRuntime *);
 
-void zero_matrix(LogicalRegion &matrix, Context ctx, HighLevelRuntime
-		 *runtime);
-void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx,
-		 HighLevelRuntime *runtime);
-
 //void set_element(double x, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime);
 
 void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime);
@@ -231,7 +228,6 @@ void save_region(FSTreeNode * node, ColRange rg, std::string filename,
 void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
 void register_save_task();
-void register_zero_matrix_task();
 void register_circulant_matrix_task();
 void register_circulant_kmat_task();
 
@@ -253,10 +249,6 @@ void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRu
 
 /* --- save solution to matrix --- */
 //void get_soln_from_region(Eigen::MatrixXd &, FSTreeNode *, Context ctx, HighLevelRuntime *runtime, int row_beg = 0);
-
-
-void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
-	       Context ctx, HighLevelRuntime *runtime);
 
 
 void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,

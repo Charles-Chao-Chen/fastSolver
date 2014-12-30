@@ -2,16 +2,12 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
-void register_gemm_task() {
+void register_gemm_tasks() {
 
-  HighLevelRuntime::register_legion_task<gemm_task>(GEMM_TASK_ID,
-						    Processor::LOC_PROC,
-						    true,
-						    true,
-						    AUTO_GENERATE_ID,
-						    TaskConfigOptions(true/*leaf*/),
-						    "gemm_reduction");
-  
+  HighLevelRuntime::register_reduction_op<EntrySum>(REDUCE_ID);
+  GEMM_Reduce_Task::register_tasks();
+
+    
   HighLevelRuntime::register_legion_task<gemm2_task>(GEMM2_TASK_ID,
 						     Processor::LOC_PROC,
 						     true,
@@ -20,9 +16,18 @@ void register_gemm_task() {
 						     TaskConfigOptions(true/*leaf*/),
 						     "gemm_broadcast");
 
-  HighLevelRuntime::register_reduction_op<EntrySum>(REDUCE_ID);
+
+  HighLevelRuntime::register_legion_task<zero_matrix_task>(ZERO_MATRIX_TASK_ID,
+							   Processor::LOC_PROC,
+							   true, true,
+							   AUTO_GENERATE_ID,
+							   TaskConfigOptions(true/*leaf*/),
+							   "init_zero_matrix");
+
 }
 
+
+/* ---- reduction class implementation ---- */
 
 const double EntrySum::identity = 0.0;
 
@@ -59,6 +64,8 @@ void EntrySum::fold<false>(RHS &rhs1, RHS rhs2)
     newval.as_T = oldval.as_T + rhs2;
   } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
 }
+
+
 
 
 // compute w = v^T u
@@ -132,6 +139,7 @@ void gemm_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 }
 
 
+/*
 void gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u, int col_beg, int ncol, LogicalRegion & res, Context ctx, HighLevelRuntime * runtime) {
     
   // assume that u and v have the same tree structure
@@ -160,25 +168,59 @@ void gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u, int col_beg, i
     gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol, res, ctx, runtime);
   }
 }
+*/
 
-
-void gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u, int
-col_beg, int ncol, LogicalRegion & res, Range tag, Context ctx, HighLevelRuntime * runtime) {
+void gemm_recursive(double alpha,
+		    FSTreeNode * v, FSTreeNode * u,
+		    int col_beg, int ncol,
+		    LogicalRegion & res,
+		    Range task_tag,
+		    Context ctx,
+		    HighLevelRuntime * runtime) {
     
   // assume that u and v have the same tree structure
   // (down to Legion leaf level)
   if (v->isLegionLeaf == true) {
 
     assert(u->isLegionLeaf == true);
+    assert(v->matrix->data != LogicalRegion::NO_REGION);
+    assert(u->matrix->data != LogicalRegion::NO_REGION);
+    assert(res             != LogicalRegion::NO_REGION);
 
     gemmArg arg = {alpha, col_beg, ncol};
+    GEMM_Reduce_Task launcher(TaskArgument(
+				&arg,
+				sizeof(gemmArg)),
+			      Predicate::TRUE_PRED,
+			      0,
+			      task_tag.begin);
+    
+    launcher.add_region_requirement(
+      RegionRequirement(v->matrix->data,
+			READ_ONLY,
+			EXCLUSIVE,
+			v->matrix->data)); // v
+    launcher.add_region_requirement(
+      RegionRequirement(u->matrix->data,
+			READ_ONLY,
+			EXCLUSIVE,
+			u->matrix->data)); // u
+    launcher.add_region_requirement(
+      RegionRequirement(res,
+			REDUCE_ID,
+			SIMULTANEOUS,
+			res));             // res
+    launcher.region_requirements[0].add_field(FID_X);
+    launcher.region_requirements[1].add_field(FID_X);
+    launcher.region_requirements[2].add_field(FID_X);
+    runtime->execute_task(ctx, launcher);
+
+
+    /*
     TaskLauncher gemm_task1(GEMM_TASK_ID, TaskArgument(&arg,
 						       sizeof(gemmArg)),
 			    Predicate::TRUE_PRED, 0, tag.begin);
 
-    assert(v->matrix->data != LogicalRegion::NO_REGION);
-    assert(u->matrix->data != LogicalRegion::NO_REGION);
-    assert(res             != LogicalRegion::NO_REGION);
     gemm_task1.add_region_requirement(RegionRequirement(v->matrix->data, READ_ONLY, EXCLUSIVE,    v->matrix->data)); // v
     gemm_task1.add_region_requirement(RegionRequirement(u->matrix->data, READ_ONLY, EXCLUSIVE,    u->matrix->data)); // u
     gemm_task1.add_region_requirement(RegionRequirement(res,             REDUCE_ID, SIMULTANEOUS, res));             // res
@@ -186,12 +228,13 @@ col_beg, int ncol, LogicalRegion & res, Range tag, Context ctx, HighLevelRuntime
     gemm_task1.region_requirements[1].add_field(FID_X);
     gemm_task1.region_requirements[2].add_field(FID_X);
     runtime->execute_task(ctx, gemm_task1);
-
+*/
+      
   } else {
 
-    int   half = tag.size/2;
-    Range tag0 = {tag.begin,      half};
-    Range tag1 = {tag.begin+half, half};
+    int   half = task_tag.size/2;
+    Range tag0 = {task_tag.begin,      half};
+    Range tag1 = {task_tag.begin+half, half};
     gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol, res,
 		   tag0, ctx, runtime);
     gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol, res,
@@ -199,7 +242,7 @@ col_beg, int ncol, LogicalRegion & res, Range tag, Context ctx, HighLevelRuntime
   }
 }
 
-
+/*
 void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double beta, LogicalRegion & res,
 	  Context ctx, HighLevelRuntime *runtime) {
 
@@ -216,7 +259,7 @@ void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double beta, Log
 
   gemm_recursive(alpha, v, u, ru.col_beg, ru.ncol, res, ctx, runtime);
 }
-
+*/
 
 
 void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double
@@ -361,61 +404,138 @@ void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion &
 
 
 
-/*
-void test_gemm(Context ctx, HighLevelRuntime *runtime) {
+void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx, HighLevelRuntime *runtime) {
+  assert(matrix != LogicalRegion::NO_REGION);
+  TaskLauncher zero_matrix_task(ZERO_MATRIX_TASK_ID,
+				TaskArgument(NULL, 0),
+				Predicate::TRUE_PRED, 0, tag.begin);
+  zero_matrix_task.add_region_requirement(RegionRequirement(matrix, WRITE_DISCARD, EXCLUSIVE, matrix));
+  zero_matrix_task.region_requirements[0].add_field(FID_X);
+  runtime->execute_task(ctx, zero_matrix_task);
+}
 
-  LeafData V1(13, 6, ctx, runtime), V2(11, 6, ctx, runtime);
-  V1.set_matrix(1.0, ctx, runtime);
-  V2.set_matrix(1.0, ctx, runtime);
 
-  FSTreeNode V, V_lchild, V_rchild; // 24 x 6
-  V.lchild = & V_lchild;
-  V.rchild = & V_rchild;  
-  V_lchild.data = & V1;
-  V_rchild.data = & V2;
-  V_lchild.lchild = NULL;
-  V_lchild.rchild = NULL;
-  V_rchild.lchild = NULL;
-  V_rchild.rchild = NULL; 
+void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+		      Context ctx, HighLevelRuntime *runtime) {
+
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  assert(task->arglen == 0);
+
+  IndexSpace is = task->regions[0].region.get_index_space();
+  Domain dom = runtime->get_index_space_domain(ctx, is);
+  Rect<2> rect = dom.get_rect<2>();
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+
+  double *ptr = regions[0].get_field_accessor(FID_X).typeify<double>().raw_rect_ptr<2>(rect, subrect, offsets);
+  assert(rect == subrect);
+  assert(ptr  != NULL);
+  
+  int nrow = rect.dim_size(0);
+  int ncol = rect.dim_size(1);
+  int size = nrow * ncol;
+
+  memset(ptr, 0, size*sizeof(double));
+}
+
+
+void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
+
+  assert(false);
+
+}
+
+
+
+/* ---- gemm_reduce implementation ---- */
+
+/*static*/
+int GEMM_Reduce_Task::TASKID;
+
+GEMM_Reduce_Task::GEMM_Reduce_Task(
+  TaskArgument arg,
+  Predicate pred /*= Predicate::TRUE_PRED*/,
+  MapperID id /*= 0*/,
+  MappingTagID tag /*= 0*/)
+  : TaskLauncher(TASKID, arg, pred, id, tag) {}
+
+/*static*/
+void GEMM_Reduce_Task::register_tasks(void)
+{
+  TASKID =
+  HighLevelRuntime::register_legion_task<GEMM_Reduce_Task::cpu_task>(
+    AUTO_GENERATE_ID,
+    Processor::LOC_PROC, 
+    true,
+    true,
+    AUTO_GENERATE_ID,
+    TaskConfigOptions(true/*leaf*/),
+    "GEMM_Reduce");
+  
+  printf("Register task %d : GEMM_Reduce\n", TASKID);
+}
+
+void
+GEMM_Reduce_Task::cpu_task(const Task *task,
+			   const std::vector<PhysicalRegion> &regions,
+			   Context ctx, HighLevelRuntime *runtime) {
+  
+
+  assert(regions.size() == 3);
+  assert(task->regions.size() == 3);
+  assert(task->arglen == sizeof(gemmArg));
+  gemmArg arg = *((gemmArg*)task->args);
+  int     u_ncol    = arg.ncol;
+  int     u_col_beg = arg.col_beg;
+  double  alpha     = arg.alpha;
+  
+  IndexSpace is_v = task->regions[0].region.get_index_space();
+  IndexSpace is_u = task->regions[1].region.get_index_space();
+  IndexSpace is_w = task->regions[2].region.get_index_space();
+
+  Domain dom_v = runtime->get_index_space_domain(ctx, is_v);
+  Domain dom_u = runtime->get_index_space_domain(ctx, is_u);
+  Domain dom_w = runtime->get_index_space_domain(ctx, is_w);
+
+  Rect<2> rect_v = dom_v.get_rect<2>();
+  Rect<2> rect_u = dom_u.get_rect<2>();
+  Rect<2> rect_w = dom_w.get_rect<2>();
+
+  RegionAccessor<AccessorType::Generic, double> acc_v =
+    regions[0].get_field_accessor(FID_X).typeify<double>();
+  RegionAccessor<AccessorType::Generic, double> acc_u =
+    regions[1].get_field_accessor(FID_X).typeify<double>();
+  RegionAccessor<AccessorType::Generic, double> acc_w =
+    regions[2].get_accessor().typeify<double>();
+  
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+
+  double *v_ptr = regions[0].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect_v, subrect, offsets);
+  assert(rect_v == subrect);
+  
+  double *u_ptr = regions[1].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect_u, subrect, offsets);
+  assert(rect_u == subrect);
+    
+  double *w_ptr = regions[2].get_accessor().typeify<double>().raw_rect_ptr<2>(rect_w, subrect, offsets);
+  assert(rect_w == subrect);
+  
+  char transa = 't';
+  char transb = 'n';
+  int  m = rect_v.dim_size(1);
+  int  n = u_ncol;
+  int  k = rect_v.dim_size(0);
+  assert(k == rect_u.dim_size(0));
+  assert(m == rect_w.dim_size(0));
+  assert(n == rect_w.dim_size(1));
 
   
-  LeafData U1(13, 5, ctx, runtime), U2(11, 5, ctx, runtime);
-  U1.set_matrix(1.0, ctx, runtime);
-  U2.set_matrix(1.0, ctx, runtime);
-
-  FSTreeNode U, U_lchild, U_rchild; // 24 x 5
-  U.lchild = & U_lchild;
-  U.rchild = & U_rchild;  
-  U_lchild.data = & U1;
-  U_rchild.data = & U2;
-  U_lchild.lchild = NULL;
-  U_lchild.rchild = NULL;
-  U_rchild.lchild = NULL; 
-  U_rchild.rchild = NULL;
-
-  LogicalRegion res;
-  gemm(1.0, &V, ALL, &U, ALL, 0.0, res, ctx, runtime);
-
-
-  print_matrix(res, ctx, runtime);
+  double beta = 1.0;
+  int u_nrow = rect_u.dim_size(0);
+  double * u  = u_ptr + u_col_beg * u_nrow;
+  blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, v_ptr, &k, u, &k, &beta, w_ptr, &m);
 }
-*/
-
-
-/*    
-// assume that v and u have the same tree structure
-void add_leaf_matrix(std::vector<RegionRequirement> & req, FSTreeNode * v, FSTreeNode * u) {
-
-  if (v->lchild == NULL && v->rchild == NULL) { // real leaf
-    LogicalRegion & V = v->data->matrix;
-    LogicalRegion & U = u->data->matrix;
-    req.push_back(RegionRequirement(V, READ_ONLY, EXCLUSIVE, V));
-    req.push_back(RegionRequirement(U, READ_ONLY, EXCLUSIVE, U));
-  } else {
-    add_leaf_matrix(req, v->lchild, u->lchild);
-    add_leaf_matrix(req, v->rchild, u->rchild);
-  }
-}
-*/
-
-

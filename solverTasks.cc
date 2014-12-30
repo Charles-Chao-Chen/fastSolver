@@ -6,6 +6,12 @@
 using namespace LegionRuntime::Accessor;
 
 
+void register_solver_operators() {
+  LeafSolveTask::register_tasks();
+  LUSolveTask::register_tasks();
+}
+
+
 /* ---- LUSolveTask implementation ---- */
 
 /*static*/

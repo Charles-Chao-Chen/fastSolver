@@ -5,8 +5,8 @@
 #include "legion.h"
 #include "Htree.h"
 
-using namespace LegionRuntime::HighLevel;
-using namespace LegionRuntime::Accessor;
+//using namespace LegionRuntime::HighLevel;
+//using namespace LegionRuntime::Accessor;
 
 
 enum {
@@ -35,7 +35,7 @@ struct gemm2Arg {
 };
 
 
-void register_gemm_task();
+void register_gemm_tasks();
 
 
 // Reduction Op
@@ -52,13 +52,6 @@ class EntrySum {
   template <bool EXCLUSIVE> static void fold(RHS &rhs1, RHS rhs2);
 };
 
-
-/*
-struct range {
-  int lb, ub; // Lower and upper bounds of region
-range(int lb_, int ub_) : lb(lb_), ub(ub_) {};
-};
-*/
 
 // These are the two types of GEMM that are needed.
 
@@ -97,6 +90,35 @@ void gemm_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 void gemm2_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime);
 
+
+void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx,
+		 HighLevelRuntime *runtime);
+
+
+
+void zero_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+	       Context ctx, HighLevelRuntime *runtime);
+
+
+
+
+class GEMM_Reduce_Task : public TaskLauncher {
+public:
+
+  GEMM_Reduce_Task(TaskArgument arg,
+		   Predicate pred = Predicate::TRUE_PRED,
+		   MapperID id = 0,
+		   MappingTagID tag = 0);
+  
+  static int TASKID;
+
+  static void register_tasks(void);
+
+public:
+  static void cpu_task(const Task *task,
+		       const std::vector<PhysicalRegion> &regions,
+		       Context ctx, HighLevelRuntime *runtime);
+};
 
 
 
