@@ -5,7 +5,6 @@
 #include "legion.h"
 #include "Htree.h"
 #include "gemm.h"
-#include "utility.h"
 
 #include <string>
 #include <fstream>

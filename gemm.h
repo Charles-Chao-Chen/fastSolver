@@ -4,7 +4,6 @@
 
 #include "legion.h"
 #include "Htree.h"
-#include "utility.h"
 
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;

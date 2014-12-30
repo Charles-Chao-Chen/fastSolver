@@ -1,12 +1,10 @@
 #ifndef __LEGIONTREE_
 #define __LEGIONTREE_
 
-
-#include "legion.h"
-#include "utility.h"
-
 #include <string>
 #include <fstream>
+
+#include "legion.h"
 
 
 using namespace LegionRuntime::HighLevel;

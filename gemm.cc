@@ -1,4 +1,5 @@
 #include "gemm.h"
+#include "lapack_blas.h"
 
 
 void register_gemm_task() {

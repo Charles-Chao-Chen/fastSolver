@@ -1,22 +1,5 @@
-#ifndef __UTILITY_H
-#define __UTILITY_H
-
-#include <stdlib.h>
-
-/* Uniform random number generator */
-#define frand(xmin,xmax) ((double)xmin+(double)(xmax-xmin)*rand()/ \
-			  (double)RAND_MAX) 
-
-
-void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag);
-
-void dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
-			   int nregions, int rhs_cols, int r, double
-			   diag);
-
-void dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
-			   int nregions, int rhs_cols, int r, double
-			   diag);
+#ifndef _BLAS_H
+#define _BLAS_H
 
   
 /* Note for using blas and lapack library:
@@ -59,9 +42,12 @@ namespace lapack {
     void dgesv_(int *N, int *NRHS, double *A, int *LDA, int *IPIV,
 		double *B, int *LDB, int *INFO);
 
+    // LU factorize
+    // note: pivoting array IPIV also needs to be stored
     void dgetrf_(int *M, int *N, double *A, int *LDA, int *IPIV,
 		 int *INFO);
-    
+
+    // LU solve (with existing factorization)
     void dgetrs_(char *TRANS, int *N, int *NRHS, double *A, int *LDA,
 		 int *IPIV, double *B, int *LDB, int *INFO);
     
@@ -71,4 +57,4 @@ namespace lapack {
 
 
 
-#endif // __UTILITY_H
+#endif // _BLAS_H

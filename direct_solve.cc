@@ -2,8 +2,11 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
-#include "utility.h"
+#include <stdlib.h>
 
+#include "direct_solve.h"
+#include "lapack_blas.h"
+#include "macros.h"
 
 void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag) {
 

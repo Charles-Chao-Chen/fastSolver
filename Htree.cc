@@ -1,6 +1,8 @@
-#include "Htree.h"
-
 #include <iomanip>
+
+#include "Htree.h"
+#include "lapack_blas.h"
+#include "macros.h"
 
 
 void register_save_task() {

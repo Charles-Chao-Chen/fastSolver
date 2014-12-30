@@ -1,9 +1,11 @@
-#include "fastSolver.h"
-
 #include <algorithm>
 #include <assert.h>
 #include <list>
 #include <iomanip>
+
+#include "fastSolver.h"
+#include "lapack_blas.h"
+
 
 void register_solver_tasks() {
   
@@ -14,20 +16,11 @@ void register_solver_tasks() {
 						    AUTO_GENERATE_ID,
 						    TaskConfigOptions(true/*leaf*/),
 						    "leaf_direct_solve");
-  
-  HighLevelRuntime::register_legion_task<lu_solve_task>(LU_SOLVE_TASK_ID,
-							Processor::LOC_PROC,
-							true,
-							true,
-							AUTO_GENERATE_ID,
-							TaskConfigOptions(true/*leaf*/),
-							"lu_solve");
 
+  
   register_gemm_task();
-  register_save_task();
   register_zero_matrix_task();
   register_circulant_matrix_task();
-  register_circulant_kmat_task();
   
   SaveRegionTask::register_tasks();
   InitRHSTask::register_tasks();

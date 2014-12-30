@@ -13,7 +13,13 @@ USE_CUDA=0
 # Put the binary file name here
 OUTFILE		:= main
 # List all the application source files here
-GEN_SRC		:= main.cc fastSolver.cc gemm.cc Htree.cc utility.cc custom_mapper.cc # .cc files
+GEN_SRC		:= main.cc \
+		   fastSolver.cc \
+		   gemm.cc \
+		   Htree.cc \
+		   direct_solve.cc \
+		   timer.cc \
+		   custom_mapper.cc # .cc files
 GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
