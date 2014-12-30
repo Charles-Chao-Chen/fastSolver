@@ -1,5 +1,5 @@
-#ifndef __GEMM_H__
-#define __GEMM_H__
+#ifndef _GEMM_H
+#define _GEMM_H
 
 
 #include "legion.h"
@@ -10,8 +10,8 @@ using namespace LegionRuntime::Accessor;
 
 
 enum {
-  GEMM_TASK_ID = 2,
-  GEMM2_TASK_ID = 4,
+  GEMM_TASK_ID = 13,
+  GEMM2_TASK_ID = 17,
 };
 
 

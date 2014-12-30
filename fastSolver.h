@@ -15,20 +15,17 @@ using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
 
+/*
 enum {
   LEAF_TASK_ID = 1,
-  LU_SOLVE_TASK_ID = 3,
 };
-
+*/
 
 class FastSolver {
 
  public:
   FastSolver(Context, HighLevelRuntime *);
   void initialize();
-
-  
-  // void init_LR_data(HODLR_Tree::node *, FSTreeNode *, FSTreeNode *, Eigen::MatrixXd &, Eigen::MatrixXd &);
 
   void recLU_solve();
   void recLU_solve(LR_Matrix &);
@@ -69,29 +66,6 @@ class FastSolver {
 };
 
 
-
-class LUSolveTask : public TaskLauncher {
-public:
-
-  LUSolveTask(TaskArgument arg,
-	      Predicate pred = Predicate::TRUE_PRED,
-	      MapperID id = 0,
-	      MappingTagID tag = 0);
-  
-  static int TASKID;
-
-  static void register_tasks(void);
-
-public:
-  static void cpu_task(const Task *task,
-		       const std::vector<PhysicalRegion> &regions,
-		       Context ctx, HighLevelRuntime *runtime);
-};
-
-
-
-
-
 void register_solver_tasks();
 
 
@@ -109,13 +83,6 @@ void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
 		       LogicalRegion & V0Td0, LogicalRegion & V1Td1,
 		       Range task_tag, Context ctx, HighLevelRuntime
 		       *runtime);
-
-
-void lu_solve_task(const Task *, const std::vector<PhysicalRegion> &,
-		   Context, HighLevelRuntime *);
-
-//void saveVectorToText(const std::string outputFileName, Eigen::VectorXd & inputVector);
-
 
 
 #endif // __FASTSOLVER_

@@ -1,10 +1,17 @@
-#ifndef macros_hpp
-#define macros_hpp
+#ifndef _MACROS_H
+#define _MACROS_H
 
 #include <sstream>
 #include <stdexcept>
 
 #include <stdlib.h>
+
+
+// there is only one single field id
+enum {
+  FID_X,
+};
+
 
 /* Uniform random number generator */
 
@@ -22,4 +29,5 @@ throw std::runtime_error(s.str());}
 {fclose(f); std::stringstream s; s << __FILE__ << ":" << __LINE__ << ":" << __func__ << ": " << msg; \
 throw std::runtime_error(s.str());}
 
-#endif /* macros_hpp */
+
+#endif // _MACROS_H

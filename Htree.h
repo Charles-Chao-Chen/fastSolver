@@ -12,9 +12,6 @@ using namespace LegionRuntime::Accessor;
 
 #define MAX_TREE_SIZE 15 // used in InitCirculantKmatTask::TaskArgs
 
-enum {
-  FID_X,
-};
 
 enum {
   SAVE_REGION_TASK_ID = 10,

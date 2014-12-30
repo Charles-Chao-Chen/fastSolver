@@ -146,7 +146,7 @@ void dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
 
 
   // write the direct output to file
-  std::ofstream ofs("solution_ref.txt");
+  std::ofstream ofs("soln_ref.txt");
   for (int i=0; i<rhs_rows; i++)
     ofs << rhs[i] << std::endl;
   ofs.close();

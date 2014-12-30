@@ -48,7 +48,7 @@ void top_level_task(const Task *task,
 		    Context ctx, HighLevelRuntime *runtime) {
 
 #if 1
-  //test_accuracy(ctx, runtime);
+  //test_accuracy
   run_test(10,   /* rank */
 	   800,  /* N */
 	   50,   /* threshold*/
@@ -58,7 +58,7 @@ void top_level_task(const Task *task,
 	   ctx,
 	   runtime);
 #else
-  //test_performance(ctx, runtime);
+  //test_performance
   run_test(150,   /* rank */
 	   1<<12, /* N */
 	   1<<8,  /* threshold*/
@@ -101,7 +101,7 @@ void run_test(int rank, int N, int threshold,
 
   if (compute_accuracy) {
     // write the solution from fast solver
-    const char *soln_file = "solution.txt";
+    const char *soln_file = "soln.txt";
     if (remove(soln_file) == 0)
       std::cout << "Remove old solution file." << std::endl;
   

@@ -13,12 +13,13 @@ USE_CUDA=0
 # Put the binary file name here
 OUTFILE		:= main
 # List all the application source files here
-GEN_SRC		:= main.cc \
-		   fastSolver.cc \
-		   gemm.cc \
-		   Htree.cc \
+GEN_SRC		:= main.cc         \
+		   fastSolver.cc   \
+		   solverTasks.cc  \
+		   gemm.cc         \
+		   Htree.cc 	   \
 		   direct_solve.cc \
-		   timer.cc \
+		   timer.cc 	   \
 		   custom_mapper.cc # .cc files
 GEN_GPU_SRC	:=				# .cu files
 
@@ -122,7 +123,7 @@ cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
 
 r1n:
-	numactl -m 0 -N 0 mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \
+	mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \
 	GASNET_BACKTRACE=1 ./main -level 5 \
 	-ll:cpu 12 -ll:csize 30000 -hl:sched 8192 -hl:window 8192
 

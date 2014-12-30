@@ -1,6 +1,6 @@
 #include "gemm.h"
 #include "lapack_blas.h"
-
+#include "macros.h"
 
 void register_gemm_task() {
 
