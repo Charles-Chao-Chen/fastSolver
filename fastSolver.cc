@@ -9,6 +9,7 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
+
 void register_solver_tasks() {
   register_solver_operators();  
   register_gemm_tasks();
