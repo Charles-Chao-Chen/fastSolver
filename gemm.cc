@@ -6,6 +6,138 @@ enum {
   REDUCE_ID = 1,
 };
 
+
+namespace {
+  
+  class ZeroMatrixTask : public TaskLauncher {
+
+  public:  
+    ZeroMatrixTask(TaskArgument arg,
+		   Predicate pred = Predicate::TRUE_PRED,
+		   MapperID id = 0,
+		   MappingTagID tag = 0);
+  
+    static void register_tasks(void);
+
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+    // public:
+  private:
+    static int TASKID;
+  };
+
+
+  class GEMM_Reduce_Task : public TaskLauncher {
+
+  public:
+    struct TaskArgs {
+      double alpha;
+      int col_beg;
+      int ncol;
+    };
+
+    GEMM_Reduce_Task(TaskArgument arg,
+		     Predicate pred = Predicate::TRUE_PRED,
+		     MapperID id = 0,
+		     MappingTagID tag = 0);
+  
+    static int TASKID;
+
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+
+
+  class GEMM_Broadcast_Task : public TaskLauncher {
+
+  public:
+    struct TaskArgs {
+      double alpha;
+      double beta;
+      int u_col_beg;
+      int u_ncol;
+      int d_col_beg;
+      int d_ncol;
+    };
+
+    GEMM_Broadcast_Task(TaskArgument arg,
+			Predicate pred = Predicate::TRUE_PRED,
+			MapperID id = 0,
+			MappingTagID tag = 0);
+  
+    static int TASKID;
+
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+}
+
+
+namespace {
+
+  // Reduction Op
+  class EntrySum {
+	
+  public:
+    typedef double LHS;
+    typedef double RHS;
+    static const double identity;
+
+  public:
+    template <bool EXCLUSIVE> static void apply(LHS &lhs, RHS rhs);
+    template <bool EXCLUSIVE> static void fold(RHS &rhs1, RHS rhs2);
+  };
+
+  
+  /* ---- reduction class implementation ---- */
+
+  const double EntrySum::identity = 0.0;
+
+  template<>
+  void EntrySum::apply<true>(LHS &lhs, RHS rhs)
+  {
+    lhs += rhs;
+  }
+
+  template<>
+  void EntrySum::apply<false>(LHS &lhs, RHS rhs)
+  {
+    int64_t *target = (int64_t *)&lhs;
+    union { int64_t as_int; double as_T; } oldval, newval;
+    do {
+      oldval.as_int = *target;
+      newval.as_T = oldval.as_T + rhs;
+    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
+  }
+
+  template<>
+  void EntrySum::fold<true>(RHS &rhs1, RHS rhs2)
+  {
+    rhs1 += rhs2;
+  }
+
+  template<>
+  void EntrySum::fold<false>(RHS &rhs1, RHS rhs2)
+  {
+    int64_t *target = (int64_t *)&rhs1;
+    union { int64_t as_int; double as_T; } oldval, newval;
+    do {
+      oldval.as_int = *target;
+      newval.as_T = oldval.as_T + rhs2;
+    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
+  }
+}
+
+
 void register_gemm_tasks() {
 
   HighLevelRuntime   ::register_reduction_op<EntrySum>(REDUCE_ID);
@@ -15,13 +147,37 @@ void register_gemm_tasks() {
 }
 
 
-void gemm_recursive(double alpha,
-		    FSTreeNode * v, FSTreeNode * u,
-		    int col_beg, int ncol,
-		    LogicalRegion & res,
-		    Range task_tag,
-		    Context ctx,
-		    HighLevelRuntime * runtime) {
+static void
+zero_matrix(LogicalRegion &matrix, Range tag,
+	    Context ctx, HighLevelRuntime *runtime) {
+  
+  assert(matrix != LogicalRegion::NO_REGION);
+  ZeroMatrixTask launcher(TaskArgument(NULL, 0),
+			  Predicate::TRUE_PRED,
+			  0,
+			  tag.begin);
+  launcher.add_region_requirement(
+	     RegionRequirement(matrix,
+			       WRITE_DISCARD,
+			       EXCLUSIVE,
+			       matrix));
+  launcher.region_requirements[0].add_field(FID_X);
+  runtime->execute_task(ctx, launcher);
+}
+
+
+static void
+scale_matrix(double beta, LogicalRegion &matrix,
+	     Context ctx, HighLevelRuntime *runtime) {
+  assert(false);
+}
+
+
+static void
+gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
+	       int col_beg, int ncol, LogicalRegion & res,
+	       Range task_tag, Context ctx,
+	       HighLevelRuntime * runtime) {
     
   // assume that u and v have the same tree structure
   // (down to Legion leaf level)
@@ -73,9 +229,10 @@ void gemm_recursive(double alpha,
 }
 
 
-void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double
-	  beta, LogicalRegion & res, Range task_tag,
-	  Context ctx, HighLevelRuntime *runtime) {
+void
+gemm_reduce(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
+	    double beta, LogicalRegion & res, Range task_tag,
+	    Context ctx, HighLevelRuntime *runtime) {
 
   // create and initialize the result region
   if (res == LogicalRegion::NO_REGION) {
@@ -93,9 +250,12 @@ void gemm(double alpha, FSTreeNode *v, FSTreeNode *u, range ru, double
 
 
 // d = beta * d + alpha* u * eta 
-void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion &
-	   eta, double beta, FSTreeNode * v, range rv, Range tag,
-	   Context ctx, HighLevelRuntime *runtime) {
+void
+gemm_broadcast(double alpha, FSTreeNode * u, range ru,
+	       LogicalRegion &eta,
+	       double beta, FSTreeNode * v, range rv,
+	       Range tag,
+	       Context ctx, HighLevelRuntime *runtime) {
 
   if (u->isLegionLeaf == true) {
   
@@ -114,15 +274,15 @@ void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion &
 				 tag.begin);
 
     launcher.add_region_requirement(
-      RegionRequirement(u->matrix->data,
-			READ_WRITE,
-			EXCLUSIVE,
-			u->matrix->data));
+               RegionRequirement(u->matrix->data,
+				 READ_WRITE,
+				 EXCLUSIVE,
+				 u->matrix->data));
     launcher.add_region_requirement(
-      RegionRequirement(eta,
-			READ_ONLY,
-			EXCLUSIVE,
-			eta)); // eta
+               RegionRequirement(eta,
+				 READ_ONLY,
+				 EXCLUSIVE,
+				 eta)); // eta
     launcher.region_requirements[0].add_field(FID_X);
     launcher.region_requirements[1].add_field(FID_X);
     runtime->execute_task(ctx, launcher);
@@ -132,35 +292,12 @@ void gemm2(double alpha, FSTreeNode * u, range ru, LogicalRegion &
     int   half = tag.size/2;
     Range tag0 = {tag.begin,      half};
     Range tag1 = {tag.begin+half, half};
-    gemm2(alpha, u->lchild, ru, eta, beta, v->lchild, rv, tag0, ctx, runtime);
-    gemm2(alpha, u->rchild, ru, eta, beta, v->rchild, rv, tag1, ctx, runtime);
+    gemm_broadcast(alpha, u->lchild, ru, eta, beta, v->lchild, rv,
+		   tag0, ctx, runtime);
+    gemm_broadcast(alpha, u->rchild, ru, eta, beta, v->rchild, rv,
+		   tag1, ctx, runtime);
   }  
 }
-
-
-void zero_matrix(LogicalRegion &matrix, Range tag, Context ctx, HighLevelRuntime *runtime) {
-  assert(matrix != LogicalRegion::NO_REGION);
-
-  ZeroMatrixTask launcher(TaskArgument(NULL, 0),
-			  Predicate::TRUE_PRED,
-			  0,
-			  tag.begin);
-  launcher.add_region_requirement(
-	     RegionRequirement(matrix,
-			       WRITE_DISCARD,
-			       EXCLUSIVE,
-			       matrix));
-  launcher.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, launcher);
-}
-
-
-void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime) {
-
-  assert(false);
-
-}
-
 
 
 /* ---- gemm_reduce implementation ---- */
@@ -196,7 +333,6 @@ GEMM_Reduce_Task::cpu_task(const Task *task,
 			   const std::vector<PhysicalRegion> &regions,
 			   Context ctx, HighLevelRuntime *runtime) {
   
-
   assert(regions.size() == 3);
   assert(task->regions.size() == 3);
   assert(task->arglen == sizeof(TaskArgs));
@@ -399,40 +535,5 @@ ZeroMatrixTask::cpu_task(const Task *task,
 }
 
 
-/* ---- reduction class implementation ---- */
 
-const double EntrySum::identity = 0.0;
 
-template<>
-void EntrySum::apply<true>(LHS &lhs, RHS rhs)
-{
-  lhs += rhs;
-}
-
-template<>
-void EntrySum::apply<false>(LHS &lhs, RHS rhs)
-{
-  int64_t *target = (int64_t *)&lhs;
-  union { int64_t as_int; double as_T; } oldval, newval;
-  do {
-    oldval.as_int = *target;
-    newval.as_T = oldval.as_T + rhs;
-  } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
-}
-
-template<>
-void EntrySum::fold<true>(RHS &rhs1, RHS rhs2)
-{
-  rhs1 += rhs2;
-}
-
-template<>
-void EntrySum::fold<false>(RHS &rhs1, RHS rhs2)
-{
-  int64_t *target = (int64_t *)&rhs1;
-  union { int64_t as_int; double as_T; } oldval, newval;
-  do {
-    oldval.as_int = *target;
-    newval.as_T = oldval.as_T + rhs2;
-  } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
-}

@@ -97,10 +97,14 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode, Range mappingTag) {
   range ru1 = {b1->col_beg, b1->ncol};
   range rd0 = {0,           b0->col_beg};
   range rd1 = {0,           b1->col_beg};
-  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, mappingTag0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, mappingTag1, ctx, runtime);
-  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, mappingTag0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, mappingTag1, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0,
+	      mappingTag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1,
+	      mappingTag1, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0,
+	      mappingTag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1,
+	      mappingTag1, ctx, runtime);
 
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1
@@ -109,8 +113,10 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode, Range mappingTag) {
 
   // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
   // Assemble x from d0 and d1: merge two trees
-  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, mappingTag0, ctx, runtime);
-  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, mappingTag1, ctx, runtime);
+  gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0,
+		 mappingTag0, ctx, runtime);
+  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1,
+		 mappingTag1, ctx, runtime);
 }
 
 
@@ -155,10 +161,10 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
   range ru1 = {b1->col_beg, b1->ncol};
   range rd0 = {0,           b0->col_beg};
   range rd1 = {0,           b1->col_beg};
-  gemm(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
-  gemm(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
-  gemm(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
 
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1, eta1 = V0Td0.
@@ -166,8 +172,8 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
 
   // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
   // Assemble x from d0 and d1: merge two trees
-  gemm2(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
-  gemm2(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
+  gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
+  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
 }
 
 

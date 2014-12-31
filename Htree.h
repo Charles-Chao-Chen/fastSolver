@@ -213,11 +213,6 @@ class LR_Matrix {
 void create_matrix(LogicalRegion &, int, int, Context,
 		   HighLevelRuntime *);
 
-//void set_element(double x, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime);
-
-void scale_matrix(double beta, LogicalRegion &matrix, Context ctx, HighLevelRuntime *runtime);
-
-
 void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
 void save_region(LogicalRegion & matrix, std::string filename, Context ctx, HighLevelRuntime *runtime);
