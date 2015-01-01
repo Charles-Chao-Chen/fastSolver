@@ -7,6 +7,10 @@
 using namespace LegionRuntime::Accessor;
 
 
+// for debugging purpose
+void save_matrix(double *A, int nRows, int nCols, int LD,
+		 std::string filename);
+
 namespace {
   
   class LUSolveTask : public TaskLauncher {
@@ -546,4 +550,23 @@ solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
   launcher.region_requirements[1].add_field(FID_X);
   launcher.region_requirements[2].add_field(FID_X);    
   runtime->execute_task(ctx, launcher);
+}
+
+
+void save_matrix(double *A, int nRows, int nCols, int LD,
+		 std::string filename) {
+
+  std::ofstream outputFile(filename.c_str(), std::ios_base::app);
+  if (outputFile.is_open()){
+    outputFile<<nRows<<std::endl;
+    outputFile<<nCols<<std::endl;
+    for (int i = 0; i < nRows ;i++) {
+      for (int j = 0; j< nCols ;j++) {
+	//outputFile<<A[i+j*nRows]<<'\t';
+	outputFile<<A[i+j*LD]<<'\t';
+      }
+      outputFile<<std::endl;
+    }
+  }
+  outputFile.close();
 }

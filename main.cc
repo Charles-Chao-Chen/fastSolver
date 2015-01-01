@@ -92,8 +92,9 @@ void run_test(int rank, int N, int threshold,
   lr_mat.init_circulant_matrix(diag, num_node);
     
  
-  FastSolver fs(ctx, runtime);
-  fs.recLU_solve(lr_mat, num_node);
+  FastSolver fs;
+  fs.solve_dfs(lr_mat, num_node, ctx, runtime);
+  //fs.solve_bfs(lr_mat, num_node, ctx, runtime);
 
   // display timing
   double t1 = timer();

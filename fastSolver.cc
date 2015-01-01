@@ -17,21 +17,28 @@ void register_solver_tasks() {
 }
 
 
-FastSolver::FastSolver(Context ctx, HighLevelRuntime *runtime) {
-  this -> ctx     = ctx;
-  this -> runtime = runtime;
-}
-
-
-void FastSolver::recLU_solve(LR_Matrix &lr_mat, int tag_size) {
+void
+FastSolver::solve_dfs(LR_Matrix &lr_mat, int tag_size,
+		      Context ctx, HighLevelRuntime *runtime)
+{
   Range tag = {0, tag_size};
-  recLU_solve(lr_mat.uroot, lr_mat.vroot, tag);
-  //recLU_solve_bfs(lr_mat.uroot, lr_mat.vroot, tag);
+  solve_dfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
 }
 
 
-void FastSolver::recLU_solve_bfs(FSTreeNode * uroot, FSTreeNode *
-vroot, Range mappingTag) {
+void
+FastSolver::solve_bfs(LR_Matrix &lr_mat, int tag_size,
+		      Context ctx, HighLevelRuntime *runtime)
+{
+  Range tag = {0, tag_size};
+  solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+}
+
+
+void
+FastSolver::solve_bfs(FSTreeNode * uroot, FSTreeNode *vroot,
+		      Range mappingTag,
+		      Context ctx, HighLevelRuntime *runtime) {
 
   std::list<FSTreeNode *> ulist;
   std::list<FSTreeNode *> vlist;
@@ -41,9 +48,9 @@ vroot, Range mappingTag) {
   std::list<Range> rangeList;
   rangeList.push_back(mappingTag);
 
-  typedef std::list<FSTreeNode *>::iterator ITER;
+  typedef std::list<FSTreeNode *>::iterator         ITER;
   typedef std::list<FSTreeNode *>::reverse_iterator RITER;
-  typedef std::list<Range>::reverse_iterator RRITER;
+  typedef std::list<Range>::reverse_iterator        RRITER;
   ITER uit = ulist.begin();
   ITER vit = vlist.begin();
   for (; uit != ulist.end(); uit++, vit++) {
@@ -61,16 +68,17 @@ vroot, Range mappingTag) {
       rangeList.push_back(mappingTag.rchild());
     }
   }
-
   RITER ruit = ulist.rbegin();
   RITER rvit = vlist.rbegin();
   RRITER rrit = rangeList.rbegin();
   for (; ruit != ulist.rend(); ruit++, rvit++, rrit++)
-    visit(*ruit, *rvit, *rrit);
+    visit(*ruit, *rvit, *rrit, ctx, runtime);
 
 }
 
-void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode, Range mappingTag) {
+void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
+		       Range mappingTag,
+		       Context ctx, HighLevelRuntime *runtime) {
   
   if (unode->isLegionLeaf) {
     assert(vnode->isLegionLeaf);
@@ -120,15 +128,15 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode, Range mappingTag) {
 }
 
 
-void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
-			     Range tag) {
+void
+FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
+		      Range tag,
+		      Context ctx, HighLevelRuntime *runtime) {
 
   if (unode->isLegionLeaf) {
 
     assert(vnode->isLegionLeaf);
 
-    //save_region(unode, "UUmat.txt", ctx, runtime);
-	
     // pick a task tag id from tag_beg to tag_end.
     // here the first tag is picked.
     solve_legion_leaf(unode, vnode, tag, ctx, runtime); 
@@ -147,8 +155,8 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
   FSTreeNode * V0 = vnode->lchild;
   FSTreeNode * V1 = vnode->rchild;
 
-  recLU_solve(b0, V0, tag0);
-  recLU_solve(b1, V1, tag1);
+  solve_dfs(b0, V0, tag0, ctx, runtime);
+  solve_dfs(b1, V1, tag1, ctx, runtime);
 
   assert(unode->isLegionLeaf == false);
   assert(V0->Hmat != NULL);
@@ -174,24 +182,6 @@ void FastSolver::recLU_solve(FSTreeNode * unode, FSTreeNode * vnode,
   // Assemble x from d0 and d1: merge two trees
   gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
   gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
-}
-
-
-void save_matrix(double *A, int nRows, int nCols, int LD, std::string filename) {
-
-  std::ofstream outputFile(filename.c_str(), std::ios_base::app);
-  if (outputFile.is_open()){
-    outputFile<<nRows<<std::endl;
-    outputFile<<nCols<<std::endl;
-    for (int i = 0; i < nRows ;i++) {
-      for (int j = 0; j< nCols ;j++) {
-	//outputFile<<A[i+j*nRows]<<'\t';
-	outputFile<<A[i+j*LD]<<'\t';
-      }
-      outputFile<<std::endl;
-    }
-  }
-  outputFile.close();
 }
 
 

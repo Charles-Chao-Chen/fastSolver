@@ -11,7 +11,7 @@ DONE: Make a generic interface to use standard lib.
 Note: Legion rect has lowest dimension increasing frist in memory, but the
 	generic interator increase the lowest dimension first.
 
-TODO: OOP design.
+DONE: OOP design.
 
 TODO: traverse_legion_tree() for row_beg should be inside
 	set_legion_leaf().
