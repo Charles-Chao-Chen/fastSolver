@@ -1,5 +1,3 @@
-#include <iomanip>
-
 #include "Htree.h"
 #include "lapack_blas.h"
 #include "macros.h"
@@ -9,7 +7,6 @@ void register_Htree_tasks() {
 
   register_circulant_matrix_task();
   
-  SaveRegionTask::register_tasks();
   InitRHSTask::register_tasks();
   InitCirculantKmatTask::register_tasks();
 }
@@ -84,22 +81,22 @@ LR_Matrix::LR_Matrix(int nleaf_per_legion_node, Context ctx_, HighLevelRuntime *
  *   threshold - size of dense blocks at the leaf level
  */
 LR_Matrix::LR_Matrix(int N, int threshold, int rhs_cols_, int r_,
-		     Context ctx_, HighLevelRuntime *runtime_): rhs_rows(N),
-								rhs_cols(rhs_cols_),
-								r(r_),
-								ctx(ctx_),
-								runtime(runtime_) {
+		     Context ctx_, HighLevelRuntime *runtime_):
+  rhs_rows(N),
+  rhs_cols(rhs_cols_),
+  r(r_),
+  ctx(ctx_),
+  runtime(runtime_)
+{
   
-
   uroot  = new FSTreeNode;
   uroot -> nrow = N;
   uroot -> ncol = rhs_cols;
   create_default_tree(uroot, r, threshold);
 
   //print_legion_tree(uroot);
-
   // postpone creating V tree after setting the legion leaf
-								}
+}
 
 
 void LR_Matrix::create_legion_leaf(int nleaf_per_legion_node) {
@@ -400,13 +397,13 @@ void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
   runtime->execute_task(ctx, launcher);
 }
 
-
+/*
 void LR_Matrix::save_solution(std::string filename) {
 
   ColRange ru = {0, rhs_cols};
-  save_region(uroot, ru, filename, ctx, runtime, true/*wait*/);
+  save_region(uroot, ru, filename, ctx, runtime, true);
 }
-
+*/
 
 // this function picks legion leaf nodes as those having the number of threshold real matrix leaves.
 // when threshold = 1, the legion leaf and real matrix leaf coinside.
@@ -729,7 +726,7 @@ void LR_Matrix::set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range
   }  
 }
 
-
+/*
 void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
 
   //  if (node == vroot)
@@ -745,7 +742,7 @@ void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
     print_Vmat(node->rchild, filename);
   }
 }
-
+*/
 
 void LeafData::set_circulant_matrix_data(int col_beg, int row_beg, int r, Context ctx, HighLevelRuntime *runtime) {    
 
@@ -862,6 +859,7 @@ void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, High
 }
 
 
+/*
 void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string filename, Context ctx, HighLevelRuntime *runtime) {
 
   RegionRequirement req(matrix, READ_ONLY, EXCLUSIVE, matrix);
@@ -991,7 +989,7 @@ void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevel
     save_region(node->rchild, filename, ctx, runtime);
   }  
 }
-
+*/
 
 void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime) {
@@ -1311,82 +1309,6 @@ void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &re
   for (int i=0; i<ksize; i++)
     assert(IPIV[i] = i+1);
   */
-}
-
-/* ---- SaveRegionTask implementation ---- */
-
-/*static*/
-int SaveRegionTask::TASKID;
-
-SaveRegionTask::SaveRegionTask(TaskArgument arg,
-			       Predicate pred /*= Predicate::TRUE_PRED*/,
-			       MapperID id /*= 0*/,
-			       MappingTagID tag /*= 0*/)
-  : TaskLauncher(TASKID, arg, pred, id, tag)
-{
-}
-
-/*static*/
-void SaveRegionTask::register_tasks(void)
-{
-  TASKID = HighLevelRuntime::register_legion_task<SaveRegionTask::cpu_task>(AUTO_GENERATE_ID,
-									    Processor::LOC_PROC, 
-									    true,
-									    true,
-									    AUTO_GENERATE_ID,
-									    TaskConfigOptions(true/*leaf*/),
-									    "save_region_to_file");
-  printf("registered as task id %d\n", TASKID);
-}
-
-void SaveRegionTask::cpu_task(const Task *task,
-			      const std::vector<PhysicalRegion> &regions,
-			      Context ctx, HighLevelRuntime *runtime)
-{
-
-  assert(regions.size() == 1);
-  assert(task->regions.size() == 1);
-  TaskArgs* task_args = (TaskArgs *)task->args;
-  int col_beg = task_args->col_range.col_beg;
-  int ncol    = task_args->col_range.ncol;
-  char* filename = task_args->filename;
-
-  IndexSpace is   = task->regions[0].region.get_index_space();
-  Domain     dom  = runtime->get_index_space_domain(ctx, is);
-  Rect<2>    rect = dom.get_rect<2>();
-
-  RegionAccessor<AccessorType::Generic, double> acc =
-    regions[0].get_field_accessor(FID_X).typeify<double>();
-  
-  Rect<2> subrect;
-  ByteOffset offsets[2];  
-
-  double *ptr =  acc.raw_rect_ptr<2>(rect, subrect, offsets);
-  assert(rect == subrect);
-  assert(ptr  != NULL);
-
-  int nrow = rect.dim_size(0);
-  assert(col_beg+ncol <= rect.dim_size(1));
-  //if (ncol == 0)
-  //ncol = rect.dim_size(1) - col_beg;
-
-
-  std::ofstream outputFile(filename, std::ios_base::app);
-  //outputFile << nrow << std::endl;
-  //outputFile << ncol << std::endl;
-
-  for (int i=0; i<nrow; i++) {
-    for (int j=0; j<ncol; j++) {
-      int row_idx = i;
-      int col_idx = j+col_beg;
-      int pnt[] = {row_idx, col_idx};
-      //double x = acc.read(DomainPoint::from_point<2>( Point<2>(pnt)));
-      double x = ptr[ row_idx + col_idx*nrow ];
-      outputFile << std::setprecision(20) << x << '\t';
-    }
-    outputFile << std::endl;
-  }
-  outputFile.close();
 }
 
 

@@ -18,6 +18,7 @@ GEN_SRC		:= main.cc         \
 		   solverTasks.cc  \
 		   gemm.cc         \
 		   Htree.cc 	   \
+		   save_region.cc  \
 		   direct_solve.cc \
 		   timer.cc 	   \
 		   custom_mapper.cc # .cc files

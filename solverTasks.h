@@ -22,5 +22,5 @@ solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
 		  Range task_tag,
 		  Context ctx, HighLevelRuntime *runtime);
 
-
+  
 #endif // _SOLVER_TASKS_H

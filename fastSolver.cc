@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <assert.h>
 #include <list>
-#include <iomanip>
-
 #include "fastSolver.h"
 #include "solverTasks.h"
+#include "save_region.h"
 #include "gemm.h"
 #include "lapack_blas.h"
+#include "timer.h"
 #include "macros.h"
 
 
@@ -14,15 +14,25 @@ void register_solver_tasks() {
   register_solver_operators();  
   register_gemm_tasks();
   register_Htree_tasks();
+  register_output_tasks();
 }
 
+FastSolver::FastSolver():
+  err_L2(-1),
+  time_launcher(-1),
+  soln_file("soln.txt") {}
 
 void
-FastSolver::solve_dfs(LR_Matrix &lr_mat, int tag_size,
+FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
   Range tag = {0, tag_size};
-  solve_dfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+  double t0 = timer();
+  solve_dfs(matrix.uroot, matrix.vroot, tag, ctx, runtime);
+  double t1 = timer();
+  time_launcher = t1 - t0;
+  // save solution to file
+  save_solution(matrix, this->soln_file, ctx, runtime);
 }
 
 
@@ -183,6 +193,4 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
   gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
 }
-
-
 

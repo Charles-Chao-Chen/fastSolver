@@ -78,7 +78,6 @@ void run_test(int rank, int N, int threshold,
 	      bool compute_accuracy,
 	      Context ctx, HighLevelRuntime *runtime) {
 
-  double t0 = timer();  
   int rand_seed = 1123;
   int num_node = 4;
   int rhs_cols = 1;
@@ -96,10 +95,12 @@ void run_test(int rank, int N, int threshold,
   fs.solve_dfs(lr_mat, num_node, ctx, runtime);
   //fs.solve_bfs(lr_mat, num_node, ctx, runtime);
 
-  // display timing
-  double t1 = timer();
-  printf("Init Time: %f.\n", t1-t0);
+  
+  std::cout << "Tasks launching time: "
+	    << fs.get_elapsed_time()
+	    << std::endl;
 
+  /*
   if (compute_accuracy) {
     // write the solution from fast solver
     const char *soln_file = "soln.txt";
@@ -111,4 +112,5 @@ void run_test(int rank, int N, int threshold,
     assert( N%threshold == 0);
     dirct_circulant_solve(soln_file, rand_seed, rhs_rows, N/threshold, rhs_cols, rank, diag);
   }
+  */
 }

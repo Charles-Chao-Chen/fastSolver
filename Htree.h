@@ -149,6 +149,9 @@ class LR_Matrix {
   void get_soln_from_region(double *);
   void get_soln_from_region(double *soln, FSTreeNode *node, int row_beg = 0);
 
+
+  int get_num_rhs() {return rhs_cols;}
+  
   /* --- output V --- */
   void print_Vmat(FSTreeNode *, std::string);
 
@@ -257,7 +260,7 @@ void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
 void array_to_tree(FSTreeNode *arg, int idx);
 void array_to_tree(FSTreeNode *arg, int idx, int shift);
 
-
+/*
 class SaveRegionTask : public TaskLauncher {
 public:
   struct TaskArgs {
@@ -278,7 +281,7 @@ public:
 		       const std::vector<PhysicalRegion> &regions,
 		       Context ctx, HighLevelRuntime *runtime);
 };
-
+*/
 
 class InitRHSTask : public TaskLauncher {
 public:

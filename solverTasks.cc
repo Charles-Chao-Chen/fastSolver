@@ -3,7 +3,6 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
-
 using namespace LegionRuntime::Accessor;
 
 
@@ -49,12 +48,6 @@ namespace {
 			 const std::vector<PhysicalRegion> &regions,
 			 Context ctx, HighLevelRuntime *runtime);
   };
-}
-
-
-void register_solver_operators() {
-  LeafSolveTask::register_tasks();
-  LUSolveTask::register_tasks();
 }
 
 
@@ -569,4 +562,10 @@ void save_matrix(double *A, int nRows, int nCols, int LD,
     }
   }
   outputFile.close();
+}
+
+
+void register_solver_operators() {
+  LeafSolveTask::register_tasks();
+  LUSolveTask::register_tasks();
 }
