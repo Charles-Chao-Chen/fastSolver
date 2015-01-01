@@ -3,12 +3,94 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
+
 using namespace LegionRuntime::Accessor;
+
+
+namespace {
+  
+  class LUSolveTask : public TaskLauncher {
+  public:
+
+    LUSolveTask(TaskArgument arg,
+		Predicate pred = Predicate::TRUE_PRED,
+		MapperID id = 0,
+		MappingTagID tag = 0);
+  
+    static int TASKID;
+
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+
+
+  class LeafSolveTask : public TaskLauncher {
+  public:
+
+    LeafSolveTask(TaskArgument arg,
+		  Predicate pred = Predicate::TRUE_PRED,
+		  MapperID id = 0,
+		  MappingTagID tag = 0);
+  
+    static int TASKID;
+
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+}
 
 
 void register_solver_operators() {
   LeafSolveTask::register_tasks();
   LUSolveTask::register_tasks();
+}
+
+
+// legion task wrapper
+void
+solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
+		  LogicalRegion & V0Td0, LogicalRegion & V1Td1,
+		  Range task_tag, Context ctx,
+		  HighLevelRuntime *runtime) {
+
+  // this task can be indexed by any tag in the range.
+  // the first tag is picked here.
+  LUSolveTask launcher(TaskArgument(NULL, 0),
+		       Predicate::TRUE_PRED,
+		       0,
+		       task_tag.begin);
+    
+  launcher.add_region_requirement(RegionRequirement(V0Tu0,
+						    READ_ONLY,
+						    EXCLUSIVE,
+						    V0Tu0));
+  launcher.add_region_requirement(RegionRequirement(V1Tu1,
+						    READ_ONLY,
+						    EXCLUSIVE,
+						    V1Tu1));
+  launcher.add_region_requirement(RegionRequirement(V0Td0,
+						    READ_WRITE,
+						    EXCLUSIVE,
+						    V0Td0));
+  launcher.add_region_requirement(RegionRequirement(V1Td1,
+						    READ_WRITE,
+						    EXCLUSIVE,
+						    V1Td1));
+  
+  launcher.region_requirements[0].add_field(FID_X);
+  launcher.region_requirements[1].add_field(FID_X);
+  launcher.region_requirements[2].add_field(FID_X);
+  launcher.region_requirements[3].add_field(FID_X);
+
+  runtime->execute_task(ctx, launcher);
 }
 
 
@@ -411,3 +493,57 @@ serial_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode,
   free(S_RHS);
 }
 
+
+// this function wrapper launches leaf tasks
+void
+solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
+		  Range task_tag,
+		  Context ctx, HighLevelRuntime *runtime) {
+  
+  int nleaf = count_leaf(uleaf);
+  //assert(nleaf == nleaf_per_node);
+  //int max_tree_size = nleaf_per_node * 2;
+  int max_tree_size = nleaf * 2;
+  FSTreeNode arg[max_tree_size*2+2];
+
+  arg[0] = *vleaf;
+  int tree_size = tree_to_array(vleaf, arg, 0);
+  //std::cout << "Tree size: " << tree_size << std::endl;
+  assert(tree_size < max_tree_size);
+
+  arg[max_tree_size] = *uleaf;
+  tree_to_array(uleaf, arg, 0, max_tree_size);
+
+  // encode the array size
+  arg[0].col_beg = max_tree_size;
+
+  
+  LeafSolveTask launcher(
+			 TaskArgument(
+			   &arg[0],
+			   sizeof(FSTreeNode)*(max_tree_size*2)),
+			 Predicate::TRUE_PRED,
+			 0,
+			 task_tag.begin
+			 );
+
+  launcher.add_region_requirement(
+    RegionRequirement(uleaf->matrix->data,
+		      READ_WRITE,
+		      EXCLUSIVE,
+		      uleaf->matrix->data)); // u region
+  launcher.add_region_requirement(
+    RegionRequirement(vleaf->matrix->data,
+		      READ_ONLY,
+		      EXCLUSIVE,
+		      vleaf->matrix->data)); // v region
+  launcher.add_region_requirement(
+    RegionRequirement(vleaf->kmat->data,
+		      READ_ONLY,
+		      EXCLUSIVE,
+		      vleaf->kmat->data)); // k region
+  launcher.region_requirements[0].add_field(FID_X);
+  launcher.region_requirements[1].add_field(FID_X);
+  launcher.region_requirements[2].add_field(FID_X);    
+  runtime->execute_task(ctx, launcher);
+}

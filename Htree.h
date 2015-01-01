@@ -1,5 +1,5 @@
-#ifndef __LEGIONTREE_
-#define __LEGIONTREE_
+#ifndef _LEGION_TREE_
+#define _LEGION_TREE_
 
 #include <string>
 #include <fstream>
@@ -26,7 +26,6 @@ enum MatrixType {
   UMatrix,
   VMatrix,
 };
-
 
 
 struct range {
@@ -338,4 +337,4 @@ int count_leaf(FSTreeNode *node);
 void fill_circulant_Kmat(FSTreeNode * vnode, int, int r, double diag,
 double *Kmat, int LD);
 
-#endif // __LEGIONTREE_
+#endif // _LEGION_TREE_

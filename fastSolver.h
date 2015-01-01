@@ -1,13 +1,10 @@
 #ifndef _FAST_SOLVER
 #define _FAST_SOLVER
 
+#include <string>
 
 #include "legion.h"
 #include "Htree.h"
-
-#include <string>
-#include <fstream>
-#include <vector>
 
 
 void register_solver_tasks();
@@ -19,30 +16,16 @@ class FastSolver {
   void initialize();
 
   void recLU_solve();
-  void recLU_solve(LR_Matrix &);
-  void recLU_solve(FSTreeNode *, FSTreeNode *);
   void recLU_solve(LR_Matrix &lr_mat, int tag_size);
   void recLU_solve(FSTreeNode * unode, FSTreeNode * vnode, Range tag);
-  void recLU_solve_bfs(FSTreeNode * uroot, FSTreeNode * vroot);
   void recLU_solve_bfs(FSTreeNode * uroot, FSTreeNode * vroot, Range mappingTag);
-  
-  //void save_soln_from_region(FSTreeNode *);
   
  private:
 
   void visit(FSTreeNode *unode, FSTreeNode *vnode);
   void visit(FSTreeNode *unode, FSTreeNode *vnode, Range mappingTag);
-  void solve_legion_leaf(FSTreeNode *, FSTreeNode *);
-
-  void solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf, Range task_tag);
- 
-  //int  tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int);
-  //void tree_to_array(FSTreeNode *, std::vector<FSTreeNode> &, int, int);
-  //int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
-  //void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
 
 
-  
   /*--- private attributes ---*/
   //Eigen::VectorXd soln;
     
@@ -64,13 +47,6 @@ void recLU_leaf_solve(FSTreeNode * uroot, FSTreeNode * vroot, double * u_ptr, do
 
 
 void save_matrix(double *A, int nRows, int nCols, int LD, std::string filename);
-
-void solve_node_matrix(LogicalRegion &, LogicalRegion &, LogicalRegion &, LogicalRegion &, Context, HighLevelRuntime *);
-
-void solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
-		       LogicalRegion & V0Td0, LogicalRegion & V1Td1,
-		       Range task_tag, Context ctx, HighLevelRuntime
-		       *runtime);
 
 
 #endif // _FAST_SOLVER
