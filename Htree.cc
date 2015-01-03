@@ -11,17 +11,17 @@ void register_Htree_tasks() {
   InitCirculantKmatTask::register_tasks();
 }
 
-
+/*
 void register_save_task() {
   
   HighLevelRuntime::register_legion_task<save_task>(SAVE_REGION_TASK_ID,
 						    Processor::LOC_PROC,
 						    true, true,
 						    AUTO_GENERATE_ID,
-						    TaskConfigOptions(true/*leaf*/),
+						    TaskConfigOptions(true),
 						    "save_region");
 }
-
+*/
 
 void register_circulant_matrix_task() {
   
@@ -989,7 +989,7 @@ void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevel
     save_region(node->rchild, filename, ctx, runtime);
   }  
 }
-*/
+
 
 void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 	       Context ctx, HighLevelRuntime *runtime) {
@@ -1032,7 +1032,7 @@ void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
   }
   outputFile.close();
 }
-
+*/
 
 void print_legion_tree(FSTreeNode * node) {
 
@@ -1064,6 +1064,7 @@ void print_legion_tree(FSTreeNode * node) {
 }
 
 
+/*
 void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime) {
 
   if (node->isLegionLeaf == true) {
@@ -1080,7 +1081,7 @@ void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRu
     save_kmat(node->rchild, filename, ctx, runtime);
   }  
 }
-
+*/
 
 void LR_Matrix::get_soln_from_region(double *soln) {
   get_soln_from_region(soln, uroot); // row_beg=0

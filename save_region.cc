@@ -65,8 +65,8 @@ void SaveRegionTask::cpu_task(const Task *task,
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
   TaskArgs* task_args = (TaskArgs *)task->args;
-  int col_beg = task_args->col_range.col_beg;
-  int ncol    = task_args->col_range.ncol;
+  int col_beg    = task_args->col_range.col_beg;
+  int ncol       = task_args->col_range.ncol;
   char* filename = task_args->filename;
 
   IndexSpace is   = task->regions[0].region.get_index_space();
@@ -97,7 +97,6 @@ void SaveRegionTask::cpu_task(const Task *task,
     for (int j=0; j<ncol; j++) {
       int row_idx = i;
       int col_idx = j+col_beg;
-      int pnt[] = {row_idx, col_idx};
       double x = ptr[ row_idx + col_idx*nrow ];
       outputFile << std::setprecision(20) << x << '\t';
     }
@@ -143,12 +142,12 @@ save_region(FSTreeNode * node, ColRange rg, std::string filename,
 
 
 void
-save_solution(LR_Matrix &matrix, std::string &soln_file,
+save_solution(LR_Matrix &matrix, std::string soln_file,
 	      Context ctx, HighLevelRuntime *runtime) {
 
   ColRange ru = {0, matrix.get_num_rhs()};
   save_region(matrix.uroot, ru, soln_file,
-	      ctx, runtime, false/*wait*/);
+	      ctx, runtime, true/*wait*/);
 }
 
 

@@ -4,6 +4,7 @@
 #include <string>
 #include "legion.h"
 #include "Htree.h"
+#include "direct_solve.h"
 
 
 void register_solver_tasks();
@@ -19,7 +20,6 @@ class FastSolver {
   void solve_bfs(LR_Matrix &, int, Context, HighLevelRuntime *);
 
   // get err and time
-  double get_L2norm_error() const {return err_L2;}
   double get_elapsed_time() const {return time_launcher;}
   
  private:
@@ -32,12 +32,8 @@ class FastSolver {
   void visit(FSTreeNode *, FSTreeNode *, Range,
 	     Context, HighLevelRuntime *);
 
-  //void save_solution(LR_Matrix &, Context, HighLevelRuntime *);
-
  private:
-  double err_L2;        // error in l2 norm
   double time_launcher; // time of launching all the tasks
-  std::string soln_file;
 };
 
 

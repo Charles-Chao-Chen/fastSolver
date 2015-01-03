@@ -5,10 +5,12 @@
 #include <stdlib.h>
 
 #include "direct_solve.h"
+#include "save_region.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
-void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag) {
+static void
+dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag) {
 
   double *U = (double *) malloc(rhs_rows*r*sizeof(double));
   for (int j=0; j<r; j++)
@@ -52,7 +54,8 @@ void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols
 }
 
 
-void dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
+static void
+dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
 			   int nregions, int rhs_cols, int r, double diag) {
 
   double *rhs = (double *) malloc(rhs_rows*sizeof(double));
@@ -106,7 +109,8 @@ void dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
 }
 
 
-void dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
+static void
+dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
 			   int nregions, int rhs_cols, int r, double diag) {
 
   double *rhs = (double *) malloc(rhs_rows*sizeof(double));
@@ -174,4 +178,22 @@ void dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
   free(soln);
   free(U);
   free(A);
+}
+
+
+void
+compute_L2_error(LR_Matrix &lr_mat, int rand_seed, int rhs_rows,
+		 int nregions, int rhs_cols, int rank,
+		 double diag, Context ctx, HighLevelRuntime *runtime) {
+    
+    // write the solution from fast solver
+    const char *soln_file = "soln.txt";
+    if (remove(soln_file) == 0)
+      std::cout << "Remove old solution file." << std::endl;
+  
+    save_solution(lr_mat, soln_file, ctx, runtime);
+  
+    dirct_circulant_solve(soln_file, rand_seed, rhs_rows, nregions,
+			  rhs_cols, rank, diag);
+  
 }

@@ -16,8 +16,8 @@ using namespace LegionRuntime::Accessor;
 void register_Htree_tasks();
 
 enum {
-  SAVE_REGION_TASK_ID = 10,
-  ZERO_MATRIX_TASK_ID = 20,
+  //SAVE_REGION_TASK_ID = 10,
+  //ZERO_MATRIX_TASK_ID = 20,
   CIRCULANT_MATRIX_TASK_ID = 30,
   CIRCULANT_KMAT_TASK_ID = 40,
 };
@@ -215,21 +215,21 @@ class LR_Matrix {
 void create_matrix(LogicalRegion &, int, int, Context,
 		   HighLevelRuntime *);
 
-void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string filename, Context ctx, HighLevelRuntime *runtime);
+//void save_region(LogicalRegion & matrix, int col_beg, int ncol, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
-void save_region(LogicalRegion & matrix, std::string filename, Context ctx, HighLevelRuntime *runtime);
+//void save_region(LogicalRegion & matrix, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
-void save_region(FSTreeNode * node, ColRange rg, std::string filename,
-		 Context ctx, HighLevelRuntime *runtime, bool wait = false);
+//void save_region(FSTreeNode * node, ColRange rg, std::string filename,
+//		 Context ctx, HighLevelRuntime *runtime, bool wait = false);
 
-void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime);
+//void save_region(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
 void register_save_task();
 void register_circulant_matrix_task();
 void register_circulant_kmat_task();
 
-void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
-	       Context ctx, HighLevelRuntime *runtime);
+//void save_task(const Task *task, const std::vector<PhysicalRegion> &regions,
+//	       Context ctx, HighLevelRuntime *runtime);
 
 
 void create_default_tree(FSTreeNode *node, int r, int threshold);
@@ -242,7 +242,7 @@ int  max_row_size(FSTreeNode *);
 /*--- for debugging purpose ---*/
 void print_legion_tree(FSTreeNode *);
 
-void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime);
+//void save_kmat(FSTreeNode * node, std::string filename, Context ctx, HighLevelRuntime *runtime);
 
 /* --- save solution to matrix --- */
 //void get_soln_from_region(Eigen::MatrixXd &, FSTreeNode *, Context ctx, HighLevelRuntime *runtime, int row_beg = 0);

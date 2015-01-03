@@ -3,7 +3,6 @@
 #include <list>
 #include "fastSolver.h"
 #include "solverTasks.h"
-#include "save_region.h"
 #include "gemm.h"
 #include "lapack_blas.h"
 #include "timer.h"
@@ -11,6 +10,9 @@
 
 
 void register_solver_tasks() {
+
+  std::cout << "Registering all solver tasks ..."
+	    << std::endl;
   register_solver_operators();  
   register_gemm_tasks();
   register_Htree_tasks();
@@ -18,9 +20,7 @@ void register_solver_tasks() {
 }
 
 FastSolver::FastSolver():
-  err_L2(-1),
-  time_launcher(-1),
-  soln_file("soln.txt") {}
+  time_launcher(-1) {}
 
 void
 FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
@@ -31,8 +31,6 @@ FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
   solve_dfs(matrix.uroot, matrix.vroot, tag, ctx, runtime);
   double t1 = timer();
   time_launcher = t1 - t0;
-  // save solution to file
-  save_solution(matrix, this->soln_file, ctx, runtime);
 }
 
 

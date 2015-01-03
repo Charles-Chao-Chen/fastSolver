@@ -1,9 +1,7 @@
 #include <iostream>
 
 #include "fastSolver.h"
-#include "direct_solve.h"
 #include "custom_mapper.h"
-#include "timer.h"
 
 enum {
   MASTER_TASK_ID = 0,
@@ -60,7 +58,7 @@ void top_level_task(const Task *task,
 #else
   //test_performance
   run_test(150,   /* rank */
-	   1<<14, /* N */
+	   1<<13, /* N */
 	   1<<8,  /* threshold*/
 	   1,     /* nleaf_per_legion_node */
 	   1.e5,  /* diagonal */
@@ -100,17 +98,13 @@ void run_test(int rank, int N, int threshold,
 	    << fs.get_elapsed_time()
 	    << std::endl;
 
-  /*
+
   if (compute_accuracy) {
-    // write the solution from fast solver
-    const char *soln_file = "soln.txt";
-    if (remove(soln_file) == 0)
-      std::cout << "Remove old solution file." << std::endl;
-  
-    lr_mat.save_solution(soln_file);
-  
+
     assert( N%threshold == 0);
-    dirct_circulant_solve(soln_file, rand_seed, rhs_rows, N/threshold, rhs_cols, rank, diag);
+    compute_L2_error(lr_mat, rand_seed, rhs_rows, N/threshold,
+		     rhs_cols, rank, diag, ctx, runtime);
+
   }
-  */
+
 }
