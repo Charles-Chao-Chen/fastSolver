@@ -15,10 +15,6 @@ using namespace LegionRuntime::Accessor;
 
 void register_Htree_tasks();
 
-enum {
-  CIRCULANT_MATRIX_TASK_ID = 30,
-  CIRCULANT_KMAT_TASK_ID = 40,
-};
 
 enum MatrixType {
   UMatrix,
@@ -47,42 +43,29 @@ struct ColRange {
   int ncol;
 };
 
-
-struct CirArg {
-  int col_beg;
-  int row_beg;
-  int r;
-};
-
-
+/*
 struct CirKmatArg {
   int row_beg;
   int r;
   double diag;
 };
-
+*/
 
 class LeafData {
 
 public:
   LeafData(): cols(0), rows(0), data(LogicalRegion::NO_REGION) {}
   //~LeafData();
-  
-  //LeafData(int nrow_, int ncol_, Context ctx, HighLevelRuntime *runtime);
-
-  //void set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context ctx, HighLevelRuntime *runtime, int row_beg = 0);
 
   void
     set_circulant_matrix_data(int col_beg, int row_beg, int r, Range tag,
 			      Context ctx, HighLevelRuntime *runtime);
 
-  void
-    set_circulant_kmat(CirKmatArg arg, Range tag,
-		       Context ctx, HighLevelRuntime *runtime);
+  //void set_circulant_kmat(CirKmatArg arg, Range tag,
+  //		       Context ctx, HighLevelRuntime *runtime);
 
   int cols;
-  int rows;
-  
+  int rows;  
   //IndexSpace iSpace;
   //FieldSpace fSpace;
   LogicalRegion data; // Region storing the actual data
@@ -95,7 +78,6 @@ public:
 // U and V have the same row structure
 struct FSTreeNode {
 
-  //FSTreeNode() {};
   FSTreeNode(int nrow=0,
 	     int ncol=0,
 	     int row_beg=0,
@@ -126,7 +108,7 @@ struct FSTreeNode {
 class LR_Matrix {
 
  public:
-  LR_Matrix() {}
+  // LR_Matrix() {}
 
   void create_tree(int, int, int, int, int,
 		   Context, HighLevelRuntime *);
@@ -147,7 +129,8 @@ class LR_Matrix {
 			  Context, HighLevelRuntime *);  
   int  create_legion_leaf(FSTreeNode *, int, int &,
 			  Context, HighLevelRuntime *);
-  void create_matrix_region(FSTreeNode *, Context, HighLevelRuntime *);
+  void create_matrix_region(FSTreeNode *,
+			    Context, HighLevelRuntime *);
   void create_vnode_from_unode(FSTreeNode *, FSTreeNode *,
 			       Context, HighLevelRuntime *);
 
@@ -156,7 +139,6 @@ class LR_Matrix {
   void init_RHS(FSTreeNode *node, int rand_seed, Range tag,
 		Context, HighLevelRuntime *,
 		int row_beg = 0);
-
   void init_Umat(FSTreeNode *node, Range tag,
 		 Context, HighLevelRuntime *, int row_beg = 0);
   void init_Vmat(FSTreeNode *node, double diag, Range tag,
@@ -214,54 +196,6 @@ void array_to_tree(FSTreeNode *arg, int idx);
 void array_to_tree(FSTreeNode *arg, int idx, int shift);
 
 
-class InitRHSTask : public TaskLauncher {
-public:
-  struct TaskArgs {
-    int rand_seed;
-    //char filename[25];
-  };
-
-  InitRHSTask(TaskArgument arg,
-	      Predicate pred = Predicate::TRUE_PRED,
-	      MapperID id = 0,
-	      MappingTagID tag = 0);
-  
-  static int TASKID;
-  static void register_tasks(void);
-
-public:
-  static void cpu_task(const Task *task,
-		       const std::vector<PhysicalRegion> &regions,
-		       Context ctx, HighLevelRuntime *runtime);
-};
-
-
-class InitCirculantKmatTask : public TaskLauncher {
-public:
-  template <int N>
-  struct TaskArgs {
-    //int treeSize;
-    int row_beg_global;
-    int rank;
-    //int LD; // leading dimension
-    double diag;
-    FSTreeNode treeArray[N];
-  };
-  
-  InitCirculantKmatTask(TaskArgument arg,
-			Predicate pred = Predicate::TRUE_PRED,
-			MapperID id = 0,
-			MappingTagID tag = 0);
-  
-  static int TASKID;
-  static void register_tasks(void);
-
-public:
-  static void cpu_task(const Task *task,
-		       const std::vector<PhysicalRegion> &regions,
-		       Context ctx, HighLevelRuntime *runtime);
-};
-
 void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
 			 double diag, Range mapping_tag, Context ctx,
 			 HighLevelRuntime *runtime);
@@ -269,6 +203,6 @@ void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
 int count_leaf(FSTreeNode *node);
 
 void fill_circulant_Kmat(FSTreeNode * vnode, int, int r, double diag,
-double *Kmat, int LD);
+			 double *Kmat, int LD);
 
 #endif // _LEGION_TREE_

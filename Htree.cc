@@ -3,27 +3,6 @@
 #include "macros.h"
 
 
-void register_Htree_tasks() {
-
-  register_circulant_matrix_task();
-  
-  InitRHSTask::register_tasks();
-  InitCirculantKmatTask::register_tasks();
-}
-
-
-void register_circulant_matrix_task() {
-  
-  HighLevelRuntime::register_legion_task<circulant_matrix_task>(CIRCULANT_MATRIX_TASK_ID,
-								Processor::LOC_PROC,
-								true, true,
-								AUTO_GENERATE_ID,
-								TaskConfigOptions(true/*leaf*/),
-								"init_circulant_matrix");
-
-}
-
-
 FSTreeNode::FSTreeNode(int nrow, int ncol,
 		       int row_beg, int col_beg,
 		       FSTreeNode *lchild,
@@ -36,6 +15,79 @@ FSTreeNode::FSTreeNode(int nrow, int ncol,
   lchild(lchild), rchild(rchild), Hmat(Hmat),
   matrix(matrix), kmat(kmat),
   isLegionLeaf(isLegionLeaf) {}
+
+
+namespace {
+
+  class InitRHSTask : public TaskLauncher {
+  public:
+    struct TaskArgs {
+      int rand_seed;
+      //char filename[25];
+    };
+
+    InitRHSTask(TaskArgument arg,
+		Predicate pred = Predicate::TRUE_PRED,
+		MapperID id = 0,
+		MappingTagID tag = 0);
+  
+    static int TASKID;
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+
+  class InitCirculantKmatTask : public TaskLauncher {
+  public:
+    template <int N>
+    struct TaskArgs {
+      //int treeSize;
+      int row_beg_global;
+      int rank;
+      //int LD; // leading dimension
+      double diag;
+      FSTreeNode treeArray[N];
+    };
+  
+    InitCirculantKmatTask(TaskArgument arg,
+			  Predicate pred = Predicate::TRUE_PRED,
+			  MapperID id = 0,
+			  MappingTagID tag = 0);
+  
+    static int TASKID;
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+
+  class InitCirculantMatrixTask : public TaskLauncher {
+  public:
+    struct TaskArgs {
+      int col_beg;
+      int row_beg;
+      int rank;
+    };
+    
+    InitCirculantMatrixTask(TaskArgument arg,
+			    Predicate pred = Predicate::TRUE_PRED,
+			    MapperID id = 0,
+			    MappingTagID tag = 0);
+  
+    static int TASKID;
+    static void register_tasks(void);
+
+  public:
+    static void cpu_task(const Task *task,
+			 const std::vector<PhysicalRegion> &regions,
+			 Context ctx, HighLevelRuntime *runtime);
+  };
+}
 
 
 /* Input:
@@ -547,14 +599,6 @@ void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag
     double *C = Kmat + vnode->row_beg;
     blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
 
-    /*
-    std::cout << "Kmat: " << std::endl;
-    for (int j=0; j<ksize; j++)
-      for (int i=0; i<ksize; i++)
-	std::cout << Kmat[vnode->row_beg + i + LD*j] << "\t";
-    std::cout << std::endl;
-    */
-
     //printf("After init Kmat.\n");
     
     free(U);
@@ -624,42 +668,27 @@ set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
   }  
 }
 
-/*
-void LeafData::
-set_circulant_matrix_data(int col_beg, int row_beg, int r,
-			  Context ctx, HighLevelRuntime *runtime) {    
-
-  CirArg cir_arg = {col_beg, row_beg, r};
-  TaskLauncher circulant_matrix_task(CIRCULANT_MATRIX_TASK_ID, TaskArgument(&cir_arg, sizeof(CirArg)));
-
-  //circulant_matrix_task.add_region_requirement(RegionRequirement(data,
-  //WRITE_DISCARD, EXCLUSIVE, data));
-  circulant_matrix_task.add_region_requirement(RegionRequirement(data, READ_WRITE, EXCLUSIVE, data));
-  circulant_matrix_task.region_requirements[0].add_field(FID_X);
-
-  runtime->execute_task(ctx, circulant_matrix_task);
-  //Future fm = runtime->execute_task(ctx, circulant_matrix_task);
-  //fm.get_void_result();
-}
-*/
 
 void LeafData::
 set_circulant_matrix_data(int col_beg, int row_beg, int r, Range tag,
 			  Context ctx, HighLevelRuntime *runtime) {    
 
-  CirArg cir_arg = {col_beg, row_beg, r};
-  TaskLauncher circulant_matrix_task(CIRCULANT_MATRIX_TASK_ID,
-				     TaskArgument(&cir_arg,
-						  sizeof(CirArg)),
-				     Predicate::TRUE_PRED,
-				     0,
-				     tag.begin);
-  circulant_matrix_task.add_region_requirement(RegionRequirement(data, READ_WRITE, EXCLUSIVE, data));
-  circulant_matrix_task.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, circulant_matrix_task);
+  InitCirculantMatrixTask::TaskArgs
+    args = {col_beg, row_beg, r};
+  InitCirculantMatrixTask launcher(TaskArgument(&args,
+						sizeof(args)),
+				   Predicate::TRUE_PRED,
+				   0,
+				   tag.begin);
+  launcher.add_region_requirement(RegionRequirement(data,
+						    READ_WRITE,
+						    EXCLUSIVE,
+						    data));
+  launcher.region_requirements[0].add_field(FID_X);
+  runtime->execute_task(ctx, launcher);
 }
 
-
+/*
 void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 			   Context ctx, HighLevelRuntime *runtime) {
 
@@ -701,7 +730,7 @@ void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &
     }
   }
 }
-
+*/
 
 /*
 void LeafData::set_matrix_data(double *mat, int rhs_rows, int rhs_cols, Context ctx, HighLevelRuntime *runtime, int row_beg) {
@@ -1081,11 +1110,12 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
   array_to_tree(arg, 2*idx+2);
 }
 
+/*
 // assume at the real leaf
 void LeafData::
 set_circulant_kmat(CirKmatArg arg, Range tag,
 		   Context ctx, HighLevelRuntime *runtime) {
-    
+ 
   TaskLauncher circulant_kmat_task(CIRCULANT_KMAT_TASK_ID,
 				   TaskArgument(&arg,
 						sizeof(CirKmatArg)),
@@ -1100,8 +1130,9 @@ set_circulant_kmat(CirKmatArg arg, Range tag,
   circulant_kmat_task.region_requirements[0].add_field(FID_X);
   runtime->execute_task(ctx, circulant_kmat_task);
 }
+*/
 
-
+/*
 void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &regions,
 			 Context ctx, HighLevelRuntime *runtime) {
 
@@ -1164,22 +1195,8 @@ void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &re
   double *B = U;
   double *C = k_ptr;
   blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
-
-
-  // pre-compute the LU factorization
-  // this is confusing (hard to notice) when writing
-  // another function to initialize kmat
-  /*
-  int INFO;
-  int IPIV[ksize];
-  lapack::dgetrf_(&ksize, &ksize, C, &ldc, IPIV, &INFO);
-  assert(INFO == 0);
-  // assert no pivoting
-  for (int i=0; i<ksize; i++)
-    assert(IPIV[i] = i+1);
-  */
 }
-
+*/
 
 /* ---- InitRHSTask implementation ---- */
 
@@ -1197,22 +1214,23 @@ InitRHSTask::InitRHSTask(TaskArgument arg,
 /*static*/
 void InitRHSTask::register_tasks(void)
 {
-  TASKID = HighLevelRuntime::register_legion_task<InitRHSTask::cpu_task>(AUTO_GENERATE_ID,
-									 Processor::LOC_PROC, 
-									 true,
-									 true,
-									 AUTO_GENERATE_ID,
-									 TaskConfigOptions(true/*leaf*/),
-									 "init_RHS");
-  printf("registered as task id %d\n", TASKID);
+  TASKID =
+    HighLevelRuntime::register_legion_task
+    <InitRHSTask::cpu_task>(AUTO_GENERATE_ID,
+			    Processor::LOC_PROC, 
+			    true,
+			    true,
+			    AUTO_GENERATE_ID,
+			    TaskConfigOptions(true/*leaf*/),
+			    "init_RHS");
+  printf("Register task %d : init_RHS\n", TASKID);
 }
 
-void InitRHSTask::cpu_task(const Task *task,
-			   const std::vector<PhysicalRegion> &regions,
-			   Context ctx, HighLevelRuntime *runtime)
+void InitRHSTask::
+cpu_task(const Task *task,
+	 const std::vector<PhysicalRegion> &regions,
+	 Context ctx, HighLevelRuntime *runtime)
 {
-
-
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
 
@@ -1251,30 +1269,32 @@ void InitRHSTask::cpu_task(const Task *task,
 /*static*/
 int InitCirculantKmatTask::TASKID;
 
-InitCirculantKmatTask::InitCirculantKmatTask(TaskArgument arg,
-					     Predicate pred /*= Predicate::TRUE_PRED*/,
-					     MapperID id /*= 0*/,
-					     MappingTagID tag /*= 0*/)
-  : TaskLauncher(TASKID, arg, pred, id, tag)
-{
-}
+InitCirculantKmatTask::
+InitCirculantKmatTask(TaskArgument arg,
+		      Predicate pred /*= Predicate::TRUE_PRED*/,
+		      MapperID id /*= 0*/,
+		      MappingTagID tag /*= 0*/)
+  : TaskLauncher(TASKID, arg, pred, id, tag) {}
 
 /*static*/
 void InitCirculantKmatTask::register_tasks(void)
 {
-  TASKID = HighLevelRuntime::register_legion_task<InitCirculantKmatTask::cpu_task>(AUTO_GENERATE_ID,
-										   Processor::LOC_PROC, 
-										   true,
-										   true,
-										   AUTO_GENERATE_ID,
-										   TaskConfigOptions(true/*leaf*/),
-										   "init_Kmat");
-  printf("registered as task id %d\n", TASKID);
+  TASKID =
+    HighLevelRuntime::register_legion_task
+    <InitCirculantKmatTask::cpu_task>(AUTO_GENERATE_ID,
+				      Processor::LOC_PROC, 
+				      true,
+				      true,
+				      AUTO_GENERATE_ID,
+				      TaskConfigOptions(true/*leaf*/),
+				      "init_Kmat");
+  printf("Register task %d : Init_Dense_Block\n", TASKID);
 }
 
-void InitCirculantKmatTask::cpu_task(const Task *task,
-				     const std::vector<PhysicalRegion> &regions,
-				     Context ctx, HighLevelRuntime *runtime)
+void InitCirculantKmatTask::
+cpu_task(const Task *task,
+	 const std::vector<PhysicalRegion> &regions,
+	 Context ctx, HighLevelRuntime *runtime)
 {
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
@@ -1311,6 +1331,80 @@ void InitCirculantKmatTask::cpu_task(const Task *task,
 }
 
 
+/* ---- InitCirculantMatrixTask implementation ---- */
+
+/*static*/
+int InitCirculantMatrixTask::TASKID;
+
+InitCirculantMatrixTask::
+InitCirculantMatrixTask(TaskArgument arg,
+			Predicate pred /*= Predicate::TRUE_PRED*/,
+			MapperID id /*= 0*/,
+			MappingTagID tag /*= 0*/)
+  : TaskLauncher(TASKID, arg, pred, id, tag) {}
+
+/*static*/
+void InitCirculantMatrixTask::register_tasks(void)
+{
+  TASKID =
+    HighLevelRuntime::register_legion_task
+    <InitCirculantMatrixTask::cpu_task>(AUTO_GENERATE_ID,
+					Processor::LOC_PROC, 
+					true,
+					true,
+					AUTO_GENERATE_ID,
+					TaskConfigOptions(true/*leaf*/),
+					"init_low_rank_block");
+  printf("Register task %d : Init_Low_Rank_Block\n", TASKID);
+}
+
+void InitCirculantMatrixTask::
+cpu_task(const Task *task,
+	 const std::vector<PhysicalRegion> &regions,
+	 Context ctx, HighLevelRuntime *runtime)
+{
+
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  assert(task->arglen == sizeof(TaskArgs));
+
+  const TaskArgs cir_arg = *((const TaskArgs*)task->args);
+  int col_beg = cir_arg.col_beg;
+  int row_beg = cir_arg.row_beg;
+  int r       = cir_arg.rank;
+  
+  IndexSpace is = task->regions[0].region.get_index_space();
+  Domain dom = runtime->get_index_space_domain(ctx, is);
+  Rect<2> rect = dom.get_rect<2>();
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];
+
+  double *ptr = regions[0].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect, subrect, offsets);
+  assert(rect == subrect);
+  assert(ptr  != NULL);
+  
+  int nrow = rect.dim_size(0);
+  int ncol = rect.dim_size(1);
+  int vol  = rect.volume();
+  assert( (ncol - col_beg) % r == 0 );
+    
+  for (int j=0; j<ncol - col_beg; j++) {
+    for (int i=0; i<nrow; i++) {
+      int value = (j+i+row_beg)%r;
+
+      int irow = i;
+      int icol = j+col_beg;
+
+      assert(irow + icol*nrow < vol);
+      ptr[irow + icol*nrow] = value;
+    }
+  }
+}
+
+
+
 int count_leaf(FSTreeNode *node) {
   if (node->lchild == NULL && node->rchild == NULL)
     return 1;
@@ -1335,3 +1429,9 @@ Range Range::rchild ()
   return (Range){begin+half_size, half_size};
 }
 
+
+void register_Htree_tasks() {
+  InitRHSTask::register_tasks();
+  InitCirculantKmatTask::register_tasks();
+  InitCirculantMatrixTask::register_tasks();
+}

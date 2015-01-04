@@ -8,16 +8,20 @@
 #include "lapack_blas.h"
 #include "timer.h"
 #include "macros.h"
-
+#include "unistd.h"
 
 void register_solver_tasks() {
 
-  std::cout << "Registering all solver tasks ..."
+  char hostname[1024];
+  gethostname(hostname, 1024);
+  std::cout << "Registering all solver tasks on "
+	    << hostname
 	    << std::endl;
   register_solver_operators();  
   register_gemm_tasks();
   register_Htree_tasks();
   register_output_tasks();
+  std::cout << std::endl;
 }
 
 
