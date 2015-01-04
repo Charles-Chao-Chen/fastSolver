@@ -1,10 +1,8 @@
 #ifndef _FAST_SOLVER
 #define _FAST_SOLVER
 
-#include <string>
 #include "legion.h"
 #include "Htree.h"
-#include "direct_solve.h"
 
 
 void register_solver_tasks();

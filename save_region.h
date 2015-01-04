@@ -12,5 +12,8 @@ void
 save_solution(LR_Matrix &, std::string,
 	      Context ctx, HighLevelRuntime *runtime);
 
+void
+print_Vmat(FSTreeNode *node, std::string filename);
+  
 
 #endif //_SAVE_REGION_H

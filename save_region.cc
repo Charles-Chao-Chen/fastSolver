@@ -154,3 +154,22 @@ save_solution(LR_Matrix &matrix, std::string soln_file,
 void register_output_tasks() {
   SaveRegionTask::register_tasks();
 }
+
+
+/*
+void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
+
+  //  if (node == vroot)
+  //save_region(node, filename, ctx, runtime); // print big V matrix
+
+  if (node->Hmat != NULL)
+    save_region(node->Hmat, filename, ctx, runtime);
+  else if (node != vroot)
+    return;
+
+  if (node->lchild != NULL && node->rchild != NULL) {
+    print_Vmat(node->lchild, filename);
+    print_Vmat(node->rchild, filename);
+  }
+}
+*/

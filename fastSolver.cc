@@ -4,6 +4,7 @@
 #include "fastSolver.h"
 #include "solverTasks.h"
 #include "gemm.h"
+#include "save_region.h"
 #include "lapack_blas.h"
 #include "timer.h"
 #include "macros.h"
@@ -19,8 +20,10 @@ void register_solver_tasks() {
   register_output_tasks();
 }
 
+
 FastSolver::FastSolver():
   time_launcher(-1) {}
+
 
 void
 FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
@@ -84,6 +87,7 @@ FastSolver::solve_bfs(FSTreeNode * uroot, FSTreeNode *vroot,
 
 }
 
+
 void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
 		       Range mappingTag,
 		       Context ctx, HighLevelRuntime *runtime) {
@@ -142,13 +146,11 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 		      Context ctx, HighLevelRuntime *runtime) {
 
   if (unode->isLegionLeaf) {
-
     assert(vnode->isLegionLeaf);
 
     // pick a task tag id from tag_beg to tag_end.
     // here the first tag is picked.
     solve_legion_leaf(unode, vnode, tag, ctx, runtime); 
-
     //save_region(unode, "Umat.txt", ctx, runtime);
     
     return;

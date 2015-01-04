@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "fastSolver.h"
+#include "direct_solve.h"
 #include "custom_mapper.h"
 
 enum {
@@ -81,30 +82,30 @@ void run_test(int rank, int N, int threshold,
   int rhs_cols = 1;
   int rhs_rows = N;
   
-  LR_Matrix lr_mat(N, threshold, rhs_cols, rank, ctx, runtime);
-  lr_mat.create_legion_leaf(nleaf_per_legion_node);  
-  lr_mat.init_RHS(rand_seed, num_node);
+  LR_Matrix lr_mat;
+
+  // create H-tree with legion leaf
+  lr_mat.create_tree(N, threshold, rhs_cols, rank,
+		     nleaf_per_legion_node, ctx, runtime);
+
+  // random right hand size
+  lr_mat.init_right_hand_side(rand_seed, num_node, ctx, runtime);
   
   // A = U U^T + diag and U is a circulant matrix
-  lr_mat.init_circulant_matrix(diag, num_node);
+  lr_mat.init_circulant_matrix(diag, num_node, ctx, runtime);
     
  
   FastSolver fs;
   fs.solve_dfs(lr_mat, num_node, ctx, runtime);
   //fs.solve_bfs(lr_mat, num_node, ctx, runtime);
-
   
-  std::cout << "Tasks launching time: "
-	    << fs.get_elapsed_time()
+  std::cout << "Tasks launching time: " << fs.get_elapsed_time()
 	    << std::endl;
 
-
   if (compute_accuracy) {
-
-    assert( N%threshold == 0);
+    assert( N%threshold == 0 );
     compute_L2_error(lr_mat, rand_seed, rhs_rows, N/threshold,
 		     rhs_cols, rank, diag, ctx, runtime);
-
   }
 
 }
