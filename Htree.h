@@ -43,13 +43,6 @@ struct ColRange {
   int ncol;
 };
 
-/*
-struct CirKmatArg {
-  int row_beg;
-  int r;
-  double diag;
-};
-*/
 
 class LeafData {
 
@@ -60,9 +53,6 @@ public:
   void
     set_circulant_matrix_data(int col_beg, int row_beg, int r, Range tag,
 			      Context ctx, HighLevelRuntime *runtime);
-
-  //void set_circulant_kmat(CirKmatArg arg, Range tag,
-  //		       Context ctx, HighLevelRuntime *runtime);
 
   int cols;
   int rows;  
