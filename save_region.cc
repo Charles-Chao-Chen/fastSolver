@@ -1,6 +1,7 @@
 #include <iomanip>
 #include "save_region.h"
 
+using namespace LegionRuntime::Accessor;
 
 namespace {
   class SaveRegionTask : public TaskLauncher {

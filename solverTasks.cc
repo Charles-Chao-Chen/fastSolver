@@ -1,5 +1,6 @@
 #include "solverTasks.h"
 #include "Htree.h"
+#include "htreeHelper.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
@@ -9,6 +10,7 @@ using namespace LegionRuntime::Accessor;
 // for debugging purpose
 void save_matrix(double *A, int nRows, int nCols, int LD,
 		 std::string filename);
+
 
 namespace {
   
@@ -569,3 +571,4 @@ void register_solver_operators() {
   LeafSolveTask::register_tasks();
   LUSolveTask::register_tasks();
 }
+

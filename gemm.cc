@@ -6,6 +6,8 @@ enum {
   REDUCE_ID = 1,
 };
 
+using namespace LegionRuntime::Accessor;
+
 
 namespace {
   

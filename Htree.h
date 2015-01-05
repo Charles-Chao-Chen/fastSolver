@@ -6,9 +6,8 @@
 
 #include "legion.h"
 
-
 using namespace LegionRuntime::HighLevel;
-using namespace LegionRuntime::Accessor;
+
 
 #define MAX_TREE_SIZE 15 // used in InitCirculantKmatTask::TaskArgs
 
@@ -47,15 +46,19 @@ struct ColRange {
 class LeafData {
 
 public:
-  LeafData(): cols(0), rows(0), data(LogicalRegion::NO_REGION) {}
+ LeafData(int rows=0, int cols=0):
+  rows(rows), cols(cols), 
+  data(LogicalRegion::NO_REGION) {}
+
   //~LeafData();
 
   void
     init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
 			  Context ctx, HighLevelRuntime *runtime);
 
-  int cols;
   int rows;  
+  int cols;
+
   //IndexSpace iSpace;
   //FieldSpace fSpace;
   LogicalRegion data; // Region storing the actual data
@@ -152,35 +155,9 @@ void create_matrix(LogicalRegion &, int, int, Context,
 		   HighLevelRuntime *);
 
 
-void register_save_task();
-void register_circulant_matrix_task();
-void register_circulant_kmat_task();
-
-void set_row_begin_index(FSTreeNode *, int);
-int  count_column_size(FSTreeNode *, int);
-int  max_row_size(FSTreeNode *);
-
-
 /*--- for debugging purpose ---*/
 void print_legion_tree(FSTreeNode *);
 
-
-void circulant_matrix_task(const Task *task, const std::vector<PhysicalRegion> &regions,
-	       Context ctx, HighLevelRuntime *runtime);
-
-void circulant_kmat_task(const Task *task, const std::vector<PhysicalRegion> &regions,
-	       Context ctx, HighLevelRuntime *runtime);
-
-
-int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
-void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
-void array_to_tree(FSTreeNode *arg, int idx);
-void array_to_tree(FSTreeNode *arg, int idx, int shift);
-
-
-void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
-			 double diag, Range mapping_tag, Context ctx,
-			 HighLevelRuntime *runtime);
 
 int count_leaf(FSTreeNode *node);
 
