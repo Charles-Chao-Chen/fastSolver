@@ -51,8 +51,8 @@ public:
   //~LeafData();
 
   void
-    set_circulant_matrix_data(int col_beg, int row_beg, int r, Range tag,
-			      Context ctx, HighLevelRuntime *runtime);
+    init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
+			  Context ctx, HighLevelRuntime *runtime);
 
   int cols;
   int rows;  
@@ -99,7 +99,8 @@ class LR_Matrix {
 
  public:
   // LR_Matrix() {}
-
+  //~LR_Matrix();
+  
   void create_tree(int, int, int, int, int,
 		   Context, HighLevelRuntime *);
   void init_right_hand_side(int, int, Context, HighLevelRuntime *);
@@ -115,12 +116,7 @@ class LR_Matrix {
  private:
 
   /* --- create tree --- */
-  void create_legion_leaf(int nleaf_per_legion_node,
-			  Context, HighLevelRuntime *);  
-  int  create_legion_leaf(FSTreeNode *, int, int &,
-			  Context, HighLevelRuntime *);
-  void create_matrix_region(FSTreeNode *,
-			    Context, HighLevelRuntime *);
+
   void create_vnode_from_unode(FSTreeNode *, FSTreeNode *,
 			       Context, HighLevelRuntime *);
 
@@ -137,8 +133,6 @@ class LR_Matrix {
     
   /*--- helper functions ---*/
 
-  void create_legion_matrix(FSTreeNode *node,
-			    Context, HighLevelRuntime *);
   void create_Hmatrix(FSTreeNode *, FSTreeNode *, int,
 		      Context, HighLevelRuntime *);
   void set_circulant_Hmatrix_data(FSTreeNode * Hmat,
@@ -148,7 +142,7 @@ class LR_Matrix {
   
   
   /* --- private attributes --- */
-  int r; // only if every block has the same rank
+  int rank; // only if every block has the same rank
   int rhs_rows;
   int rhs_cols;
 };
@@ -161,8 +155,6 @@ void create_matrix(LogicalRegion &, int, int, Context,
 void register_save_task();
 void register_circulant_matrix_task();
 void register_circulant_kmat_task();
-
-void create_balanced_tree(FSTreeNode *node, int r, int threshold);
 
 void set_row_begin_index(FSTreeNode *, int);
 int  count_column_size(FSTreeNode *, int);
