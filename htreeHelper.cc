@@ -107,3 +107,28 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
   array_to_tree(arg, 2*idx+2);
 }
 
+
+int count_leaf(FSTreeNode *node) {
+  if (node->lchild == NULL && node->rchild == NULL)
+    return 1;
+  else {
+    int n1 = count_leaf(node->lchild);
+    int n2 = count_leaf(node->rchild);
+    return n1+n2;
+  }
+}
+
+
+/* ---- Range class methods ---- */
+Range Range::lchild ()
+{
+  int half_size = size/2;
+  return (Range){begin, half_size};
+}
+
+
+Range Range::rchild ()
+{
+  int half_size = size/2;
+  return (Range){begin+half_size, half_size};
+}

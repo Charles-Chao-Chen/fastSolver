@@ -4,6 +4,7 @@
 #include "fastSolver.h"
 #include "solverTasks.h"
 #include "gemm.h"
+#include "initMatrixTasks.h"
 #include "save_region.h"
 #include "lapack_blas.h"
 #include "timer.h"
@@ -19,7 +20,7 @@ void register_solver_tasks() {
 	    << std::endl;
   register_solver_operators();  
   register_gemm_tasks();
-  register_Htree_tasks();
+  register_init_tasks();
   register_output_tasks();
   std::cout << std::endl;
 }
@@ -33,7 +34,7 @@ void
 FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
-  Range tag = {0, tag_size};
+  Range tag(0, tag_size);
   double t0 = timer();
   solve_dfs(matrix.uroot, matrix.vroot, tag, ctx, runtime);
   double t1 = timer();
@@ -45,7 +46,7 @@ void
 FastSolver::solve_bfs(LR_Matrix &lr_mat, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
-  Range tag = {0, tag_size};
+  Range tag(0, tag_size);
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
 }
 
@@ -154,15 +155,16 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 
     // pick a task tag id from tag_beg to tag_end.
     // here the first tag is picked.
-    solve_legion_leaf(unode, vnode, tag, ctx, runtime); 
     //save_region(unode, "Umat.txt", ctx, runtime);
+    solve_legion_leaf(unode, vnode, tag, ctx, runtime); 
+    
     
     return;
   }
 
   int   half = tag.size/2;
-  Range tag0 = {tag.begin,      half};
-  Range tag1 = {tag.begin+half, half};
+  Range tag0 = tag.lchild();
+  Range tag1 = tag.rchild();
   
   FSTreeNode * b0 = unode->lchild;
   FSTreeNode * b1 = unode->rchild;

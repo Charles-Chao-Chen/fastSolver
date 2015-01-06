@@ -10,11 +10,15 @@ int count_column_size(FSTreeNode *node, int col_size);
 
 int max_row_size(FSTreeNode *);
 
+int count_leaf(FSTreeNode *node);
+
+
 
 int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
 void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
 void array_to_tree(FSTreeNode *, int);
 void array_to_tree(FSTreeNode *, int, int);
+
 
 
 #endif // _HTREE_HELPER

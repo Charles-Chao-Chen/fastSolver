@@ -221,8 +221,8 @@ gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
   } else {
 
     int   half = task_tag.size/2;
-    Range tag0 = {task_tag.begin,      half};
-    Range tag1 = {task_tag.begin+half, half};
+    Range tag0 = task_tag.lchild();
+    Range tag1 = task_tag.rchild();
     gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol, res,
 		   tag0, ctx, runtime);
     gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol, res,
@@ -292,8 +292,8 @@ gemm_broadcast(double alpha, FSTreeNode * u, range ru,
   } else {
 
     int   half = tag.size/2;
-    Range tag0 = {tag.begin,      half};
-    Range tag1 = {tag.begin+half, half};
+    Range tag0 = tag.lchild();
+    Range tag1 = tag.rchild();
     gemm_broadcast(alpha, u->lchild, ru, eta, beta, v->lchild, rv,
 		   tag0, ctx, runtime);
     gemm_broadcast(alpha, u->rchild, ru, eta, beta, v->rchild, rv,

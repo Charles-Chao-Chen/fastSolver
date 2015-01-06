@@ -83,7 +83,7 @@ LR_Matrix::init_circulant_matrix(double diag, int num_node,
 				 *runtime)
 {
 
-  Range tag = {0, num_node};
+  Range tag(num_node);
   init_Umat(uroot, tag, ctx, runtime);       // row_beg = 0
   init_Vmat(vroot, diag, tag, ctx, runtime); // row_beg = 0
 
@@ -129,7 +129,7 @@ LR_Matrix::init_right_hand_side(int rand_seed, int node_num,
 {
   std::cout << "rhs_cols: " << rhs_cols << std::endl;
   assert(rhs_cols == 1);
-  Range tag = {0, node_num};
+  Range tag(node_num);
   init_RHS(uroot, rand_seed, tag, ctx, runtime /*, row_beg = 0*/); 
 }
 
@@ -161,8 +161,8 @@ void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, Range tag,
   } else { // recursively split RHS
     
     int   half = tag.size/2;
-    Range ltag = {tag.begin,      half};
-    Range rtag = {tag.begin+half, half};
+    Range ltag = tag.lchild();
+    Range rtag = tag.rchild();
     init_RHS(node->lchild, rand_seed, ltag,
 	     ctx, runtime, row_beg);
     init_RHS(node->rchild, rand_seed, rtag,
@@ -182,8 +182,8 @@ void LR_Matrix::init_Umat(FSTreeNode *node, Range tag,
 					rank, tag, ctx, runtime);
   } else {
     int   half = tag.size/2;
-    Range ltag = {tag.begin,      half};
-    Range rtag = {tag.begin+half, half};
+    Range ltag = tag.lchild();
+    Range rtag = tag.rchild();
     init_Umat(node->lchild, ltag, ctx, runtime, row_beg);
     init_Umat(node->rchild, rtag, ctx, runtime, row_beg +
 	      node->lchild->nrow);
@@ -219,8 +219,8 @@ void LR_Matrix::init_Vmat(FSTreeNode *node, double diag, Range tag,
     
   } else {
     int   half = tag.size/2;
-    Range ltag = {tag.begin,      half};
-    Range rtag = {tag.begin+half, half};
+    Range ltag = tag.lchild();
+    Range rtag = tag.rchild();
     init_Vmat(node->lchild, diag, ltag,
 	      ctx, runtime, row_beg);
     init_Vmat(node->rchild, diag, rtag,
@@ -289,11 +289,11 @@ mark_legion_leaf(FSTreeNode *node, int threshold) {
 
 static void
 create_region(FSTreeNode *node, Context ctx,
-	       HighLevelRuntime *runtime);
+	      HighLevelRuntime *runtime);
 
 /* static */ int
 create_legion_node(FSTreeNode *node, Context ctx,
-		  HighLevelRuntime *runtime) {
+		   HighLevelRuntime *runtime) {
   // count the number of legion leaf
   int nleaf;
   if (node->isLegionLeaf == false) {
@@ -510,8 +510,8 @@ set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
     
   } else {
     int   half = tag.size/2;
-    Range ltag = {tag.begin,      half};
-    Range rtag = {tag.begin+half, half};
+    Range ltag = tag.lchild();
+    Range rtag = tag.rchild();
     set_circulant_Hmatrix_data(Hmat->lchild, ltag,
 			       ctx, runtime, row_beg);
     set_circulant_Hmatrix_data(Hmat->rchild, rtag,
@@ -652,40 +652,6 @@ void print_legion_tree(FSTreeNode * node) {
   print_legion_tree(node->lchild);
   print_legion_tree(node->rchild);
 }
-
-
-int count_leaf(FSTreeNode *node) {
-  if (node->lchild == NULL && node->rchild == NULL)
-    return 1;
-  else {
-    int n1 = count_leaf(node->lchild);
-    int n2 = count_leaf(node->rchild);
-    return n1+n2;
-  }
-}
-
-
-Range Range::lchild ()
-{
-  int half_size = size/2;
-  return (Range){begin, half_size};
-}
-
-
-Range Range::rchild ()
-{
-  int half_size = size/2;
-  return (Range){begin+half_size, half_size};
-}
-
-
-void register_Htree_tasks() {
-  InitRHSTask::register_tasks();
-  InitCirculantKmatTask::register_tasks();
-  InitCirculantMatrixTask::register_tasks();
-}
-
-
 
 
 void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {

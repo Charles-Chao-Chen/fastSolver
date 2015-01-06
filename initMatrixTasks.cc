@@ -6,6 +6,12 @@
 using namespace LegionRuntime::Accessor;
 
 
+void register_init_tasks() {
+  InitRHSTask::register_tasks();
+  InitCirculantKmatTask::register_tasks();
+  InitCirculantMatrixTask::register_tasks();
+}
+
 
 /* ---- InitRHSTask implementation ---- */
 

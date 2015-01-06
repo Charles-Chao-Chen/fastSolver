@@ -7,6 +7,9 @@
 using namespace LegionRuntime::HighLevel;
 
 
+void register_init_tasks();
+
+
 class InitRHSTask : public TaskLauncher {
 public:
 struct TaskArgs {

@@ -12,9 +12,6 @@ using namespace LegionRuntime::HighLevel;
 #define MAX_TREE_SIZE 15 // used in InitCirculantKmatTask::TaskArgs
 
 
-void register_Htree_tasks();
-
-
 enum MatrixType {
   UMatrix,
   VMatrix,
@@ -29,17 +26,14 @@ struct range {
 
 class Range {
  public:
+ Range(                   ): begin(0),     size(0)    {}
+ Range(int size           ): begin(0),     size(size) {}
+ Range(int begin, int size): begin(begin), size(size) {}
   Range lchild();
   Range rchild();
  public:
   int begin;
   int size;
-};
-
-
-struct ColRange {
-  int col_beg;
-  int ncol;
 };
 
 
@@ -158,8 +152,6 @@ void create_matrix(LogicalRegion &, int, int, Context,
 /*--- for debugging purpose ---*/
 void print_legion_tree(FSTreeNode *);
 
-
-int count_leaf(FSTreeNode *node);
 
 void fill_circulant_Kmat(FSTreeNode * vnode, int, int r, double diag,
 			 double *Kmat, int LD);

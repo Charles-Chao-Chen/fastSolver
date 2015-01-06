@@ -154,8 +154,6 @@ dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
   for (int i=0; i<rhs_rows; i++)
     ofs << rhs[i] << std::endl;
   ofs.close();
-
-
   
   // read solver output from file
   double *soln = (double *) malloc(rhs_rows*sizeof(double));
