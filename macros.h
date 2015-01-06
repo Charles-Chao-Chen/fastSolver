@@ -15,10 +15,10 @@ enum {
 
 /* Uniform random number generator */
 
-#define frand(xmin,xmax) 1.234567
+//#define frand(xmin,xmax) 1.234567
 
-//((double)xmin+(double)(xmax-xmin)*rand()/	\
-//			  (double)RAND_MAX) 
+#define frand(xmin,xmax) ((double)xmin+(double)(xmax-xmin)*rand()/	\
+  			  (double)RAND_MAX) 
 
 
 /* Macros to throw exceptions */

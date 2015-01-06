@@ -192,8 +192,8 @@ gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
 
     GEMM_Reduce_Task::TaskArgs args = {alpha, col_beg, ncol};    
     GEMM_Reduce_Task launcher(TaskArgument(
-				&args,
-				sizeof(args)),
+					   &args,
+					   sizeof(args)),
 			      Predicate::TRUE_PRED,
 			      0,
 			      task_tag.begin);

@@ -108,15 +108,15 @@ LUSolveTask::LUSolveTask(
 /*static*/
 void LUSolveTask::register_tasks(void)
 {
-  TASKID =
-  HighLevelRuntime::register_legion_task<LUSolveTask::cpu_task>(
-    AUTO_GENERATE_ID,
-    Processor::LOC_PROC, 
-    true,
-    true,
-    AUTO_GENERATE_ID,
-    TaskConfigOptions(true/*leaf*/),
-    "LU_Solve");
+  TASKID = HighLevelRuntime::register_legion_task
+    <LUSolveTask::cpu_task>(
+			    AUTO_GENERATE_ID,
+			    Processor::LOC_PROC, 
+			    true,
+			    true,
+			    AUTO_GENERATE_ID,
+			    TaskConfigOptions(true/*leaf*/),
+			    "LU_Solve");
   
   printf("Register task %d : LU_Solve\n", TASKID);
 }
@@ -157,16 +157,20 @@ LUSolveTask::cpu_task(const Task *task,
   Rect<2> subrect;
   ByteOffset offsets[2];
   
-  double *V0Tu0 = acc_V0Tu0.raw_rect_ptr<2>(rect_V0Tu0, subrect, offsets);
+  double *V0Tu0 = acc_V0Tu0.raw_rect_ptr<2>
+    (rect_V0Tu0, subrect, offsets);
   assert(rect_V0Tu0 == subrect);
 
-  double *V1Tu1 = acc_V1Tu1.raw_rect_ptr<2>(rect_V1Tu1, subrect, offsets);
+  double *V1Tu1 = acc_V1Tu1.raw_rect_ptr<2>
+    (rect_V1Tu1, subrect, offsets);
   assert(rect_V1Tu1 == subrect);
   
-  double *V0Td0 = acc_V0Td0.raw_rect_ptr<2>(rect_V0Td0, subrect, offsets);
+  double *V0Td0 = acc_V0Td0.raw_rect_ptr<2>
+    (rect_V0Td0, subrect, offsets);
   assert(rect_V0Td0 == subrect);
 
-  double *V1Td1 = acc_V1Td1.raw_rect_ptr<2>(rect_V1Td1, subrect, offsets);
+  double *V1Td1 = acc_V1Td1.raw_rect_ptr<2>
+    (rect_V1Td1, subrect, offsets);
   assert(rect_V1Td1 == subrect);
 
 
@@ -198,10 +202,6 @@ LUSolveTask::cpu_task(const Task *task,
   // where S = I - V1Tu1 * V0Tu0
   // Note:  eta0 overwrites V1Td1
   
-  // Solve: I * eta1 = V0Td0 - V0Tu0 * eta0
-  // where no solve happens because of the indenty coefficience
-  // Note:  eta1 overwrites V0Td0
-  
   char transa  = 'n';
   char transb  = 'n';
   double alpha = -1.;
@@ -209,10 +209,11 @@ LUSolveTask::cpu_task(const Task *task,
 
   assert(V1Tu1_cols == V0Td0_rows);
   assert(V1Td1_rows == V1Tu1_rows);
-  blas::dgemm_(&transa, &transb, &V1Tu1_rows, &V0Td0_cols, &V1Tu1_cols,
-	       &alpha,   V1Tu1,  &V1Tu1_rows,
-	                 V0Td0,  &V0Td0_rows,
-	       &beta,    V1Td1,  &V1Td1_rows);
+  blas::dgemm_(&transa, &transb,
+	       &V1Tu1_rows, &V0Td0_cols, &V1Tu1_cols,
+	       &alpha,      V1Tu1,       &V1Tu1_rows,
+	                    V0Td0,       &V0Td0_rows,
+	       &beta,       V1Td1,       &V1Td1_rows);
 
 
   int N = V1Tu1_rows;
@@ -222,17 +223,23 @@ LUSolveTask::cpu_task(const Task *task,
     S[i*(N+1)] = 1.;
 
   assert(V1Tu1_cols == V0Tu0_rows);
-  blas::dgemm_(&transa, &transb, &V1Tu1_rows, &V0Tu0_cols, &V1Tu1_cols,
-	       &alpha,   V1Tu1,  &V1Tu1_rows,
-	                 V0Tu0,  &V0Tu0_rows,
-	       &beta,    S,      &N);
+  blas::dgemm_(&transa, &transb,
+	       &V1Tu1_rows, &V0Tu0_cols, &V1Tu1_cols,
+	       &alpha,      V1Tu1,       &V1Tu1_rows,
+	                    V0Tu0,       &V0Tu0_rows,
+	       &beta,       S,           &N);
 
   int INFO;
   int IPIV[N];
   assert(V0Td0_cols == V1Td1_cols);
-  lapack::dgesv_(&N, &V1Td1_cols, S, &N, IPIV, V1Td1, &V1Td1_rows, &INFO);
+  lapack::dgesv_(&N,    &V1Td1_cols,
+		 S,     &N,          IPIV,
+		 V1Td1, &V1Td1_rows, &INFO);
   assert(INFO == 0);
 
+  // Solve: I * eta1 = V0Td0 - V0Tu0 * eta0
+  // where no solve happens because of the indenty coefficience
+  // Note:  eta1 overwrites V0Td0
   assert(V0Tu0_cols == V1Td1_rows);
   blas::dgemm_(&transa, &transb, &V0Tu0_rows, &V1Td1_cols, &V0Tu0_cols,
 	       &alpha,   V0Tu0,  &V0Tu0_rows,
@@ -279,7 +286,6 @@ void
 LeafSolveTask::cpu_task(const Task *task,
 			const std::vector<PhysicalRegion> &regions,
 			Context ctx, HighLevelRuntime *runtime) {
-
 
   assert(regions.size() == 3);
   assert(task->regions.size() == 3);
@@ -517,8 +523,7 @@ solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
   arg[0].col_beg = max_tree_size;
 
   
-  LeafSolveTask launcher(
-			 TaskArgument(
+  LeafSolveTask launcher(TaskArgument(
 			   &arg[0],
 			   sizeof(FSTreeNode)*(max_tree_size*2)),
 			 Predicate::TRUE_PRED,
@@ -545,25 +550,6 @@ solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
   launcher.region_requirements[1].add_field(FID_X);
   launcher.region_requirements[2].add_field(FID_X);    
   runtime->execute_task(ctx, launcher);
-}
-
-
-void save_matrix(double *A, int nRows, int nCols, int LD,
-		 std::string filename) {
-
-  std::ofstream outputFile(filename.c_str(), std::ios_base::app);
-  if (outputFile.is_open()){
-    outputFile<<nRows<<std::endl;
-    outputFile<<nCols<<std::endl;
-    for (int i = 0; i < nRows ;i++) {
-      for (int j = 0; j< nCols ;j++) {
-	//outputFile<<A[i+j*nRows]<<'\t';
-	outputFile<<A[i+j*LD]<<'\t';
-      }
-      outputFile<<std::endl;
-    }
-  }
-  outputFile.close();
 }
 
 

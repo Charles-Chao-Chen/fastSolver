@@ -166,8 +166,9 @@ dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
   // read solver output from file
   double *soln = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
   std::ifstream ifs(soln_file.c_str());
-  for (int i=0; i<rhs_rows*rhs_cols; i++)
-    ifs >> soln[i];
+  for (int i=0; i<rhs_rows; i++)
+    for (int j=0; j<rhs_cols; j++)
+    ifs >> soln[i + j*rhs_rows];
   ifs.close();
   
   double diff  = 0;

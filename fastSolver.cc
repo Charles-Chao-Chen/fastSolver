@@ -75,14 +75,6 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 
   solve_dfs(b0, V0, tag0, ctx, runtime);
   solve_dfs(b1, V1, tag1, ctx, runtime);
-
-
-  const char *save_file = "Umat.txt";
-  if (remove(save_file) == 0)
-    std::cout << "Remove file: " << save_file << std::endl;
-  save_Htree(unode, save_file, ctx, runtime);
-
-
   
   assert(unode->isLegionLeaf == false);
   assert(V0->Hmat != NULL);
@@ -100,11 +92,39 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
   gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
 
+
+  /*
+  const char *save_file = "V0Td0.txt";
+  if (remove(save_file) == 0)
+    std::cout << "Remove file: " << save_file << std::endl;
+  save_region(V0Td0, save_file, ctx, runtime);
+  */
+
+  
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1, eta1 = V0Td0.
   solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, tag, ctx, runtime);
 
-  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
+
+  /*
+  const char *save_file1 = "V0Td0_finish.txt";
+  if (remove(save_file1) == 0)
+    std::cout << "Remove file: " << save_file1 << std::endl;
+  save_region(V0Td0, save_file1, ctx, runtime);
+  */
+
+    
+  /*
+  const char *save_file = "Umat.txt";
+  if (remove(save_file) == 0)
+    std::cout << "Remove file: " << save_file << std::endl;
+  save_Htree(unode, save_file, ctx, runtime);
+  */
+
+  
+
+  // This step requires a broadcast of V0Td0 and V1Td1
+  // from root to leaves.
   // Assemble x from d0 and d1: merge two trees
   gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
   gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);

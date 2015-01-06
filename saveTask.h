@@ -18,6 +18,15 @@ save_Htree(FSTreeNode * node, std::string filename,
 	   Range rg = (Range)(0,-1));
 
 void
+save_region(LogicalRegion data, std::string save_file,
+	    Context ctx, HighLevelRuntime *runtime,
+	    Range rg = (Range)(0,-1));
+
+void
+save_data(double *ptr, int nRows, int colBegin, int nCols,
+	  char *filename);
+
+void
 print_Vmat(FSTreeNode *node, std::string filename);
   
 

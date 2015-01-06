@@ -155,9 +155,10 @@ spy2:
 	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
 
 newfile:
-	mv Umat.txt    Umat_ref.txt
-	mv Ufinish.txt Ufinish_ref.txt
-
+	#mv Umat.txt    Umat_ref.txt
+	#mv Ufinish.txt Ufinish_ref.txt
+	mv V0Td0.txt          V0Td0_ref.txt
+	mv V0Td0_finish.txt   V0Td0_finish_ref.txt
 
 tar:	
 	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h Htree.cc Htree.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h
