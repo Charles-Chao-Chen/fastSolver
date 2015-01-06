@@ -48,11 +48,11 @@ void top_level_task(const Task *task,
 
 #if 1
   //test_accuracy
-  run_test(10,   /* rank */
-	   800,  /* N */
-	   50,   /* threshold*/
+  run_test(6,   /* rank */
+	   120,  /* N */
+	   15,   /* threshold*/
 	   1,    /* nleaf_per_legion_node */
-	   1.e5, /* diagonal */
+	   1.e1, /* diagonal */
 	   true, /* compute accuracy */
 	   ctx,
 	   runtime);
@@ -79,7 +79,7 @@ void run_test(int rank, int N, int threshold,
 
   int rand_seed = 1123;
   int num_node = 4;
-  int rhs_cols = 1;
+  int rhs_cols = 2;
   int rhs_rows = N;
   
   LR_Matrix lr_mat;
@@ -89,7 +89,8 @@ void run_test(int rank, int N, int threshold,
 		     nleaf_per_legion_node, ctx, runtime);
 
   // random right hand size
-  lr_mat.init_right_hand_side(rand_seed, num_node, ctx, runtime);
+  lr_mat.init_right_hand_side(rand_seed, rhs_cols, num_node,
+			      ctx, runtime);
   
   // A = U U^T + diag and U is a circulant matrix
   lr_mat.init_circulant_matrix(diag, num_node, ctx, runtime);

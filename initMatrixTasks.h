@@ -11,24 +11,25 @@ void register_init_tasks();
 
 
 class InitRHSTask : public TaskLauncher {
-public:
-struct TaskArgs {
-int rand_seed;
-//char filename[25];
-};
-
- InitRHSTask(TaskArgument arg,
-	     Predicate pred = Predicate::TRUE_PRED,
-	     MapperID id = 0,
-	     MappingTagID tag = 0);
+ public:
+  struct TaskArgs {
+    int rand_seed;
+    int ncol;
+    //char filename[25];
+  };
   
- static int TASKID;
- static void register_tasks(void);
+  InitRHSTask(TaskArgument arg,
+	      Predicate pred = Predicate::TRUE_PRED,
+	      MapperID id = 0,
+	      MappingTagID tag = 0);
+  
+  static int TASKID;
+  static void register_tasks(void);
 
  public:
- static void cpu_task(const Task *task,
-		      const std::vector<PhysicalRegion> &regions,
-		      Context ctx, HighLevelRuntime *runtime);
+  static void cpu_task(const Task *task,
+		       const std::vector<PhysicalRegion> &regions,
+		       Context ctx, HighLevelRuntime *runtime);
 };
 
 class InitCirculantKmatTask : public TaskLauncher {

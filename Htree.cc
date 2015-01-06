@@ -123,28 +123,27 @@ create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
 }
 
 
-void
-LR_Matrix::init_right_hand_side(int rand_seed, int node_num,
-				Context ctx, HighLevelRuntime *runtime)
+void LR_Matrix::
+init_right_hand_side(int rand_seed, int ncol, int node_num,
+		     Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "rhs_cols: " << rhs_cols << std::endl;
-  assert(rhs_cols == 1);
+  //assert(rhs_cols == 1);
   Range tag(node_num);
-  init_RHS(uroot, rand_seed, tag, ctx, runtime /*, row_beg = 0*/); 
+  init_RHS(uroot, rand_seed, ncol, tag,
+	   ctx, runtime /*, row_beg = 0*/); 
 }
 
 
-void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, Range tag,
-			 Context ctx, HighLevelRuntime *runtime,
-			 int row_beg) {
+void LR_Matrix::
+init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
+	 Context ctx, HighLevelRuntime *runtime, int row_beg) {
 
   if (node->isLegionLeaf == true) {
     assert(node->matrix != NULL);
 
     //typename
-    InitRHSTask::TaskArgs args;
-    args.rand_seed = rand_seed;
-
+    InitRHSTask::TaskArgs args = {rand_seed, ncol};
     InitRHSTask launcher(TaskArgument(&args, sizeof(args)),
 			 Predicate::TRUE_PRED,
 			 0,
@@ -163,17 +162,17 @@ void LR_Matrix::init_RHS(FSTreeNode *node, int rand_seed, Range tag,
     int   half = tag.size/2;
     Range ltag = tag.lchild();
     Range rtag = tag.rchild();
-    init_RHS(node->lchild, rand_seed, ltag,
+    init_RHS(node->lchild, rand_seed, ncol, ltag,
 	     ctx, runtime, row_beg);
-    init_RHS(node->rchild, rand_seed, rtag,
+    init_RHS(node->rchild, rand_seed, ncol, rtag,
 	     ctx, runtime, row_beg+node->lchild->nrow);
   }  
 }
 
 
-void LR_Matrix::init_Umat(FSTreeNode *node, Range tag,
-			  Context ctx, HighLevelRuntime *runtime,
-			  int row_beg) {
+void LR_Matrix::
+init_Umat(FSTreeNode *node, Range tag, Context ctx,
+	  HighLevelRuntime *runtime, int row_beg) {
 
   if (node->isLegionLeaf == true) {
 

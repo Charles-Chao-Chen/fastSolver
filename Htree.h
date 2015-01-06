@@ -100,7 +100,7 @@ class LR_Matrix {
   
   void create_tree(int, int, int, int, int,
 		   Context, HighLevelRuntime *);
-  void init_right_hand_side(int, int, Context, HighLevelRuntime *);
+  void init_right_hand_side(int, int, int, Context, HighLevelRuntime *);
   void init_circulant_matrix(double, int, Context, HighLevelRuntime *);
 
   int get_num_rhs() {return rhs_cols;}
@@ -119,7 +119,7 @@ class LR_Matrix {
 
   /* --- populate data --- */
 
-  void init_RHS(FSTreeNode *node, int rand_seed, Range tag,
+  void init_RHS(FSTreeNode *, int, int, Range tag,
 		Context, HighLevelRuntime *,
 		int row_beg = 0);
   void init_Umat(FSTreeNode *node, Range tag,

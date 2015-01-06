@@ -51,7 +51,8 @@ cpu_task(const Task *task,
 
   TaskArgs* args = (TaskArgs *)task->args;
   int rand_seed = args->rand_seed;
-
+  int ncol      = args->ncol;
+  
   IndexSpace is   = task->regions[0].region.get_index_space();
   Domain     dom  = runtime->get_index_space_domain(ctx, is);
   Rect<2>    rect = dom.get_rect<2>();
@@ -70,11 +71,12 @@ cpu_task(const Task *task,
   //printf("Start init_RHS task with %d rows.\n", nrow);
   
   srand( rand_seed );
-  for (int i=0; i<nrow; i++) {
-    int row_idx = i;
-    int col_idx = 0;
-    //int pnt[] = {row_idx, col_idx};
-    ptr[ row_idx + col_idx*nrow ] = frand(0, 1);
+  for (int j=0; j<ncol; j++) {
+    for (int i=0; i<nrow; i++) {
+      int row_idx = i;
+      int col_idx = j;
+      ptr[ row_idx + col_idx*nrow ] = frand(0, 1);
+    }
   }
 }
 

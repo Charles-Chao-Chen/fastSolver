@@ -154,6 +154,10 @@ spy2:
 	GASNET_BACKTRACE=1 ./main -cat legion_spy -level 2 \
 	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
 
+newfile:
+	mv Umat.txt    Umat_ref.txt
+	mv Ufinish.txt Ufinish_ref.txt
+
 
 tar:	
 	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h Htree.cc Htree.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h

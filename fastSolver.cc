@@ -39,6 +39,75 @@ FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
   solve_dfs(matrix.uroot, matrix.vroot, tag, ctx, runtime);
   double t1 = timer();
   time_launcher = t1 - t0;
+
+
+  const char *save_file = "Ufinish.txt";
+  if (remove(save_file) == 0)
+    std::cout << "Remove file: " << save_file << std::endl;
+  save_Htree(matrix.uroot, save_file, ctx, runtime);
+
+}
+
+
+void
+FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
+		      Range tag,
+		      Context ctx, HighLevelRuntime *runtime) {
+
+  if (unode->isLegionLeaf) {
+    assert(vnode->isLegionLeaf);
+
+    // pick a task tag id from tag_beg to tag_end.
+    // here the first tag is picked.
+    //save_Htree(unode, "Uinit.txt", ctx, runtime);
+    solve_legion_leaf(unode, vnode, tag, ctx, runtime); 
+    return;
+  }
+
+  int   half = tag.size/2;
+  Range tag0 = tag.lchild();
+  Range tag1 = tag.rchild();
+  
+  FSTreeNode * b0 = unode->lchild;
+  FSTreeNode * b1 = unode->rchild;
+  FSTreeNode * V0 = vnode->lchild;
+  FSTreeNode * V1 = vnode->rchild;
+
+  solve_dfs(b0, V0, tag0, ctx, runtime);
+  solve_dfs(b1, V1, tag1, ctx, runtime);
+
+
+  const char *save_file = "Umat.txt";
+  if (remove(save_file) == 0)
+    std::cout << "Remove file: " << save_file << std::endl;
+  save_Htree(unode, save_file, ctx, runtime);
+
+
+  
+  assert(unode->isLegionLeaf == false);
+  assert(V0->Hmat != NULL);
+  assert(V1->Hmat != NULL);
+
+  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
+  // from leaves to root in the H tree.
+  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  range ru0 = {b0->col_beg, b0->ncol};
+  range ru1 = {b1->col_beg, b1->ncol};
+  range rd0 = {0,           b0->col_beg};
+  range rd1 = {0,           b1->col_beg};
+  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
+
+  // V0Td0 and V1Td1 contain the solution on output.
+  // eta0 = V1Td1, eta1 = V0Td0.
+  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, tag, ctx, runtime);
+
+  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
+  // Assemble x from d0 and d1: merge two trees
+  gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
+  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
 }
 
 
@@ -143,60 +212,3 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1,
 		 mappingTag1, ctx, runtime);
 }
-
-
-void
-FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
-		      Range tag,
-		      Context ctx, HighLevelRuntime *runtime) {
-
-  if (unode->isLegionLeaf) {
-    assert(vnode->isLegionLeaf);
-
-    // pick a task tag id from tag_beg to tag_end.
-    // here the first tag is picked.
-    //save_region(unode, "Umat.txt", ctx, runtime);
-    solve_legion_leaf(unode, vnode, tag, ctx, runtime); 
-    
-    
-    return;
-  }
-
-  int   half = tag.size/2;
-  Range tag0 = tag.lchild();
-  Range tag1 = tag.rchild();
-  
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
-
-  solve_dfs(b0, V0, tag0, ctx, runtime);
-  solve_dfs(b1, V1, tag1, ctx, runtime);
-
-  assert(unode->isLegionLeaf == false);
-  assert(V0->Hmat != NULL);
-  assert(V1->Hmat != NULL);
-
-  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
-  // from leaves to root in the H tree.
-  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
-  range ru0 = {b0->col_beg, b0->ncol};
-  range ru1 = {b1->col_beg, b1->ncol};
-  range rd0 = {0,           b0->col_beg};
-  range rd1 = {0,           b1->col_beg};
-  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
-  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
-  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
-  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
-
-  // V0Td0 and V1Td1 contain the solution on output.
-  // eta0 = V1Td1, eta1 = V0Td0.
-  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, tag, ctx, runtime);
-
-  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
-  // Assemble x from d0 and d1: merge two trees
-  gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
-  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
-}
-
