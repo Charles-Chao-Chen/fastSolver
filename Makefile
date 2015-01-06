@@ -20,7 +20,7 @@ GEN_SRC		:= main.cc         \
 		   Htree.cc 	   \
 		   htreeHelper.cc  \
 		   initMatrixTasks.cc \
-		   save_region.cc  \
+		   saveTask.cc  \
 		   direct_solve.cc \
 		   timer.cc 	   \
 		   custom_mapper.cc # .cc files

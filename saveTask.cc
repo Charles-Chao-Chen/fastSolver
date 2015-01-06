@@ -1,5 +1,5 @@
 #include <iomanip>
-#include "save_region.h"
+#include "saveTask.h"
 
 using namespace LegionRuntime::Accessor;
 
@@ -81,6 +81,8 @@ void SaveRegionTask::cpu_task(const Task *task,
   assert(ptr  != NULL);
 
   int nrow = rect.dim_size(0);
+  if (ncol == -1)
+    ncol = rect.dim_size(1);
   assert(col_beg+ncol <= rect.dim_size(1));
 
   std::ofstream outputFile(filename, std::ios_base::app);
@@ -100,8 +102,18 @@ void SaveRegionTask::cpu_task(const Task *task,
 
 
 void
-save_region(FSTreeNode * node, Range rg, std::string filename,
-	    Context ctx, HighLevelRuntime *runtime) {
+save_solution(LR_Matrix &matrix, std::string soln_file,
+	      Context ctx, HighLevelRuntime *runtime)
+{
+  Range ru(matrix.get_num_rhs());
+  save_Htree(matrix.uroot, soln_file, ctx, runtime, ru);
+}
+
+
+void
+save_Htree(FSTreeNode * node, std::string filename,
+	   Context ctx, HighLevelRuntime *runtime,
+	   Range rg) {
 
   if (node->isLegionLeaf == true) {
 
@@ -109,8 +121,7 @@ save_region(FSTreeNode * node, Range rg, std::string filename,
     int len = filename.size();
     filename.copy(args.filename, len, 0);
     args.filename[len] = '\0';
-    args.col_range.begin = rg.begin;
-    args.col_range.size  = rg.size;
+    args.col_range = rg;
     
     SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));    
     launcher.add_region_requirement(
@@ -123,19 +134,12 @@ save_region(FSTreeNode * node, Range rg, std::string filename,
     fm.get_void_result();
     
   } else {
-    save_region(node->lchild, rg, filename, ctx, runtime);
-    save_region(node->rchild, rg, filename, ctx, runtime);
+    save_Htree(node->lchild, filename, ctx, runtime, rg);
+    save_Htree(node->rchild, filename, ctx, runtime, rg);
   }  
 }
 
 
-void
-save_solution(LR_Matrix &matrix, std::string soln_file,
-	      Context ctx, HighLevelRuntime *runtime) {
-
-  Range ru(matrix.get_num_rhs());
-  save_region(matrix.uroot, ru, soln_file, ctx, runtime);
-}
 
 
 /*
