@@ -1,6 +1,7 @@
 #include "solverTasks.h"
 #include "Htree.h"
 #include "htreeHelper.h"
+#include "saveTask.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
@@ -89,7 +90,8 @@ solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
   launcher.region_requirements[2].add_field(FID_X);
   launcher.region_requirements[3].add_field(FID_X);
 
-  runtime->execute_task(ctx, launcher);
+  Future f = runtime->execute_task(ctx, launcher);
+  f.get_void_result();
 }
 
 
@@ -207,6 +209,15 @@ LUSolveTask::cpu_task(const Task *task,
   double alpha = -1.;
   double beta  =  1.;
 
+
+
+  const char *save_file0 = "V1Td1.txt";
+  if (remove(save_file0) == 0)
+    std::cout << "Remove file: " << save_file0 << std::endl;
+  save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file0);
+
+  
+  
   assert(V1Tu1_cols == V0Td0_rows);
   assert(V1Td1_rows == V1Tu1_rows);
   blas::dgemm_(&transa, &transb,
@@ -216,6 +227,17 @@ LUSolveTask::cpu_task(const Task *task,
 	       &beta,       V1Td1,       &V1Td1_rows);
 
 
+
+  
+  const char *save_file3 = "V1Td1_finish.txt";
+  if (remove(save_file3) == 0)
+    std::cout << "Remove file: " << save_file3 << std::endl;
+  save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file3);
+
+
+
+
+  
   int N = V1Tu1_rows;
   double *S = (double*) calloc( N*N, sizeof(double) );
   // initialize the indentity matrix
@@ -229,6 +251,17 @@ LUSolveTask::cpu_task(const Task *task,
 	                    V0Tu0,       &V0Tu0_rows,
 	       &beta,       S,           &N);
 
+
+
+  
+  /*
+  const char *save_file = "V1Td1.txt";
+  if (remove(save_file) == 0)
+    std::cout << "Remove file: " << save_file << std::endl;
+  save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file);
+  */
+
+  
   int INFO;
   int IPIV[N];
   assert(V0Td0_cols == V1Td1_cols);
@@ -237,6 +270,17 @@ LUSolveTask::cpu_task(const Task *task,
 		 V1Td1, &V1Td1_rows, &INFO);
   assert(INFO == 0);
 
+
+  /*
+  const char *save_file2 = "V1Td1_finish.txt";
+  if (remove(save_file2) == 0)
+    std::cout << "Remove file: " << save_file2 << std::endl;
+  save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file2);
+  */
+
+
+  
+
   // Solve: I * eta1 = V0Td0 - V0Tu0 * eta0
   // where no solve happens because of the indenty coefficience
   // Note:  eta1 overwrites V0Td0
@@ -244,7 +288,7 @@ LUSolveTask::cpu_task(const Task *task,
   blas::dgemm_(&transa, &transb, &V0Tu0_rows, &V1Td1_cols, &V0Tu0_cols,
 	       &alpha,   V0Tu0,  &V0Tu0_rows,
 	                 V1Td1,  &V1Td1_rows,
-	       &beta,    V0Td0,  &V0Td0_rows);  
+	       &beta,    V0Td0,  &V0Td0_rows);   
   
   free(S);
 }

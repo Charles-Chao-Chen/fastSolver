@@ -131,7 +131,7 @@ r1n:
 	-ll:cpu 12 -ll:csize 30000 -hl:sched 8192 -hl:window 8192
 
 r2n:
-	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
+	mpirun -H n0000 -H n0001 -bind-to none -x GASNET_IB_SPAWNER -x \
 	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 12 -ll:csize 30000
 
 prof1:
@@ -142,7 +142,8 @@ prof1:
 prof2:
 	mpirun -H n0001,n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
 	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
-	-ll:cpu 12 -ll:util 1 -ll:csize 30000 -hl:sched 8192 -hl:window 8192
+	-ll:cpu 12 -ll:util 1 -ll:csize 30000 \
+	-hl:sched 8192 -hl:window 8192
 
 prof4:
 	numactl -m 0 -N 0 mpirun -H n0002 -H n0003 -H n0000 -H n0001 -bind-to none -x GASNET_IB_SPAWNER -x \
@@ -159,6 +160,11 @@ newfile:
 	#mv Ufinish.txt Ufinish_ref.txt
 	mv V0Td0.txt          V0Td0_ref.txt
 	mv V0Td0_finish.txt   V0Td0_finish_ref.txt
+	mv V1Td1.txt          V1Td1_ref.txt
+	mv V1Td1_finish.txt   V1Td1_finish_ref.txt
+	mv V1Tu1.txt          V1Tu1_ref.txt
+	mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
+
 
 tar:	
 	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h Htree.cc Htree.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h
