@@ -1,6 +1,8 @@
 #ifndef _SAVE_TASK_H
 #define _SAVE_TASK_H
 
+#include <string>
+
 #include "Htree.h"
 #include "macros.h"
 
@@ -24,7 +26,7 @@ save_region(LogicalRegion data, std::string save_file,
 
 void
 save_data(double *ptr, int nRows, int colBegin, int nCols,
-	  char *filename);
+	    std::string filename);
 
 void
 print_Vmat(FSTreeNode *node, std::string filename);

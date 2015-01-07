@@ -61,10 +61,11 @@ void SaveRegionTask::cpu_task(const Task *task,
 {
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
-  TaskArgs* task_args = (TaskArgs *)task->args;
-  int col_beg    = task_args->col_range.begin;
-  int ncol       = task_args->col_range.size;
-  char* filename = task_args->filename;
+  const TaskArgs* task_args = (TaskArgs *)task->args;
+  const char* filename = task_args->filename;
+  int col_beg          = task_args->col_range.begin;
+  int ncol             = task_args->col_range.size;
+  
 
   IndexSpace is   = task->regions[0].region.get_index_space();
   Domain     dom  = runtime->get_index_space_domain(ctx, is);
@@ -136,9 +137,9 @@ save_region(LogicalRegion data, std::string filename,
 
 void
 save_data(double *ptr, int nrow, int col_beg, int ncol,
-	  char *filename) {
+	  std::string filename) {
 
-  std::ofstream outputFile(filename, std::ios_base::app);
+  std::ofstream outputFile(filename.c_str(), std::ios_base::app);
   for (int i=0; i<nrow; i++) {
     for (int j=0; j<ncol; j++) {
       int row_idx = i;
