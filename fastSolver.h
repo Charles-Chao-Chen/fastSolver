@@ -14,8 +14,8 @@ class FastSolver {
   FastSolver();
 
   // wrapper for solve functions
-  void solve_dfs(LR_Matrix &, int, Context, HighLevelRuntime *);
-  void solve_bfs(LR_Matrix &, int, Context, HighLevelRuntime *);
+  void solve_dfs(HodlrMatrix &, int, Context, HighLevelRuntime *);
+  void solve_bfs(HodlrMatrix &, int, Context, HighLevelRuntime *);
 
   // get err and time
   double get_elapsed_time() const {return time_launcher;}

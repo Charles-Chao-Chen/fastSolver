@@ -96,11 +96,11 @@ struct FSTreeNode {
 };
 
 
-class LR_Matrix {
+class HodlrMatrix {
 
  public:
-  // LR_Matrix() {}
-  //~LR_Matrix();
+  // HodlrMatrix() {}
+  //~HodlrMatrix();
   
   void create_tree(int, int, int, int, int,
 		   Context, HighLevelRuntime *);

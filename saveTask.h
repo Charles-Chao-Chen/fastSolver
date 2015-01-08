@@ -11,7 +11,7 @@ void register_output_tasks();
 
 
 void
-save_solution(LR_Matrix &, std::string,
+save_solution(HodlrMatrix &, std::string,
 	      Context ctx, HighLevelRuntime *runtime);
 
 void

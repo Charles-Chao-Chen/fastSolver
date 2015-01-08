@@ -38,7 +38,7 @@ create_legion_node(FSTreeNode *node, Context ctx,
  *   threshold - size of dense blocks at the leaf level
  */
 void
-LR_Matrix::create_tree(int N, int threshold, int rhs_cols,
+HodlrMatrix::create_tree(int N, int threshold, int rhs_cols,
 		       int rank, int nleaf_per_legion_node,
 		       Context ctx, HighLevelRuntime *runtime) {
 
@@ -78,7 +78,7 @@ LR_Matrix::create_tree(int N, int threshold, int rhs_cols,
  *   RHS  - right hand side of the problem
  */
 void
-LR_Matrix::init_circulant_matrix(double diag, int num_node,
+HodlrMatrix::init_circulant_matrix(double diag, int num_node,
 				 Context ctx, HighLevelRuntime
 				 *runtime)
 {
@@ -123,7 +123,7 @@ create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
 }
 
 
-void LR_Matrix::
+void HodlrMatrix::
 init_right_hand_side(int rand_seed, int ncol, int node_num,
 		     Context ctx, HighLevelRuntime *runtime)
 {
@@ -135,7 +135,7 @@ init_right_hand_side(int rand_seed, int ncol, int node_num,
 }
 
 
-void LR_Matrix::
+void HodlrMatrix::
 init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
 	 Context ctx, HighLevelRuntime *runtime, int row_beg) {
 
@@ -170,7 +170,7 @@ init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
 }
 
 
-void LR_Matrix::
+void HodlrMatrix::
 init_Umat(FSTreeNode *node, Range tag, Context ctx,
 	  HighLevelRuntime *runtime, int row_beg) {
 
@@ -195,7 +195,7 @@ init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo,
 		    int rank, double diag, Range mapping_tag,
 		    Context ctx, HighLevelRuntime *runtime);
 
-void LR_Matrix::
+void HodlrMatrix::
 init_Vmat(FSTreeNode *node, double diag, Range tag,
 	  Context ctx, HighLevelRuntime *runtime,
 	  int row_beg) {
@@ -325,7 +325,7 @@ create_region(FSTreeNode *node, Context ctx,
 }
 
 
-void LR_Matrix::
+void HodlrMatrix::
 create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode,
 			Context ctx, HighLevelRuntime *runtime) {
 
@@ -419,7 +419,7 @@ create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode,
 }
 
 
-void LR_Matrix::
+void HodlrMatrix::
 create_Hmatrix(FSTreeNode *node, FSTreeNode * Hmat, int ncol,
 	       Context ctx, HighLevelRuntime *runtime) {
 
@@ -451,7 +451,7 @@ create_Hmatrix(FSTreeNode *node, FSTreeNode * Hmat, int ncol,
 }
 
 
-void LR_Matrix::
+void HodlrMatrix::
 set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
 			   Context ctx, HighLevelRuntime *runtime,
 			   int row_beg) {

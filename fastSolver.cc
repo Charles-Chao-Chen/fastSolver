@@ -31,7 +31,7 @@ FastSolver::FastSolver():
 
 
 void
-FastSolver::solve_dfs(LR_Matrix &matrix, int tag_size,
+FastSolver::solve_dfs(HodlrMatrix &matrix, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
   /*
@@ -141,7 +141,7 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 
 
 void
-FastSolver::solve_bfs(LR_Matrix &lr_mat, int tag_size,
+FastSolver::solve_bfs(HodlrMatrix &lr_mat, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
   Range tag(0, tag_size);

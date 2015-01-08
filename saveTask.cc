@@ -90,7 +90,7 @@ void SaveRegionTask::cpu_task(const Task *task,
 
 
 void
-save_solution(LR_Matrix &matrix, std::string soln_file,
+save_solution(HodlrMatrix &matrix, std::string soln_file,
 	      Context ctx, HighLevelRuntime *runtime)
 {
   Range ru(matrix.get_num_rhs());
@@ -155,7 +155,7 @@ save_data(double *ptr, int nrow, int col_beg, int ncol,
 
 
 /*
-void LR_Matrix::print_Vmat(FSTreeNode *node, std::string filename) {
+void HodlrMatrix::print_Vmat(FSTreeNode *node, std::string filename) {
 
   //  if (node == vroot)
   //save_region(node, filename, ctx, runtime); // print big V matrix

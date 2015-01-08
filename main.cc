@@ -84,7 +84,7 @@ void run_test(int rank, int N, int threshold,
   int rhs_cols = 2;
   int rhs_rows = N;
   
-  LR_Matrix lr_mat;
+  HodlrMatrix lr_mat;
 
   // create H-tree with legion leaf
   lr_mat.create_tree(N, threshold, rhs_cols, rank,
