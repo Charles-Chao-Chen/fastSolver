@@ -269,8 +269,7 @@ void init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo, int rank,
 mark_legion_leaf(FSTreeNode *node, int threshold) {
 
   int nRealLeaf;  
-  if (node->lchild == NULL &&
-      node->rchild == NULL) { // real matrix leaf
+  if (node->isRealLeaf()) { // real matrix leaf
     nRealLeaf = 1;
   } else {
     int nl = mark_legion_leaf(node->lchild, threshold);
@@ -308,16 +307,15 @@ create_legion_node(FSTreeNode *node, Context ctx,
 }
 
 
-static void
-create_matrix_legion(FSTreeNode *node, Context, HighLevelRuntime *);
-
 /* static */ void
 create_region(FSTreeNode *node, Context ctx,
 	      HighLevelRuntime *runtime) {
 
   assert(node->isLegionLeaf == true);
   int row_size = node->nrow;
-  int col_size = count_column_size(node, node->col_beg);
+  
+  // adding column number above and below legion node
+  int col_size = node->col_beg + count_matrix_column(node);
   //printf("row_size: %d, col_size: %d.\n", row_size, col_size);
 
   node->matrix = new LeafData(row_size, col_size);
@@ -327,7 +325,8 @@ create_region(FSTreeNode *node, Context ctx,
 }
 
 
-/* static */ void
+/*
+  void
 create_matrix_region(FSTreeNode *node,
 		     Context ctx, HighLevelRuntime *runtime)
 {
@@ -350,7 +349,7 @@ create_matrix_region(FSTreeNode *node,
     create_matrix_region(node->rchild, ctx, runtime);
   }
 }
-
+*/
 
 void LR_Matrix::
 create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode,
@@ -496,7 +495,7 @@ set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
 			   Context ctx, HighLevelRuntime *runtime,
 			   int row_beg) {
 
-  if (Hmat->lchild == NULL && Hmat->rchild == NULL) {
+  if (Hmat->isRealLeaf()) {
 
     int glo = row_beg;
     int loc = Hmat->row_beg;
@@ -652,7 +651,7 @@ void print_legion_tree(FSTreeNode * node) {
 
 void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {
 
-  if (vnode->lchild == NULL && vnode->rchild == NULL) {
+  if (vnode->isRealLeaf()) {
 
     int ksize = vnode->nrow;
     
