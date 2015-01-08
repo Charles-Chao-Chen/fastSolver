@@ -13,7 +13,7 @@ int max_row_size(FSTreeNode *);
 int count_leaf(FSTreeNode *node);
 
 void
-create_matrix(LeafData *(&matrix), int nrow, int ncol,
+create_matrix(LMatrix *(&matrix), int nrow, int ncol,
 	      Context ctx, HighLevelRuntime *runtime);
 
 void

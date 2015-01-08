@@ -10,6 +10,7 @@ using namespace LegionRuntime::HighLevel;
 
 
 // used in InitCirculantKmatTask::TaskArgs
+// for the subtree stored in array
 #define MAX_TREE_SIZE 30
 
 
@@ -38,14 +39,14 @@ class Range {
 };
 
 
-class LeafData {
+class LMatrix {
 
 public:
- LeafData(int rows=0, int cols=0):
+ LMatrix(int rows=0, int cols=0):
   rows(rows), cols(cols), 
   data(LogicalRegion::NO_REGION) {}
 
-  //~LeafData();
+  //~LMatrix();
 
   void
     init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
@@ -54,8 +55,8 @@ public:
   int rows;  
   int cols;
 
-  //IndexSpace iSpace;
-  //FieldSpace fSpace;
+  IndexSpace iSpace;
+  FieldSpace fSpace;
   LogicalRegion data; // Region storing the actual data
     
   // Data at leaf nodes is stored in column major fashion.
@@ -73,8 +74,8 @@ struct FSTreeNode {
 	     FSTreeNode *lchild=NULL,
 	     FSTreeNode *rchild=NULL,
 	     FSTreeNode *Hmat=NULL,
-	     LeafData *matrix=NULL,
-	     LeafData *kmat=NULL,
+	     LMatrix *matrix=NULL,
+	     LMatrix *kmat=NULL,
 	     bool isLegionLeaf=false);
 
   bool isRealLeaf();
@@ -88,8 +89,8 @@ struct FSTreeNode {
   FSTreeNode *rchild;
   FSTreeNode *Hmat;
   
-  LeafData *matrix; // low rank blocks
-  LeafData *kmat;   // dense blocks
+  LMatrix *matrix; // low rank blocks
+  LMatrix *kmat;   // dense blocks
     
   bool isLegionLeaf;
 };

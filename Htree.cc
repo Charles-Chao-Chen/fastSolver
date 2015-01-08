@@ -10,8 +10,8 @@ FSTreeNode::FSTreeNode(int nrow, int ncol,
 		       FSTreeNode *lchild,
 		       FSTreeNode *rchild,
 		       FSTreeNode *Hmat,
-		       LeafData *matrix,
-		       LeafData *kmat,
+		       LMatrix *matrix,
+		       LMatrix *kmat,
 		       bool isLegionLeaf):
   nrow(nrow), ncol(ncol), row_beg(row_beg), col_beg(col_beg),
   lchild(lchild), rchild(rchild), Hmat(Hmat),
@@ -476,7 +476,7 @@ set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
 }
 
 
-void LeafData::
+void LMatrix::
 init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
 		      Context ctx, HighLevelRuntime *runtime) {    
 

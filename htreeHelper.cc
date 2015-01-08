@@ -123,18 +123,20 @@ int count_leaf(FSTreeNode *node) {
 
 
 void
-create_matrix(LeafData *(&matrix), int nrow, int ncol,
+create_matrix(LMatrix *(&matrix), int nrow, int ncol,
 	      Context ctx, HighLevelRuntime *runtime) {
 
   // ncol can be 0 for the matrix below legion node
   // in v tree
   assert(nrow > 0);
-  matrix = new LeafData(nrow, ncol);
+  matrix = new LMatrix(nrow, ncol);
   create_matrix(matrix->data, nrow, ncol, ctx, runtime);
 }
 
 
-void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, HighLevelRuntime *runtime) {  
+void
+create_matrix(LogicalRegion & matrix, int nrow, int ncol,
+	      Context ctx, HighLevelRuntime *runtime) {  
   int lower[2] = {0,      0};
   int upper[2] = {nrow-1, ncol-1}; // inclusive bound
   Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
