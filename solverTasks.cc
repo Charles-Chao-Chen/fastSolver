@@ -28,9 +28,10 @@ namespace {
     static void register_tasks(void);
 
   public:
-    static void cpu_task(const Task *task,
-			 const std::vector<PhysicalRegion> &regions,
-			 Context ctx, HighLevelRuntime *runtime);
+    static void
+    cpu_task(const Task *task,
+	     const std::vector<PhysicalRegion> &regions,
+	     Context ctx, HighLevelRuntime *runtime);
   };
 
 
@@ -92,6 +93,7 @@ solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
 
   Future f = runtime->execute_task(ctx, launcher);
   f.get_void_result();
+  std::cout << "Wait for LU_solve task..." << std::endl;
 }
 
 
@@ -210,12 +212,12 @@ LUSolveTask::cpu_task(const Task *task,
   double beta  =  1.;
 
 
-
+  /*
   const char *save_file0 = "V1Td1.txt";
   if (remove(save_file0) == 0)
     std::cout << "Remove file: " << save_file0 << std::endl;
   save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file0);
-
+*/
   
   
   assert(V1Tu1_cols == V0Td0_rows);
@@ -228,12 +230,12 @@ LUSolveTask::cpu_task(const Task *task,
 
 
 
-  
+  /*
   const char *save_file3 = "V1Td1_finish.txt";
   if (remove(save_file3) == 0)
     std::cout << "Remove file: " << save_file3 << std::endl;
   save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file3);
-
+  */
 
 
 
@@ -345,7 +347,8 @@ LeafSolveTask::cpu_task(const Task *task,
   array_to_tree(arg, 0);
 
   FSTreeNode *uroot = &arg[tree_size];
-  array_to_tree(arg, 0, tree_size);
+  //array_to_tree(arg, 0, tree_size);
+  array_to_tree(arg+tree_size, 0);
   
   //print_legion_tree(vroot);
   //print_legion_tree(uroot);
@@ -407,10 +410,11 @@ static void
 serial_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode,
 		 double * u_ptr, double * v_ptr, double * k_ptr,
 		 int LD) {
-
-  //printf("lchild: %p, rchild: %p\n", vnode->lchild, vnode->rchild);
-  //printf("lchild: %p, rchild: %p\n", unode->lchild, unode->rchild);
-  //assert (unode->lchild == NULL && unode->rchild == NULL);
+  /*
+  printf("vlchild: %p, vrchild: %p\n", vnode->lchild, vnode->rchild);
+  printf("ulchild: %p, urchild: %p\n", unode->lchild, unode->rchild);
+  */
+    
   if (unode->lchild == NULL && unode->rchild == NULL) {
     assert(vnode->lchild == NULL);
     assert(vnode->rchild == NULL);

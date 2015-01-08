@@ -49,7 +49,7 @@ void top_level_task(const Task *task,
 #if 1
   //test_accuracy
   run_test(6,   /* rank */
-	   120,  /* N */
+	   240,  /* N */
 	   15,   /* threshold*/
 	   1,    /* nleaf_per_legion_node */
 	   1.e1, /* diagonal */
@@ -59,9 +59,9 @@ void top_level_task(const Task *task,
 #else
   //test_performance
   run_test(150,   /* rank */
-	   1<<13, /* N */
+	   1<<14, /* N */
 	   1<<8,  /* threshold*/
-	   1,     /* nleaf_per_legion_node */
+	   4,     /* nleaf_per_legion_node */
 	   1.e5,  /* diagonal */
 	   false, /* compute accuracy */
 	   ctx,
@@ -72,8 +72,10 @@ void top_level_task(const Task *task,
 }
 
 
+// leaf_size: how many real leaves every legion
+// node has
 void run_test(int rank, int N, int threshold,
-	      int nleaf_per_legion_node, double diag,
+	      int leaf_size, double diag,
 	      bool compute_accuracy,
 	      Context ctx, HighLevelRuntime *runtime) {
 
@@ -86,7 +88,11 @@ void run_test(int rank, int N, int threshold,
 
   // create H-tree with legion leaf
   lr_mat.create_tree(N, threshold, rhs_cols, rank,
-		     nleaf_per_legion_node, ctx, runtime);
+				 leaf_size, ctx, runtime);
+  int nleaf = lr_mat.get_num_leaf();
+  std::cout << "Number of legion leaves: "
+	    << nleaf
+	    << std::endl;
 
   // random right hand size
   lr_mat.init_right_hand_side(rand_seed, rhs_cols, num_node,
@@ -105,7 +111,8 @@ void run_test(int rank, int N, int threshold,
 
   if (compute_accuracy) {
     assert( N%threshold == 0 );
-    compute_L2_error(lr_mat, rand_seed, rhs_rows, N/threshold,
+    int nregion = nleaf;
+    compute_L2_error(lr_mat, rand_seed, rhs_rows, nregion,
 		     rhs_cols, rank, diag, ctx, runtime);
   }
 

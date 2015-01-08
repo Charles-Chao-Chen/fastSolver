@@ -32,8 +32,10 @@ INC_FLAGS	:=
 CC_FLAGS	:= -g -I ./ -DLEGION_PROF -DLEGION_SPY -DNODE_LOGGING
 NVCC_FLAGS	:=
 GASNET_FLAGS	:=
-LD_FLAGS	:= -L /usr/lib/	-l :liblapack.so.3 -l :libblas.so.3 -lm
-#LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+
+#lapack and blas on sapling
+#LD_FLAGS	:= -L /usr/lib/	-l :liblapack.so.3 -l :libblas.so.3 -lm
+LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
 
 ###########################################################################
 #
@@ -126,13 +128,24 @@ cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
 
 r1n:
-	mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -level 5 \
-	-ll:cpu 12 -ll:csize 30000 -hl:sched 8192 -hl:window 8192
+	mpiexec -n 1 \
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -cat legion_prof -level 5 \
+	-ll:cpu 12 -ll:csize 30000 \
+	-hl:sched 8192 -hl:window 8192
 
 r2n:
-	mpirun -H n0000 -H n0001 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -level 5 -ll:cpu 12 -ll:csize 30000
+	mpiexec -hosts compute-55-2,compute-55-4 \
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -level 5 \
+	-ll:cpu 12 -ll:csize 30000 \
+	-hl:sched 8192 -hl:window 8192
 
 prof1:
 	mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \
@@ -140,9 +153,13 @@ prof1:
 	-ll:cpu 12 -ll:csize 30000 -hl:sched 8192 -hl:window 8192
 
 prof2:
-	mpirun -H n0001,n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
-	-ll:cpu 12 -ll:util 1 -ll:csize 30000 \
+	mpiexec -hosts compute-55-2,compute-55-4 \
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -cat legion_prof -level 2 \
+	-ll:cpu 12 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
 
 prof4:
@@ -158,12 +175,12 @@ spy2:
 newfile:
 	#mv Umat.txt    Umat_ref.txt
 	#mv Ufinish.txt Ufinish_ref.txt
-	mv V0Td0.txt          V0Td0_ref.txt
-	mv V0Td0_finish.txt   V0Td0_finish_ref.txt
+	#mv V0Td0.txt          V0Td0_ref.txt
+	#mv V0Td0_finish.txt   V0Td0_finish_ref.txt
 	mv V1Td1.txt          V1Td1_ref.txt
 	mv V1Td1_finish.txt   V1Td1_finish_ref.txt
-	mv V1Tu1.txt          V1Tu1_ref.txt
-	mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
+	#mv V1Tu1.txt          V1Tu1_ref.txt
+	#mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
 
 
 tar:	

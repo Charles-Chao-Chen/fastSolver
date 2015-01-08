@@ -20,13 +20,16 @@ void build_subtree(FSTreeNode *node, int row_beg) {
 
 int count_column_size(FSTreeNode *node, int col_size) {
 
-  if (node->lchild == NULL &&
-      node->rchild == NULL) // real matrix leaf
-    return col_size + node->ncol;
+  col_size += node->ncol;
+  
+  //if (node->lchild == NULL &&
+  //  node->rchild == NULL) // real matrix leaf
+  if (node->isRealLeaf())
+    return col_size;
   else {
-    int n1 = count_column_size(node->lchild, col_size + node->ncol);
-    int n2 = count_column_size(node->rchild, col_size + node->ncol);
-    return std::max(n1, n2);
+    int nl = count_column_size(node->lchild, col_size);
+    int nr = count_column_size(node->rchild, col_size);
+    return std::max(nl, nr);
   }
 }
 
@@ -45,7 +48,8 @@ int max_row_size(FSTreeNode * vnode) {
 
 
 
-int tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx) {
+int
+tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx) {
 
   if (leaf->lchild != NULL && leaf->rchild != NULL) {
 
@@ -60,15 +64,17 @@ int tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx) {
 }
 
 
-void tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx, int shift) {
+void
+tree_to_array(FSTreeNode *tree, FSTreeNode *array, int idx,
+	      int shift) {
 
-  if (leaf->lchild != NULL && leaf->rchild != NULL) {
+  if (tree->lchild != NULL && tree->rchild != NULL) {
 
     //assert(2*idx+2+shift < arg.size());
-    arg[ 2*idx+1+shift ] = *(leaf -> lchild);
-    arg[ 2*idx+2+shift ] = *(leaf -> rchild);
-    tree_to_array(leaf->lchild, arg, 2*idx+1, shift);
-    tree_to_array(leaf->rchild, arg, 2*idx+2, shift); 
+    array[ 2*idx+1+shift ] = *(tree -> lchild);
+    array[ 2*idx+2+shift ] = *(tree -> rchild);
+    tree_to_array(tree->lchild, array, 2*idx+1, shift);
+    tree_to_array(tree->rchild, array, 2*idx+2, shift); 
   }
 }
 
@@ -103,8 +109,8 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
     return;
   }
 
-  array_to_tree(arg, 2*idx+1);
-  array_to_tree(arg, 2*idx+2);
+  array_to_tree(arg, 2*idx+1, shift);
+  array_to_tree(arg, 2*idx+2, shift);
 }
 
 

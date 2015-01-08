@@ -18,6 +18,10 @@ FSTreeNode::FSTreeNode(int nrow, int ncol,
   matrix(matrix), kmat(kmat),
   isLegionLeaf(isLegionLeaf) {}
 
+bool FSTreeNode::isRealLeaf() {
+  return (lchild == NULL)
+    &&   (rchild == NULL);
+}
 
 static void
 create_balanced_tree(FSTreeNode *, int, int);
@@ -51,11 +55,7 @@ LR_Matrix::create_tree(int N, int threshold, int rhs_cols,
   mark_legion_leaf(uroot, nleaf_per_legion_node);
   
   // create region at legion leaf
-  int nleaf = create_legion_node(uroot, ctx, runtime);
-  std::cout << "Number of legion leaves: "
-	    << nleaf
-	    << std::endl;
-
+  set_num_leaf( create_legion_node(uroot, ctx, runtime) );
   
   //print_legion_tree(uroot);
   // postpone creating V tree after setting the legion leaf
@@ -316,9 +316,6 @@ create_region(FSTreeNode *node, Context ctx,
 	      HighLevelRuntime *runtime) {
 
   assert(node->isLegionLeaf == true);
-    
-  //build_subtree(node, 0);
-
   int row_size = node->nrow;
   int col_size = count_column_size(node, node->col_beg);
   //printf("row_size: %d, col_size: %d.\n", row_size, col_size);

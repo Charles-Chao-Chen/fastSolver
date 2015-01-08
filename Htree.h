@@ -9,7 +9,8 @@
 using namespace LegionRuntime::HighLevel;
 
 
-#define MAX_TREE_SIZE 15 // used in InitCirculantKmatTask::TaskArgs
+// used in InitCirculantKmatTask::TaskArgs
+#define MAX_TREE_SIZE 30
 
 
 enum MatrixType {
@@ -75,6 +76,8 @@ struct FSTreeNode {
 	     LeafData *matrix=NULL,
 	     LeafData *kmat=NULL,
 	     bool isLegionLeaf=false);
+
+  bool isRealLeaf();
   
   int row_beg; // begin index in the region
   int col_beg;
@@ -104,9 +107,11 @@ class LR_Matrix {
   void init_circulant_matrix(double, int, Context, HighLevelRuntime *);
 
   int get_num_rhs() {return rhs_cols;}
+  int get_num_leaf() {return nleaf;}
+  int set_num_leaf(int nleaf) {this->nleaf = nleaf;}
   
   /* --- tree root --- */
-  int nleaf_per_node;
+  //int nleaf_per_node;
   FSTreeNode *uroot;
   FSTreeNode *vroot;
 
@@ -142,6 +147,7 @@ class LR_Matrix {
   int rank; // only if every block has the same rank
   int rhs_rows;
   int rhs_cols;
+  int nleaf;
 };
 
 

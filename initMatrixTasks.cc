@@ -18,10 +18,11 @@ void register_init_tasks() {
 /*static*/
 int InitRHSTask::TASKID;
 
-InitRHSTask::InitRHSTask(TaskArgument arg,
-			 Predicate pred /*= Predicate::TRUE_PRED*/,
-			 MapperID id /*= 0*/,
-			 MappingTagID tag /*= 0*/)
+InitRHSTask::
+InitRHSTask(TaskArgument arg,
+	    Predicate pred /*= Predicate::TRUE_PRED*/,
+	    MapperID id /*= 0*/,
+	    MappingTagID tag /*= 0*/)
   : TaskLauncher(TASKID, arg, pred, id, tag)
 {
 }
