@@ -12,6 +12,13 @@ int max_row_size(FSTreeNode *);
 
 int count_leaf(FSTreeNode *node);
 
+void
+create_matrix(LeafData *(&matrix), int nrow, int ncol,
+	      Context ctx, HighLevelRuntime *runtime);
+
+void
+create_matrix(LogicalRegion &, int, int, Context,
+		   HighLevelRuntime *);
 
 
 int  tree_to_array(FSTreeNode *, FSTreeNode *, int);

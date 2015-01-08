@@ -96,6 +96,11 @@ all:
 
 # If we're using the general low-level runtime we have to link with nvcc
 $(OUTFILE) : $(ALL_OBJS)
+	#@echo ""
+	#@echo ""
+	#@echo "-------------- debugging mode on !!! ------------------"
+	#@echo ""
+	#@echo ""
 	@echo "---> Linking objects into one binary: $(OUTFILE)"
 ifdef SHARED_LOWLEVEL
 	$(GCC) -o $(OUTFILE) $(ALL_OBJS) $(LD_FLAGS) $(GASNET_FLAGS)

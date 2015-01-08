@@ -1,4 +1,5 @@
 #include "gemm.h"
+#include "htreeHelper.h"
 #include "lapack_blas.h"
 #include "macros.h"
 

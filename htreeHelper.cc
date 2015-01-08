@@ -1,5 +1,5 @@
 #include "htreeHelper.h"
-
+#include "macros.h"
 
 // this function computes the begining row index in region of
 // Legion leaf i.e. building the subtree with the legion node
@@ -122,6 +122,33 @@ int count_leaf(FSTreeNode *node) {
 }
 
 
+void
+create_matrix(LeafData *(&matrix), int nrow, int ncol,
+	      Context ctx, HighLevelRuntime *runtime) {
+
+  // ncol can be 0 for the matrix below legion node
+  // in v tree
+  assert(nrow > 0);
+  matrix = new LeafData(nrow, ncol);
+  create_matrix(matrix->data, nrow, ncol, ctx, runtime);
+}
+
+
+void create_matrix(LogicalRegion & matrix, int nrow, int ncol, Context ctx, HighLevelRuntime *runtime) {  
+  int lower[2] = {0,      0};
+  int upper[2] = {nrow-1, ncol-1}; // inclusive bound
+  Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
+  FieldSpace fs = runtime->create_field_space(ctx);
+  IndexSpace is = runtime->
+    create_index_space(ctx, Domain::from_rect<2>(rect));
+  FieldAllocator allocator = runtime->
+    create_field_allocator(ctx, fs);
+  allocator.allocate_field(sizeof(double), FID_X);
+  matrix = runtime->create_logical_region(ctx, is, fs);
+  assert(matrix != LogicalRegion::NO_REGION);
+}
+
+
 /* ---- Range class methods ---- */
 Range Range::lchild ()
 {
@@ -135,3 +162,4 @@ Range Range::rchild ()
   int half_size = size/2;
   return (Range){begin+half_size, half_size};
 }
+

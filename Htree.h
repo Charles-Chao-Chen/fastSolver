@@ -151,10 +151,6 @@ class LR_Matrix {
 };
 
 
-void create_matrix(LogicalRegion &, int, int, Context,
-		   HighLevelRuntime *);
-
-
 /*--- for debugging purpose ---*/
 void print_legion_tree(FSTreeNode *);
 
