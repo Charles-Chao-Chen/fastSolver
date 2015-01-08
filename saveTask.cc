@@ -104,7 +104,7 @@ save_Htree(FSTreeNode * node, std::string filename,
 	   Range rg) {
 
   if (node->isLegionLeaf == true) {
-    save_region(node->matrix->data, filename, ctx, runtime, rg);
+    save_region(node->lowrank_matrix->data, filename, ctx, runtime, rg);
   } else {
     save_Htree(node->lchild, filename, ctx, runtime, rg);
     save_Htree(node->rchild, filename, ctx, runtime, rg);

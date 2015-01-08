@@ -187,8 +187,8 @@ gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
   if (v->isLegionLeaf == true) {
 
     assert(u->isLegionLeaf == true);
-    assert(v->matrix->data != LogicalRegion::NO_REGION);
-    assert(u->matrix->data != LogicalRegion::NO_REGION);
+    assert(v->lowrank_matrix->data != LogicalRegion::NO_REGION);
+    assert(u->lowrank_matrix->data != LogicalRegion::NO_REGION);
     assert(res             != LogicalRegion::NO_REGION);
 
     GEMM_Reduce_Task::TaskArgs args = {alpha, col_beg, ncol};    
@@ -200,15 +200,15 @@ gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
 			      task_tag.begin);
     
     launcher.add_region_requirement(
-      RegionRequirement(v->matrix->data,
+      RegionRequirement(v->lowrank_matrix->data,
 			READ_ONLY,
 			EXCLUSIVE,
-			v->matrix->data)); // v
+			v->lowrank_matrix->data)); // v
     launcher.add_region_requirement(
-      RegionRequirement(u->matrix->data,
+      RegionRequirement(u->lowrank_matrix->data,
 			READ_ONLY,
 			EXCLUSIVE,
-			u->matrix->data)); // u
+			u->lowrank_matrix->data)); // u
     launcher.add_region_requirement(
       RegionRequirement(res,
 			REDUCE_ID,
@@ -263,7 +263,7 @@ gemm_broadcast(double alpha, FSTreeNode * u, range ru,
   if (u->isLegionLeaf == true) {
   
     assert(v->isLegionLeaf == true);    
-    assert(u->matrix->data == v->matrix->data);
+    assert(u->lowrank_matrix->data == v->lowrank_matrix->data);
     
     GEMM_Broadcast_Task::TaskArgs
       args = {alpha, beta,
@@ -277,10 +277,10 @@ gemm_broadcast(double alpha, FSTreeNode * u, range ru,
 				 tag.begin);
 
     launcher.add_region_requirement(
-               RegionRequirement(u->matrix->data,
+               RegionRequirement(u->lowrank_matrix->data,
 				 READ_WRITE,
 				 EXCLUSIVE,
-				 u->matrix->data));
+				 u->lowrank_matrix->data));
     launcher.add_region_requirement(
                RegionRequirement(eta,
 				 READ_ONLY,

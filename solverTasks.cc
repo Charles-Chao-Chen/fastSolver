@@ -577,20 +577,20 @@ solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
 			 );
 
   launcher.add_region_requirement(
-    RegionRequirement(uleaf->matrix->data,
+    RegionRequirement(uleaf->lowrank_matrix->data,
 		      READ_WRITE,
 		      EXCLUSIVE,
-		      uleaf->matrix->data)); // u region
+		      uleaf->lowrank_matrix->data)); // u region
   launcher.add_region_requirement(
-    RegionRequirement(vleaf->matrix->data,
+    RegionRequirement(vleaf->lowrank_matrix->data,
 		      READ_ONLY,
 		      EXCLUSIVE,
-		      vleaf->matrix->data)); // v region
+		      vleaf->lowrank_matrix->data)); // v region
   launcher.add_region_requirement(
-    RegionRequirement(vleaf->kmat->data,
+    RegionRequirement(vleaf->dense_matrix->data,
 		      READ_ONLY,
 		      EXCLUSIVE,
-		      vleaf->kmat->data)); // k region
+		      vleaf->dense_matrix->data)); // k region
   launcher.region_requirements[0].add_field(FID_X);
   launcher.region_requirements[1].add_field(FID_X);
   launcher.region_requirements[2].add_field(FID_X);    

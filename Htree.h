@@ -89,8 +89,8 @@ struct FSTreeNode {
   FSTreeNode *rchild;
   FSTreeNode *Hmat;
   
-  LMatrix *matrix; // low rank blocks
-  LMatrix *kmat;   // dense blocks
+  LMatrix *lowrank_matrix; // low rank blocks
+  LMatrix *dense_matrix;   // dense blocks
     
   bool isLegionLeaf;
 };

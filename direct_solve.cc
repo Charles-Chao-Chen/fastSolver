@@ -188,19 +188,18 @@ dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
 }
 
 
-void
-compute_L2_error(HodlrMatrix &lr_mat, int rand_seed, int rhs_rows,
-		 int nregions, int rhs_cols, int rank,
-		 double diag, Context ctx, HighLevelRuntime *runtime) {
+void compute_L2_error
+(HodlrMatrix &lr_mat, int rand_seed, int rhs_rows,
+ int nregions, int rhs_cols, int rank,
+ double diag, Context ctx, HighLevelRuntime *runtime) {
     
-    // write the solution from fast solver
-    const char *soln_file = "soln.txt";
-    if (remove(soln_file) == 0)
-      std::cout << "Remove old solution file." << std::endl;
+  // write the solution from fast solver
+  const char *soln_file = "soln.txt";
+  if (remove(soln_file) == 0)
+    std::cout << "Remove old solution file." << std::endl;
   
-    save_solution(lr_mat, soln_file, ctx, runtime);
+  save_solution(lr_mat, soln_file, ctx, runtime);
   
-    dirct_circulant_solve(soln_file, rand_seed, rhs_rows, nregions,
-			  rhs_cols, rank, diag);
-  
+  dirct_circulant_solve(soln_file, rand_seed, rhs_rows, nregions,
+			rhs_cols, rank, diag); 
 }

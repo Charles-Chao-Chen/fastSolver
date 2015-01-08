@@ -15,7 +15,7 @@ FSTreeNode::FSTreeNode(int nrow, int ncol,
 		       bool isLegionLeaf):
   nrow(nrow), ncol(ncol), row_beg(row_beg), col_beg(col_beg),
   lchild(lchild), rchild(rchild), Hmat(Hmat),
-  matrix(matrix), kmat(kmat),
+  lowrank_matrix(matrix), dense_matrix(kmat),
   isLegionLeaf(isLegionLeaf) {}
 
 bool FSTreeNode::isRealLeaf() {
@@ -140,7 +140,7 @@ init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
 	 Context ctx, HighLevelRuntime *runtime, int row_beg) {
 
   if (node->isLegionLeaf == true) {
-    assert(node->matrix != NULL);
+    assert(node->lowrank_matrix != NULL);
 
     //typename
     InitRHSTask::TaskArgs args = {rand_seed, ncol};
@@ -150,10 +150,10 @@ init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
 			 tag.begin);
     
     launcher.add_region_requirement(
-	       RegionRequirement(node->matrix->data,
+	       RegionRequirement(node->lowrank_matrix->data,
 				 WRITE_DISCARD,
 				 EXCLUSIVE,
-				 node->matrix->data).
+				 node->lowrank_matrix->data).
 	       add_field(FID_X));
     runtime->execute_task(ctx, launcher);
     
@@ -176,8 +176,8 @@ init_Umat(FSTreeNode *node, Range tag, Context ctx,
 
   if (node->isLegionLeaf == true) {
 
-    assert(node->matrix != NULL); // initialize region here
-    node->matrix->init_circulant_matrix(rhs_cols, row_beg,
+    assert(node->lowrank_matrix != NULL); // initialize region here
+    node->lowrank_matrix->init_circulant_matrix(rhs_cols, row_beg,
 					rank, tag, ctx, runtime);
   } else {
     int   half = tag.size/2;
@@ -208,13 +208,13 @@ init_Vmat(FSTreeNode *node, double diag, Range tag,
 
     // init V
     // when the legion leaf is the real leaf, there is no data here.
-    if (node->matrix->cols > 0)
-      node->matrix->init_circulant_matrix(0, row_beg, rank,
+    if (node->lowrank_matrix->cols > 0)
+      node->lowrank_matrix->init_circulant_matrix(0, row_beg, rank,
 					  tag, ctx, runtime);
 
     // init K
-    int nrow = node->kmat->rows;
-    int ncol = node->kmat->cols;
+    int nrow = node->dense_matrix->rows;
+    int ncol = node->dense_matrix->cols;
     init_circulant_Kmat(node, row_beg, rank, diag, tag, ctx, runtime);
     
   } else {
@@ -258,7 +258,7 @@ init_circulant_Kmat(FSTreeNode *V_legion_leaf, int row_beg_glo,
 				 mapping_tag.begin);
   
   // k region
-  launcher.add_region_requirement(RegionRequirement(V_legion_leaf->kmat->data, WRITE_DISCARD, EXCLUSIVE, V_legion_leaf->kmat->data).add_field(FID_X));
+  launcher.add_region_requirement(RegionRequirement(V_legion_leaf->dense_matrix->data, WRITE_DISCARD, EXCLUSIVE, V_legion_leaf->dense_matrix->data).add_field(FID_X));
 
   runtime->execute_task(ctx, launcher);
 }
@@ -320,8 +320,8 @@ create_region(FSTreeNode *node, Context ctx,
   int col_size = node->col_beg + count_matrix_column(node);
   //printf("row_size: %d, col_size: %d.\n", row_size, col_size);
 
-  create_matrix(node->matrix, row_size, col_size, ctx, runtime);
-  assert(node->matrix != NULL);
+  create_matrix(node->lowrank_matrix, row_size, col_size, ctx, runtime);
+  assert(node->lowrank_matrix != NULL);
 }
 
 
@@ -350,7 +350,7 @@ create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode,
 
       vnode -> isLegionLeaf = true;
 
-      if (unode->matrix == NULL) { // skip Legion leaf
+      if (unode->lowrank_matrix == NULL) { // skip Legion leaf
 	vnode -> lchild -> col_beg = vnode -> col_beg + vnode -> ncol;
 	vnode -> rchild -> col_beg = vnode -> col_beg + vnode -> ncol;
       }
@@ -395,26 +395,26 @@ create_vnode_from_unode(FSTreeNode *unode, FSTreeNode *vnode,
     
     //vnode -> matrix -> rows = vnode -> nrow;
     //vnode -> matrix -> cols = vnode -> ncol;
-    //create_matrix(vnode->matrix->data, vnode -> matrix -> rows, vnode -> matrix -> cols, ctx, runtime);
+    //create_matrix(vnode->lowrank_matrix->data, vnode -> matrix -> rows, vnode -> matrix -> cols, ctx, runtime);
   }
 
     
   // create a big rectangle at Legion leaf for lower levels not including Legion leaf
   // please refer to Eric's slides of ver 2
-  if (unode->matrix != NULL) {
+  if (unode->lowrank_matrix != NULL) {
 
     assert(unode->nrow == vnode->nrow);
-    int urow = unode->matrix->rows;
-    int ucol = unode->matrix->cols;
+    int urow = unode->lowrank_matrix->rows;
+    int ucol = unode->lowrank_matrix->cols;
     int vrow = urow;
     int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
 
     // when the legion leaf is the real leaf, there is
     // no data here.
-    create_matrix(vnode->matrix, vrow, vcol, ctx, runtime);
+    create_matrix(vnode->lowrank_matrix, vrow, vcol, ctx, runtime);
  
     // create K matrix
-    create_matrix(vnode->kmat, vnode->nrow, max_row_size(vnode), ctx, runtime);
+    create_matrix(vnode->dense_matrix, vnode->nrow, max_row_size(vnode), ctx, runtime);
   }
 }
 
@@ -429,7 +429,7 @@ create_Hmatrix(FSTreeNode *node, FSTreeNode * Hmat, int ncol,
     Hmat->ncol = node->ncol;
 
     Hmat->isLegionLeaf = true;
-    create_matrix(Hmat -> matrix,
+    create_matrix(Hmat -> lowrank_matrix,
 		  node -> nrow,
 		  ncol,
 		  ctx, runtime);
@@ -461,7 +461,7 @@ set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
     int glo = row_beg;
     int loc = Hmat->row_beg;
     assert(Hmat->ncol == rank);
-    Hmat->matrix->init_circulant_matrix(0, glo + loc, rank,
+    Hmat->lowrank_matrix->init_circulant_matrix(0, glo + loc, rank,
 					tag, ctx, runtime);
     
   } else {
@@ -505,18 +505,18 @@ void print_legion_tree(FSTreeNode * node) {
   //if (node->isLegionLeaf == true)
   //std::cout << "Legion leaf." << std::endl;
     
-  if (node->matrix != NULL) {
+  if (node->lowrank_matrix != NULL) {
 
-    int nrow = node->matrix->rows;
-    int ncol = node->matrix->cols;
+    int nrow = node->lowrank_matrix->rows;
+    int ncol = node->lowrank_matrix->cols;
 
     printf("Matrix size: %d x %d\n", nrow, ncol);
   }
 
-  if (node->kmat != NULL) {
+  if (node->dense_matrix != NULL) {
       
-    int nrow = node->kmat->rows;
-    int ncol = node->kmat->cols;
+    int nrow = node->dense_matrix->rows;
+    int ncol = node->dense_matrix->cols;
     printf("K Mat: %d x %d\n", nrow, ncol);
   }
 
