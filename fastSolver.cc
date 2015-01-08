@@ -4,6 +4,7 @@
 #include "fastSolver.h"
 #include "solverTasks.h"
 #include "gemm.h"
+#include "zero_matrix_tasks.h"
 #include "initMatrixTasks.h"
 #include "saveTask.h"
 #include "lapack_blas.h"
@@ -20,6 +21,7 @@ void register_solver_tasks() {
 	    << std::endl;
   register_solver_operators();  
   register_gemm_tasks();
+  register_zero_matrix_tasks();
   register_init_tasks();
   register_output_tasks();
   std::cout << std::endl;
@@ -216,6 +218,7 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
   // from leaves to root in the H tree.
   LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  //LMatrix V0Tu0, V0Td0, V1Tu1, V1Td1;
   range ru0 = {b0->col_beg, b0->ncol};
   range ru1 = {b1->col_beg, b1->ncol};
   range rd0 = {0,           b0->col_beg};

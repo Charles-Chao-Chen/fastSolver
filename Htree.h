@@ -51,7 +51,8 @@ public:
   void
     init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
 			  Context ctx, HighLevelRuntime *runtime);
-
+  void zero_matrix(Range, Context ctx, HighLevelRuntime *runtime);
+  
   int rows;  
   int cols;
 

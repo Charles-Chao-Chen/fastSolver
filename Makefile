@@ -17,6 +17,7 @@ GEN_SRC		:= main.cc         \
 		   fastSolver.cc   \
 		   solverTasks.cc  \
 		   gemm.cc         \
+		   zero_matrix_tasks.cc \
 		   Htree.cc 	   \
 		   htreeHelper.cc  \
 		   initMatrixTasks.cc \
