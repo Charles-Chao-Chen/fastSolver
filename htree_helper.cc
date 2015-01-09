@@ -130,13 +130,7 @@ create_matrix(LMatrix *(&matrix), int nrow, int ncol,
   // in v tree
   assert(nrow > 0);
   matrix = new LMatrix(nrow, ncol);
-  create_matrix(matrix->data, nrow, ncol, ctx, runtime);
-}
 
-
-void
-create_matrix(LogicalRegion & matrix, int nrow, int ncol,
-	      Context ctx, HighLevelRuntime *runtime) {  
   int lower[2] = {0,      0};
   int upper[2] = {nrow-1, ncol-1}; // inclusive bound
   Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
@@ -146,7 +140,6 @@ create_matrix(LogicalRegion & matrix, int nrow, int ncol,
   FieldAllocator allocator = runtime->
     create_field_allocator(ctx, fs);
   allocator.allocate_field(sizeof(double), FID_X);
-  matrix = runtime->create_logical_region(ctx, is, fs);
-  assert(matrix != LogicalRegion::NO_REGION);
+  matrix->data = runtime->create_logical_region(ctx, is, fs);
+  assert(matrix->data != LogicalRegion::NO_REGION);
 }
-

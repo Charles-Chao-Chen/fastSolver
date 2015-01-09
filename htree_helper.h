@@ -16,12 +16,6 @@ void
 create_matrix(LMatrix *(&matrix), int nrow, int ncol,
 	      Context ctx, HighLevelRuntime *runtime);
 
-
-void
-create_matrix(LogicalRegion &, int, int, Context,
-		   HighLevelRuntime *);
-
-
 int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
 void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
 void array_to_tree(FSTreeNode *, int);
