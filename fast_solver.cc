@@ -110,7 +110,10 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   
   // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
   // from leaves to root in the H tree.
-  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  LMatrix *V0Tu0 = 0;
+  LMatrix *V0Td0 = 0;
+  LMatrix *V1Tu1 = 0;
+  LMatrix *V1Td1 = 0;
   range ru0 = {b0->col_beg, b0->ncol};
   range ru1 = {b1->col_beg, b1->ncol};
   range rd0 = {0,           b0->col_beg};
@@ -217,8 +220,11 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
 
   // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
   // from leaves to root in the H tree.
-  LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
-  //LMatrix V0Tu0, V0Td0, V1Tu1, V1Td1;
+  //LogicalRegion V0Tu0, V0Td0, V1Tu1, V1Td1;
+  LMatrix *V0Tu0 = 0;
+  LMatrix *V0Td0 = 0;
+  LMatrix *V1Tu1 = 0;
+  LMatrix *V1Td1 = 0;
   range ru0 = {b0->col_beg, b0->ncol};
   range ru1 = {b1->col_beg, b1->ncol};
   range rd0 = {0,           b0->col_beg};

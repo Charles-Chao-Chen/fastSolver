@@ -56,11 +56,11 @@ namespace {
 
 
 // legion task wrapper
-void
-solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
-		  LogicalRegion & V0Td0, LogicalRegion & V1Td1,
-		  Range task_tag, Context ctx,
-		  HighLevelRuntime *runtime) {
+void solve_node_matrix
+(LMatrix *(&V0Tu0), LMatrix *(&V1Tu1),
+ LMatrix *(&V0Td0), LMatrix *(&V1Td1),
+ Range task_tag, Context ctx,
+ HighLevelRuntime *runtime) {
 
   // this task can be indexed by any tag in the range.
   // the first tag is picked here.
@@ -69,22 +69,30 @@ solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
 		       0,
 		       task_tag.begin);
     
-  launcher.add_region_requirement(RegionRequirement(V0Tu0,
-						    READ_ONLY,
-						    EXCLUSIVE,
-						    V0Tu0));
-  launcher.add_region_requirement(RegionRequirement(V1Tu1,
-						    READ_ONLY,
-						    EXCLUSIVE,
-						    V1Tu1));
-  launcher.add_region_requirement(RegionRequirement(V0Td0,
-						    READ_WRITE,
-						    EXCLUSIVE,
-						    V0Td0));
-  launcher.add_region_requirement(RegionRequirement(V1Td1,
-						    READ_WRITE,
-						    EXCLUSIVE,
-						    V1Td1));
+  launcher.add_region_requirement(RegionRequirement
+				  (V0Tu0->data,
+				   READ_ONLY,
+				   EXCLUSIVE,
+				   V0Tu0->data)
+				  );
+  launcher.add_region_requirement(RegionRequirement
+				  (V1Tu1->data,
+				   READ_ONLY,
+				   EXCLUSIVE,
+				   V1Tu1->data)
+				  );
+  launcher.add_region_requirement(RegionRequirement
+				  (V0Td0->data,
+				   READ_WRITE,
+				   EXCLUSIVE,
+				   V0Td0->data)
+				  );
+  launcher.add_region_requirement(RegionRequirement
+				  (V1Td1->data,
+				   READ_WRITE,
+				   EXCLUSIVE,
+				   V1Td1->data)
+				  );
   
   launcher.region_requirements[0].add_field(FID_X);
   launcher.region_requirements[1].add_field(FID_X);
@@ -95,6 +103,17 @@ solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
   f.get_void_result();
   std::cout << "Wait for LU_solve task..." << std::endl;
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* ---- LUSolveTask implementation ---- */

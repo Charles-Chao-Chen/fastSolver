@@ -18,15 +18,16 @@
 void
 register_gemm_tasks();
 
-void
-gemm_reduce(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
-	    double beta, LogicalRegion & res,
-	    Range task_tag,
-	    Context ctx, HighLevelRuntime *runtime);
+
+void gemm_reduce
+(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
+ double beta, LMatrix *(&res),
+ Range task_tag,
+ Context ctx, HighLevelRuntime *runtime);
 
 void gemm_broadcast
 (double alpha, FSTreeNode * u, range ru,
- LogicalRegion &eta,
+ LMatrix *(&eta),
  double beta,  FSTreeNode * v, range rv,
  const Range tag,
  Context ctx, HighLevelRuntime *runtime);

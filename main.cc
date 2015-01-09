@@ -84,27 +84,27 @@ void run_test(int rank, int N, int threshold,
   int rhs_cols = 2;
   int rhs_rows = N;
   
-  HodlrMatrix lr_mat;
+  HodlrMatrix hMatrix;
 
   // create H-tree with legion leaf
-  lr_mat.create_tree(N, threshold, rhs_cols, rank,
-				 leaf_size, ctx, runtime);
-  int nleaf = lr_mat.get_num_leaf();
+  hMatrix.create_tree(N, threshold, rhs_cols, rank,
+		      leaf_size, ctx, runtime);
+  int nleaf = hMatrix.get_num_leaf();
   std::cout << "Number of legion leaves: "
 	    << nleaf
 	    << std::endl;
 
   // random right hand size
-  lr_mat.init_right_hand_side(rand_seed, rhs_cols, num_node,
-			      ctx, runtime);
+  hMatrix.init_right_hand_side(rand_seed, rhs_cols, num_node,
+			       ctx, runtime);
   
   // A = U U^T + diag and U is a circulant matrix
-  lr_mat.init_circulant_matrix(diag, num_node, ctx, runtime);
+  hMatrix.init_circulant_matrix(diag, num_node, ctx, runtime);
     
  
   FastSolver fs;
-  fs.solve_dfs(lr_mat, num_node, ctx, runtime);
-  //fs.solve_bfs(lr_mat, num_node, ctx, runtime);
+  fs.solve_dfs(hMatrix, num_node, ctx, runtime);
+  //fs.solve_bfs(hMatrix, num_node, ctx, runtime);
   
   std::cout << "Tasks launching time: " << fs.get_elapsed_time()
 	    << std::endl;
@@ -112,7 +112,7 @@ void run_test(int rank, int N, int threshold,
   if (compute_accuracy) {
     assert( N%threshold == 0 );
     int nregion = nleaf;
-    compute_L2_error(lr_mat, rand_seed, rhs_rows, nregion,
+    compute_L2_error(hMatrix, rand_seed, rhs_rows, nregion,
 		     rhs_cols, rank, diag, ctx, runtime);
   }
 

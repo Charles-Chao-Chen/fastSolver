@@ -279,29 +279,26 @@ mark_legion_leaf(FSTreeNode *node, int threshold) {
 }
 
 
-/* static */ int
-create_legion_node(FSTreeNode *node, Context ctx,
-		   HighLevelRuntime *runtime) {
-  // count the number of legion leaf
-  int nleaf;
+// return the number of legion leaf
+/* static */ int create_legion_node
+(FSTreeNode *node, Context ctx, HighLevelRuntime *runtime) {
+  
   if (node->isLegionLeaf == false) {
     int nl = create_legion_node(node->lchild, ctx, runtime);
     int nr = create_legion_node(node->rchild, ctx, runtime);
-    nleaf = nl + nr;
+    return nl + nr;
   } else {
-    //create_region(node, ctx, runtime);
     
     int nrow = node->nrow;
-  
+    
     // adding column number above and below legion node
     int ncol = node->col_beg + count_matrix_column(node);
     create_matrix(node->lowrank_matrix, nrow, ncol,
 		  ctx, runtime);
 
     build_subtree(node);
-    nleaf = 1;
+    return 1;
   }
-  return nleaf;
 }
 
 

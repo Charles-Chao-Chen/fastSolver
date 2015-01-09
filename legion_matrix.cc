@@ -1,5 +1,6 @@
 #include "legion_matrix.h"
 #include "init_matrix_tasks.h"
+#include "zero_matrix_task.h"
 #include "macros.h"
 
 /* ---- Range class methods ---- */
@@ -37,6 +38,24 @@ void LMatrix::rand
 				   data).
 				  add_field(FID_X)
 				  );
+  runtime->execute_task(ctx, launcher);
+}
+
+
+void LMatrix::zero
+(const Range &taskTag, Context ctx, HighLevelRuntime *runtime) {
+  
+  assert(data != LogicalRegion::NO_REGION);
+  ZeroMatrixTask launcher(TaskArgument(NULL, 0),
+			  Predicate::TRUE_PRED,
+			  0,
+			  taskTag.begin);
+  launcher.add_region_requirement(
+	     RegionRequirement(data,
+			       WRITE_DISCARD,
+			       EXCLUSIVE,
+			       data));
+  launcher.region_requirements[0].add_field(FID_X);
   runtime->execute_task(ctx, launcher);
 }
 

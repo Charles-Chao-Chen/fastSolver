@@ -160,7 +160,7 @@ void register_gemm_tasks() {
 
 static void gemm_recursive
 (double alpha, FSTreeNode * v, FSTreeNode * u,
- int col_beg, int ncol, LogicalRegion & res,
+ int col_beg, int ncol, LMatrix *(&result),
  const Range task_tag, Context ctx,
  HighLevelRuntime * runtime) {
     
@@ -171,7 +171,7 @@ static void gemm_recursive
     assert(u->isLegionLeaf == true);
     assert(v->lowrank_matrix->data != LogicalRegion::NO_REGION);
     assert(u->lowrank_matrix->data != LogicalRegion::NO_REGION);
-    assert(res             != LogicalRegion::NO_REGION);
+    assert(result->data            != LogicalRegion::NO_REGION);
 
     GEMM_Reduce_Task::TaskArgs args = {alpha, col_beg, ncol};    
     GEMM_Reduce_Task launcher(TaskArgument(
@@ -192,10 +192,10 @@ static void gemm_recursive
 			EXCLUSIVE,
 			u->lowrank_matrix->data)); // u
     launcher.add_region_requirement(
-      RegionRequirement(res,
+      RegionRequirement(result->data,
 			REDUCE_ID,
 			SIMULTANEOUS,
-			res));             // res
+			result->data));            // result
     launcher.region_requirements[0].add_field(FID_X);
     launcher.region_requirements[1].add_field(FID_X);
     launcher.region_requirements[2].add_field(FID_X);
@@ -205,38 +205,41 @@ static void gemm_recursive
 
     const Range tag0 = task_tag.lchild();
     const Range tag1 = task_tag.rchild();
-    gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol, res,
-		   tag0, ctx, runtime);
-    gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol, res,
-		   tag1, ctx, runtime);
+    gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol,
+		   result, tag0, ctx, runtime);
+    gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol,
+		   result, tag1, ctx, runtime);
   }
 }
 
 
 void
 gemm_reduce(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
-	    double beta, LogicalRegion & res, Range task_tag,
+	    double beta, LMatrix *(&result), Range taskTag,
 	    Context ctx, HighLevelRuntime *runtime) {
 
-  // create and initialize the result region
-  if (res == LogicalRegion::NO_REGION) {
-
+  // create and initialize the result
+  if (result == 0) {
+    
     int nrow = v->ncol;
     int ncol = ru.ncol;
     assert(v->nrow == u->nrow);
-    create_matrix(res, nrow, ncol, ctx, runtime);
-    zero_matrix(res, task_tag, ctx, runtime);
-    
-  } else scale_matrix(beta, res, ctx, runtime);
+    create_matrix(result, nrow, ncol, ctx, runtime);
+    result->zero(taskTag, ctx, runtime);
 
-  gemm_recursive(alpha, v, u, ru.col_beg, ru.ncol, res, task_tag, ctx, runtime);
+    //zero_matrix(res, task_tag, ctx, runtime);
+    
+  } else scale_matrix(beta, result->data, ctx, runtime);
+
+  gemm_recursive(alpha, v, u, ru.col_beg, ru.ncol, result,
+		 taskTag, ctx, runtime);
 }
 
 
 // d = beta * d + alpha* u * eta 
 void gemm_broadcast
 (double alpha, FSTreeNode * u, range ru,
- LogicalRegion &eta,
+ LMatrix *(&eta),
  double beta, FSTreeNode * v, range rv,
  const Range tag,
  Context ctx, HighLevelRuntime *runtime) {
@@ -263,10 +266,10 @@ void gemm_broadcast
 				 EXCLUSIVE,
 				 u->lowrank_matrix->data));
     launcher.add_region_requirement(
-               RegionRequirement(eta,
+               RegionRequirement(eta->data,
 				 READ_ONLY,
 				 EXCLUSIVE,
-				 eta)); // eta
+				 eta->data)); // eta
     launcher.region_requirements[0].add_field(FID_X);
     launcher.region_requirements[1].add_field(FID_X);
     runtime->execute_task(ctx, launcher);

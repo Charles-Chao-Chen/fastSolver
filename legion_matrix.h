@@ -36,13 +36,17 @@ public:
     (const int, const Range&, const Range&,
      Context, HighLevelRuntime*);
 
+  // initialize zero matrix
+  // TODO: add (probably default)
+  // const Range& colRange parameter
+  void zero
+    (const Range&, Context, HighLevelRuntime*);
+
   
   void init_circulant_matrix
     (int col_beg, int row_beg, int r, Range tag,
      Context ctx, HighLevelRuntime *runtime);
 
-  
-  void zero(Range, Context ctx, HighLevelRuntime *runtime);
 
   /* --- class members --- */
   

@@ -10,11 +10,11 @@ using namespace LegionRuntime::HighLevel;
 void register_solver_operators();
 
 
-void
-solve_node_matrix(LogicalRegion & V0Tu0, LogicalRegion & V1Tu1,
-		  LogicalRegion & V0Td0, LogicalRegion & V1Td1,
-		  Range task_tag,
-		  Context ctx, HighLevelRuntime *runtime);
+void solve_node_matrix
+(LMatrix *(&V0Tu0), LMatrix *(&V1Tu1),
+ LMatrix *(&V0Td0), LMatrix *(&V1Td1),
+ Range task_tag,
+ Context ctx, HighLevelRuntime *runtime);
 
 
 void
