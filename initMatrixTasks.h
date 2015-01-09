@@ -1,5 +1,5 @@
-#ifndef _INIT_MATRIX_TASKS
-#define _INIT_MATRIX_TASKS
+#ifndef INIT_MATRIX_TASKS_H
+#define INIT_MATRIX_TASKS_H
 
 #include "legion.h"
 #include "Htree.h"
@@ -84,4 +84,4 @@ class InitCirculantMatrixTask : public TaskLauncher {
 
 
 
-#endif // _INIT_MATRIX_TASKS
+#endif // INIT_MATRIX_TASKS_H

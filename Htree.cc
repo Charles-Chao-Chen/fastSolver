@@ -137,7 +137,7 @@ init_right_hand_side(int rand_seed, int ncol, int node_num,
 
 void HodlrMatrix::
 init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
-	 Context ctx, HighLevelRuntime *runtime, int row_beg) {
+	 Context ctx, HighLevelRuntime *runtime) {
 
   if (node->isLegionLeaf == true) {
     assert(node->lowrank_matrix != NULL);
@@ -163,9 +163,9 @@ init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
     Range ltag = tag.lchild();
     Range rtag = tag.rchild();
     init_RHS(node->lchild, rand_seed, ncol, ltag,
-	     ctx, runtime, row_beg);
+	     ctx, runtime);
     init_RHS(node->rchild, rand_seed, ncol, rtag,
-	     ctx, runtime, row_beg+node->lchild->nrow);
+	     ctx, runtime);
   }  
 }
 
@@ -473,26 +473,6 @@ set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
     set_circulant_Hmatrix_data(Hmat->rchild, rtag,
 			       ctx, runtime, row_beg);
   }  
-}
-
-
-void LMatrix::
-init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
-		      Context ctx, HighLevelRuntime *runtime) {    
-
-  InitCirculantMatrixTask::TaskArgs
-    args = {col_beg, row_beg, r};
-  InitCirculantMatrixTask launcher(TaskArgument(&args,
-						sizeof(args)),
-				   Predicate::TRUE_PRED,
-				   0,
-				   tag.begin);
-  launcher.add_region_requirement(RegionRequirement(data,
-						    READ_WRITE,
-						    EXCLUSIVE,
-						    data));
-  launcher.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, launcher);
 }
 
 

@@ -1,10 +1,10 @@
 #include <assert.h>
 
-#include "zero_matrix_tasks.h"
+#include "zero_matrix_task.h"
 
 
-void register_zero_matrix_tasks() {
-  ZeroMatrixTask::register_tasks();
+void register_zero_matrix_task() {
+  ZeroMatrixTask::register_task();
 }
 
 /*
@@ -47,7 +47,7 @@ ZeroMatrixTask::ZeroMatrixTask(
   : TaskLauncher(TASKID, arg, pred, id, tag) {}
 
 /*static*/
-void ZeroMatrixTask::register_tasks(void)
+void ZeroMatrixTask::register_task(void)
 {
   TASKID =
     HighLevelRuntime::register_legion_task<ZeroMatrixTask::cpu_task>(

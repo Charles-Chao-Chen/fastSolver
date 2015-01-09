@@ -4,7 +4,10 @@
 #include <string>
 #include <fstream>
 
+#include "legion_matrix.h"
+
 #include "legion.h"
+
 
 using namespace LegionRuntime::HighLevel;
 
@@ -23,45 +26,6 @@ enum MatrixType {
 struct range {
   int col_beg;
   int ncol;
-};
-
-
-class Range {
- public:
- Range(                   ): begin(0),     size(0)    {}
- Range(int size           ): begin(0),     size(size) {}
- Range(int begin, int size): begin(begin), size(size) {}
-  Range lchild();
-  Range rchild();
- public:
-  int begin;
-  int size;
-};
-
-
-class LMatrix {
-
-public:
- LMatrix(int rows=0, int cols=0):
-  rows(rows), cols(cols), 
-  data(LogicalRegion::NO_REGION) {}
-
-  //~LMatrix();
-
-  void
-    init_circulant_matrix(int col_beg, int row_beg, int r, Range tag,
-			  Context ctx, HighLevelRuntime *runtime);
-  void zero_matrix(Range, Context ctx, HighLevelRuntime *runtime);
-  
-  int rows;  
-  int cols;
-
-  IndexSpace iSpace;
-  FieldSpace fSpace;
-  LogicalRegion data; // Region storing the actual data
-    
-  // Data at leaf nodes is stored in column major fashion.
-  // This allows extracting a given column range.
 };
 
 
@@ -127,8 +91,7 @@ class HodlrMatrix {
   /* --- populate data --- */
 
   void init_RHS(FSTreeNode *, int, int, Range tag,
-		Context, HighLevelRuntime *,
-		int row_beg = 0);
+  		Context, HighLevelRuntime *);
   void init_Umat(FSTreeNode *node, Range tag,
 		 Context, HighLevelRuntime *, int row_beg = 0);
   void init_Vmat(FSTreeNode *node, double diag, Range tag,

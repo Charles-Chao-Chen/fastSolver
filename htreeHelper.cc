@@ -150,18 +150,3 @@ create_matrix(LogicalRegion & matrix, int nrow, int ncol,
   assert(matrix != LogicalRegion::NO_REGION);
 }
 
-
-/* ---- Range class methods ---- */
-Range Range::lchild ()
-{
-  int half_size = size/2;
-  return (Range){begin, half_size};
-}
-
-
-Range Range::rchild ()
-{
-  int half_size = size/2;
-  return (Range){begin+half_size, half_size};
-}
-

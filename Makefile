@@ -17,11 +17,12 @@ GEN_SRC		:= main.cc         \
 		   fastSolver.cc   \
 		   solverTasks.cc  \
 		   gemm.cc         \
-		   zero_matrix_tasks.cc \
+		   zero_matrix_task.cc \
 		   Htree.cc 	   \
 		   htreeHelper.cc  \
+		   legion_matrix.cc   \
 		   initMatrixTasks.cc \
-		   saveTask.cc  \
+		   saveTask.cc     \
 		   direct_solve.cc \
 		   timer.cc 	   \
 		   custom_mapper.cc # .cc files
@@ -188,6 +189,9 @@ newfile:
 	#mv V1Tu1.txt          V1Tu1_ref.txt
 	#mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
 
-
+test:
+	make clean
+	make -j 12
+	make r2n
 tar:	
 	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h Htree.cc Htree.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h

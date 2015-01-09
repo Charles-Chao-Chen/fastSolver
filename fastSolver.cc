@@ -4,7 +4,7 @@
 #include "fastSolver.h"
 #include "solverTasks.h"
 #include "gemm.h"
-#include "zero_matrix_tasks.h"
+#include "zero_matrix_task.h"
 #include "initMatrixTasks.h"
 #include "saveTask.h"
 #include "lapack_blas.h"
@@ -21,7 +21,7 @@ void register_solver_tasks() {
 	    << std::endl;
   register_solver_operators();  
   register_gemm_tasks();
-  register_zero_matrix_tasks();
+  register_zero_matrix_task();
   register_init_tasks();
   register_output_tasks();
   std::cout << std::endl;
