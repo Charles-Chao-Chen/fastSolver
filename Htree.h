@@ -90,8 +90,6 @@ class HodlrMatrix {
 
   /* --- populate data --- */
 
-  void init_RHS(FSTreeNode *, int, int, Range tag,
-  		Context, HighLevelRuntime *);
   void init_Umat(FSTreeNode *node, Range tag,
 		 Context, HighLevelRuntime *, int row_beg = 0);
   void init_Vmat(FSTreeNode *node, double diag, Range tag,

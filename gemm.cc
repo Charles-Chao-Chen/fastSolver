@@ -158,11 +158,11 @@ void register_gemm_tasks() {
 }
 
 
-static void
-gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
-	       int col_beg, int ncol, LogicalRegion & res,
-	       Range task_tag, Context ctx,
-	       HighLevelRuntime * runtime) {
+static void gemm_recursive
+(double alpha, FSTreeNode * v, FSTreeNode * u,
+ int col_beg, int ncol, LogicalRegion & res,
+ const Range task_tag, Context ctx,
+ HighLevelRuntime * runtime) {
     
   // assume that u and v have the same tree structure
   // (down to Legion leaf level)
@@ -203,9 +203,8 @@ gemm_recursive(double alpha, FSTreeNode * v, FSTreeNode * u,
       
   } else {
 
-    int   half = task_tag.size/2;
-    Range tag0 = task_tag.lchild();
-    Range tag1 = task_tag.rchild();
+    const Range tag0 = task_tag.lchild();
+    const Range tag1 = task_tag.rchild();
     gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol, res,
 		   tag0, ctx, runtime);
     gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol, res,
@@ -235,12 +234,12 @@ gemm_reduce(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
 
 
 // d = beta * d + alpha* u * eta 
-void
-gemm_broadcast(double alpha, FSTreeNode * u, range ru,
-	       LogicalRegion &eta,
-	       double beta, FSTreeNode * v, range rv,
-	       Range tag,
-	       Context ctx, HighLevelRuntime *runtime) {
+void gemm_broadcast
+(double alpha, FSTreeNode * u, range ru,
+ LogicalRegion &eta,
+ double beta, FSTreeNode * v, range rv,
+ const Range tag,
+ Context ctx, HighLevelRuntime *runtime) {
 
   if (u->isLegionLeaf == true) {
   
@@ -274,9 +273,8 @@ gemm_broadcast(double alpha, FSTreeNode * u, range ru,
     
   } else {
 
-    int   half = tag.size/2;
-    Range tag0 = tag.lchild();
-    Range tag1 = tag.rchild();
+    const Range tag0 = tag.lchild();
+    const Range tag1 = tag.rchild();
     gemm_broadcast(alpha, u->lchild, ru, eta, beta, v->lchild, rv,
 		   tag0, ctx, runtime);
     gemm_broadcast(alpha, u->rchild, ru, eta, beta, v->rchild, rv,

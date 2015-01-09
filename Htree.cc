@@ -123,49 +123,41 @@ create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
 }
 
 
+void init_rhs_recursive
+(const FSTreeNode *node, const int randSeed, const int ncol,
+ const Range taskTag,
+ Context ctx, HighLevelRuntime *runtime);
+
 void HodlrMatrix::
 init_right_hand_side(int rand_seed, int ncol, int node_num,
 		     Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "rhs_cols: " << rhs_cols << std::endl;
-  //assert(rhs_cols == 1);
   Range tag(node_num);
-  init_RHS(uroot, rand_seed, ncol, tag,
-	   ctx, runtime /*, row_beg = 0*/); 
+  init_rhs_recursive(uroot, rand_seed, ncol, tag, ctx, runtime); 
 }
 
 
-void HodlrMatrix::
-init_RHS(FSTreeNode *node, int rand_seed, int ncol, Range tag,
-	 Context ctx, HighLevelRuntime *runtime) {
+/*static*/void init_rhs_recursive
+(const FSTreeNode *node, const int randSeed, const int ncol,
+ const Range taskTag,
+ Context ctx, HighLevelRuntime *runtime) {
 
   if (node->isLegionLeaf == true) {
-    assert(node->lowrank_matrix != NULL);
+    assert(node->lowrank_matrix       != NULL);
+    assert(node->lowrank_matrix->cols >= ncol);
+    Range range(0, ncol);
+    node->lowrank_matrix->rand(randSeed, range, taskTag,
+			       ctx, runtime);
 
-    //typename
-    InitRHSTask::TaskArgs args = {rand_seed, ncol};
-    InitRHSTask launcher(TaskArgument(&args, sizeof(args)),
-			 Predicate::TRUE_PRED,
-			 0,
-			 tag.begin);
-    
-    launcher.add_region_requirement(
-	       RegionRequirement(node->lowrank_matrix->data,
-				 WRITE_DISCARD,
-				 EXCLUSIVE,
-				 node->lowrank_matrix->data).
-	       add_field(FID_X));
-    runtime->execute_task(ctx, launcher);
-    
   } else { // recursively split RHS
     
-    int   half = tag.size/2;
-    Range ltag = tag.lchild();
-    Range rtag = tag.rchild();
-    init_RHS(node->lchild, rand_seed, ncol, ltag,
-	     ctx, runtime);
-    init_RHS(node->rchild, rand_seed, ncol, rtag,
-	     ctx, runtime);
+    Range ltag = taskTag.lchild();
+    Range rtag = taskTag.rchild();
+    init_rhs_recursive(node->lchild, randSeed, ncol, ltag,
+		       ctx, runtime);
+    init_rhs_recursive(node->rchild, randSeed, ncol, rtag,
+		       ctx, runtime);
   }  
 }
 

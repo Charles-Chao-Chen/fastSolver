@@ -194,7 +194,7 @@ FastSolver::solve_bfs(FSTreeNode * uroot, FSTreeNode *vroot,
 
 
 void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
-		       Range mappingTag,
+		       const Range mappingTag,
 		       Context ctx, HighLevelRuntime *runtime) {
   
   if (unode->isLegionLeaf) {
@@ -208,8 +208,8 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   FSTreeNode * V0 = vnode->lchild;
   FSTreeNode * V1 = vnode->rchild;
 
-  Range mappingTag0 = mappingTag.lchild();
-  Range mappingTag1 = mappingTag.rchild();
+  const Range mappingTag0 = mappingTag.lchild();
+  const Range mappingTag1 = mappingTag.rchild();
 
   assert(unode->isLegionLeaf == false);
   assert(V0->Hmat != NULL);

@@ -24,11 +24,12 @@ gemm_reduce(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
 	    Range task_tag,
 	    Context ctx, HighLevelRuntime *runtime);
 
-void
-gemm_broadcast(double alpha, FSTreeNode * u, range ru,
-	       LogicalRegion &eta,
-	       double beta,  FSTreeNode * v, range rv,
-	       Range tag,
-	       Context ctx, HighLevelRuntime *runtime);
+void gemm_broadcast
+(double alpha, FSTreeNode * u, range ru,
+ LogicalRegion &eta,
+ double beta,  FSTreeNode * v, range rv,
+ const Range tag,
+ Context ctx, HighLevelRuntime *runtime);
+
 
 #endif // _GEMM_H

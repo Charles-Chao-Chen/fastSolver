@@ -12,8 +12,8 @@ class Range {
  Range(                   ): begin(0),     size(0)    {}
  Range(int size           ): begin(0),     size(size) {}
  Range(int begin, int size): begin(begin), size(size) {}
-  Range lchild();
-  Range rchild();
+  Range lchild() const;
+  Range rchild() const;
  public:
   int begin;
   int size;
@@ -31,13 +31,18 @@ public:
 
   //~LMatrix();
 
+  // generate random matrix
+  void rand
+    (const int, const Range&, const Range&,
+     Context, HighLevelRuntime*);
+
+  
   void init_circulant_matrix
     (int col_beg, int row_beg, int r, Range tag,
      Context ctx, HighLevelRuntime *runtime);
 
   
-  void zero_matrix
-    (Range, Context ctx, HighLevelRuntime *runtime);
+  void zero(Range, Context ctx, HighLevelRuntime *runtime);
 
   /* --- class members --- */
   

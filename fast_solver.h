@@ -27,7 +27,7 @@ class FastSolver {
   void solve_bfs(FSTreeNode *, FSTreeNode *, Range,
 		 Context, HighLevelRuntime *);
 
-  void visit(FSTreeNode *, FSTreeNode *, Range,
+  void visit(FSTreeNode *, FSTreeNode *, const Range,
 	     Context, HighLevelRuntime *);
 
  private:

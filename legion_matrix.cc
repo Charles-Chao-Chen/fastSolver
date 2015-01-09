@@ -4,14 +4,14 @@
 
 /* ---- Range class methods ---- */
 
-Range Range::lchild ()
+Range Range::lchild () const
 {
   int half_size = size/2;
   return (Range){begin, half_size};
 }
 
 
-Range Range::rchild ()
+Range Range::rchild () const
 {
   int half_size = size/2;
   return (Range){begin+half_size, half_size};
@@ -19,6 +19,27 @@ Range Range::rchild ()
 
 
 /* ---- LMatrix class methods ---- */
+
+void LMatrix::rand
+(const int randSeed, const Range &range, const Range &taskTag,
+ Context ctx, HighLevelRuntime *runtime) {
+
+  InitRHSTask::TaskArgs args = {randSeed, range.size};
+  InitRHSTask launcher(TaskArgument(&args, sizeof(args)),
+		       Predicate::TRUE_PRED,
+		       0,
+		       taskTag.begin);
+    
+  launcher.add_region_requirement(RegionRequirement
+				  (data,
+				   READ_WRITE,
+				   EXCLUSIVE,
+				   data).
+				  add_field(FID_X)
+				  );
+  runtime->execute_task(ctx, launcher);
+}
+
 
 void LMatrix::init_circulant_matrix
 (int col_beg, int row_beg, int r, Range tag,
