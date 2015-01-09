@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <assert.h>
 #include <list>
-#include "fastSolver.h"
-#include "solverTasks.h"
+#include "fast_solver.h"
+#include "solver_tasks.h"
 #include "gemm.h"
 #include "zero_matrix_task.h"
-#include "initMatrixTasks.h"
-#include "saveTask.h"
+#include "init_matrix_tasks.h"
+#include "save_task.h"
 #include "lapack_blas.h"
 #include "timer.h"
 #include "macros.h"

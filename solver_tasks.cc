@@ -1,7 +1,7 @@
-#include "solverTasks.h"
+#include "solver_tasks.h"
 #include "Htree.h"
-#include "htreeHelper.h"
-#include "saveTask.h"
+#include "htree_helper.h"
+#include "save_task.h"
 #include "lapack_blas.h"
 #include "macros.h"
 

@@ -1,6 +1,6 @@
 #include "gemm.h"
 #include "zero_matrix_task.h"
-#include "htreeHelper.h"
+#include "htree_helper.h"
 #include "lapack_blas.h"
 #include "macros.h"
 

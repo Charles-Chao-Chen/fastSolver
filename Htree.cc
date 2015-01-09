@@ -1,6 +1,6 @@
 #include "Htree.h"
-#include "htreeHelper.h"
-#include "initMatrixTasks.h"
+#include "htree_helper.h"
+#include "init_matrix_tasks.h"
 #include "lapack_blas.h"
 #include "macros.h"
 

@@ -1,4 +1,4 @@
-#include "htreeHelper.h"
+#include "htree_helper.h"
 #include "macros.h"
 
 // this function computes the begining row index in region of

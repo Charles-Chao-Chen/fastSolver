@@ -1,5 +1,5 @@
 #include "legion_matrix.h"
-#include "initMatrixTasks.h"
+#include "init_matrix_tasks.h"
 #include "macros.h"
 
 /* ---- Range class methods ---- */

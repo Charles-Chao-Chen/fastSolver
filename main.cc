@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "fastSolver.h"
+#include "fast_solver.h"
 #include "direct_solve.h"
 #include "custom_mapper.h"
 

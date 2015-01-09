@@ -1,5 +1,5 @@
-#include "initMatrixTasks.h"
-#include "htreeHelper.h"
+#include "init_matrix_tasks.h"
+#include "htree_helper.h"
 #include "lapack_blas.h"
 #include "macros.h"
 

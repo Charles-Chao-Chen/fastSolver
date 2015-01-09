@@ -13,18 +13,18 @@ USE_CUDA=0
 # Put the binary file name here
 OUTFILE		:= main
 # List all the application source files here
-GEN_SRC		:= main.cc         \
-		   fastSolver.cc   \
-		   solverTasks.cc  \
-		   gemm.cc         \
-		   zero_matrix_task.cc \
-		   Htree.cc 	   \
-		   htreeHelper.cc  \
-		   legion_matrix.cc   \
-		   initMatrixTasks.cc \
-		   saveTask.cc     \
-		   direct_solve.cc \
-		   timer.cc 	   \
+GEN_SRC		:= main.cc              \
+		   fast_solver.cc       \
+		   solver_tasks.cc      \
+		   gemm.cc              \
+		   zero_matrix_task.cc 	\
+		   Htree.cc 	   	\
+		   htree_helper.cc  	\
+		   legion_matrix.cc   	\
+		   init_matrix_tasks.cc \
+		   save_task.cc     	\
+		   direct_solve.cc 	\
+		   timer.cc 	   	\
 		   custom_mapper.cc # .cc files
 GEN_GPU_SRC	:=				# .cu files
 
