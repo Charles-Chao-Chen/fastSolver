@@ -15,22 +15,22 @@
 // Number of columns in res must match ru.
 // Note the transpose on v.
 
-void
-register_gemm_tasks();
+void register_gemm_tasks();
 
 
 void gemm_reduce
-(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
- double beta, LMatrix *(&res),
- Range task_tag,
- Context ctx, HighLevelRuntime *runtime);
+  (const double alpha,
+   const FSTreeNode *v, const FSTreeNode *u, const Range &ru,
+   const double beta,   LMatrix *(&result),  const Range taskTag,
+   Context ctx, HighLevelRuntime *runtime);
+
 
 void gemm_broadcast
-(double alpha, FSTreeNode * u, range ru,
- LMatrix *(&eta),
- double beta,  FSTreeNode * v, range rv,
- const Range tag,
- Context ctx, HighLevelRuntime *runtime);
+  (const double alpha, const FSTreeNode * u, const Range &ru,
+   LMatrix *(&eta),
+   const double beta,  const FSTreeNode * v, const Range &rv,
+   const Range tag,
+   Context ctx, HighLevelRuntime *runtime);
 
 
 #endif // _GEMM_H

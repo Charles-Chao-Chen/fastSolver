@@ -11,25 +11,6 @@ enum {
 using namespace LegionRuntime::Accessor;
 
 
-// TODO: to be moved into LMatrix class
-static void
-zero_matrix(LogicalRegion &matrix, Range tag,
-	    Context ctx, HighLevelRuntime *runtime) {
-  
-  assert(matrix != LogicalRegion::NO_REGION);
-  ZeroMatrixTask launcher(TaskArgument(NULL, 0),
-			  Predicate::TRUE_PRED,
-			  0,
-			  tag.begin);
-  launcher.add_region_requirement(
-	     RegionRequirement(matrix,
-			       WRITE_DISCARD,
-			       EXCLUSIVE,
-			       matrix));
-  launcher.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, launcher);
-}
-
 
 static void
 scale_matrix(double beta, LogicalRegion &matrix,
@@ -38,10 +19,9 @@ scale_matrix(double beta, LogicalRegion &matrix,
 }
 
 
-
 namespace {
-  class GEMM_Reduce_Task : public TaskLauncher {
 
+  class GEMM_Reduce_Task : public TaskLauncher {
   public:
     struct TaskArgs {
       double alpha;
@@ -59,14 +39,14 @@ namespace {
     static void register_tasks(void);
 
   public:
-    static void cpu_task(const Task *task,
-			 const std::vector<PhysicalRegion> &regions,
-			 Context ctx, HighLevelRuntime *runtime);
+    static void cpu_task
+    (const Task *task,
+     const std::vector<PhysicalRegion> &regions,
+     Context ctx, HighLevelRuntime *runtime);
   };
 
 
   class GEMM_Broadcast_Task : public TaskLauncher {
-
   public:
     struct TaskArgs {
       double alpha;
@@ -87,9 +67,10 @@ namespace {
     static void register_tasks(void);
 
   public:
-    static void cpu_task(const Task *task,
-			 const std::vector<PhysicalRegion> &regions,
-			 Context ctx, HighLevelRuntime *runtime);
+    static void cpu_task
+    (const Task *task,
+     const std::vector<PhysicalRegion> &regions,
+     Context ctx, HighLevelRuntime *runtime);
   };
 }
 
@@ -97,16 +78,17 @@ namespace {
 namespace {
 
   // Reduction Op
-  class EntrySum {
-	
+  class EntrySum {	
   public:
     typedef double LHS;
     typedef double RHS;
     static const double identity;
 
   public:
-    template <bool EXCLUSIVE> static void apply(LHS &lhs, RHS rhs);
-    template <bool EXCLUSIVE> static void fold(RHS &rhs1, RHS rhs2);
+    template <bool EXCLUSIVE>
+    static void apply(LHS &lhs, RHS rhs);
+    template <bool EXCLUSIVE>
+    static void fold(RHS &rhs1, RHS rhs2);
   };
 
   
@@ -128,7 +110,10 @@ namespace {
     do {
       oldval.as_int = *target;
       newval.as_T = oldval.as_T + rhs;
-    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
+    } while (!__sync_bool_compare_and_swap(target,
+					   oldval.as_int,
+					   newval.as_int)
+	     );
   }
 
   template<>
@@ -145,7 +130,10 @@ namespace {
     do {
       oldval.as_int = *target;
       newval.as_T = oldval.as_T + rhs2;
-    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
+    } while (!__sync_bool_compare_and_swap(target,
+					   oldval.as_int,
+					   newval.as_int)
+	     );
   }
 }
 
@@ -159,26 +147,30 @@ void register_gemm_tasks() {
 
 
 static void gemm_recursive
-(double alpha, FSTreeNode * v, FSTreeNode * u,
- int col_beg, int ncol, LMatrix *(&result),
- const Range task_tag, Context ctx,
- HighLevelRuntime * runtime) {
-    
+  (const double alpha,
+   const FSTreeNode * v, const FSTreeNode * u,
+   const Range &range,
+   LMatrix *(&result),
+   const Range task_tag, Context ctx,
+   HighLevelRuntime * runtime)
+{    
   // assume that u and v have the same tree structure
   // (down to Legion leaf level)
-  if (     v->is_legion_leaf() ) {
-    assert(u->is_legion_leaf() );
+  if (     v->is_legion_leaf()                                ) {
+    assert(u->is_legion_leaf()                                );
     assert(v->lowrank_matrix->data != LogicalRegion::NO_REGION);
     assert(u->lowrank_matrix->data != LogicalRegion::NO_REGION);
     assert(result->data            != LogicalRegion::NO_REGION);
 
-    GEMM_Reduce_Task::TaskArgs args = {alpha, col_beg, ncol};    
-    GEMM_Reduce_Task launcher(TaskArgument(
-					   &args,
-					   sizeof(args)),
-			      Predicate::TRUE_PRED,
-			      0,
-			      task_tag.begin);
+    typedef GEMM_Reduce_Task GRT;
+    GRT::TaskArgs args = {alpha, range.begin, range.size};
+    GRT launcher(TaskArgument(
+			      &args,
+			      sizeof(args)
+			      ),
+		 Predicate::TRUE_PRED,
+		 0,
+		 task_tag.begin);
     
     launcher.add_region_requirement(
       RegionRequirement(v->lowrank_matrix->data,
@@ -204,59 +196,60 @@ static void gemm_recursive
 
     const Range tag0 = task_tag.lchild();
     const Range tag1 = task_tag.rchild();
-    gemm_recursive(alpha, v->lchild, u->lchild, col_beg, ncol,
+    gemm_recursive(alpha, v->lchild, u->lchild, range,
 		   result, tag0, ctx, runtime);
-    gemm_recursive(alpha, v->rchild, u->rchild, col_beg, ncol,
+    gemm_recursive(alpha, v->rchild, u->rchild, range,
 		   result, tag1, ctx, runtime);
   }
 }
 
 
-void
-gemm_reduce(double alpha, FSTreeNode *v, FSTreeNode *u, range ru,
-	    double beta, LMatrix *(&result), Range taskTag,
-	    Context ctx, HighLevelRuntime *runtime) {
+void gemm_reduce
+  (const double alpha,
+   const FSTreeNode *v, const FSTreeNode *u, const Range &ru,
+   const double beta,   LMatrix *(&result),  const Range taskTag,
+   Context ctx, HighLevelRuntime *runtime) {
 
-  // create and initialize the result
-  if (result == 0) {
+
+  if (result == 0) { // create and initialize the result
     
     int nrow = v->ncol;
-    int ncol = ru.ncol;
+    int ncol = ru.size;
     assert(v->nrow == u->nrow);
     create_matrix(result, nrow, ncol, ctx, runtime);
     result->zero(taskTag, ctx, runtime);
 
-    //zero_matrix(res, task_tag, ctx, runtime);
-    
-  } else scale_matrix(beta, result->data, ctx, runtime);
+  } else
+    scale_matrix(beta, result->data, ctx, runtime);
 
-  gemm_recursive(alpha, v, u, ru.col_beg, ru.ncol, result,
-		 taskTag, ctx, runtime);
+  gemm_recursive(alpha, v, u, ru, result, taskTag,
+		 ctx, runtime);
 }
 
 
 // d = beta * d + alpha* u * eta 
 void gemm_broadcast
-(double alpha, FSTreeNode * u, range ru,
- LMatrix *(&eta),
- double beta, FSTreeNode * v, range rv,
- const Range tag,
- Context ctx, HighLevelRuntime *runtime) {
+  (const double alpha, const FSTreeNode * u, const Range &ru,
+   LMatrix *(&eta),
+   const double beta,  const FSTreeNode * v, const Range &rv,
+   const Range tag,
+   Context ctx, HighLevelRuntime *runtime) {
 
-  if (      u->is_legion_leaf() ) { 
-    assert( v->is_legion_leaf() );    
-    assert( u->lowrank_matrix->data == v->lowrank_matrix->data);
-    
-    GEMM_Broadcast_Task::TaskArgs
-      args = {alpha, beta,
-	      ru.col_beg, ru.ncol,
-	      rv.col_beg, rv.ncol};
-    GEMM_Broadcast_Task launcher(TaskArgument(
-				   &args,
-				   sizeof(args)),
-				 Predicate::TRUE_PRED,
-				 0,
-				 tag.begin);
+  if (     u->is_legion_leaf()                               ) {
+    assert(v->is_legion_leaf()                               );
+    assert(u->lowrank_matrix->data == v->lowrank_matrix->data);
+
+    typedef GEMM_Broadcast_Task GBT;
+    GBT::TaskArgs args = {alpha,    beta,
+			  ru.begin, ru.size,
+			  rv.begin, rv.size};
+    GBT launcher(TaskArgument(
+			      &args,
+			      sizeof(args)
+			      ),
+		 Predicate::TRUE_PRED,
+		 0,
+		 tag.begin);
 
     launcher.add_region_requirement(
                RegionRequirement(u->lowrank_matrix->data,
@@ -273,7 +266,6 @@ void gemm_broadcast
     runtime->execute_task(ctx, launcher);
     
   } else {
-
     const Range tag0 = tag.lchild();
     const Range tag1 = tag.rchild();
     gemm_broadcast(alpha, u->lchild, ru, eta, beta, v->lchild, rv,
@@ -282,6 +274,23 @@ void gemm_broadcast
 		   tag1, ctx, runtime);
   }  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* ---- gemm_reduce implementation ---- */
@@ -299,28 +308,27 @@ GEMM_Reduce_Task::GEMM_Reduce_Task(
 /*static*/
 void GEMM_Reduce_Task::register_tasks(void)
 {
-  TASKID =
-  HighLevelRuntime::register_legion_task<GEMM_Reduce_Task::cpu_task>(
-    AUTO_GENERATE_ID,
-    Processor::LOC_PROC, 
-    true,
-    true,
-    AUTO_GENERATE_ID,
-    TaskConfigOptions(true/*leaf*/),
-    "GEMM_Reduce");
-  
+  TASKID = HighLevelRuntime::register_legion_task
+    <GEMM_Reduce_Task::cpu_task>(AUTO_GENERATE_ID,
+				 Processor::LOC_PROC, 
+				 true,
+				 true,
+				 AUTO_GENERATE_ID,
+				 TaskConfigOptions(true/*leaf*/),
+				 "GEMM_Reduce");
   printf("Register task %d : GEMM_Reduce\n", TASKID);
 }
 
-void
-GEMM_Reduce_Task::cpu_task(const Task *task,
-			   const std::vector<PhysicalRegion> &regions,
-			   Context ctx, HighLevelRuntime *runtime) {
-  
-  assert(regions.size() == 3);
+void GEMM_Reduce_Task::cpu_task
+  (const Task *task,
+   const std::vector<PhysicalRegion> &regions,
+   Context ctx, HighLevelRuntime *runtime)
+{ 
+  assert(regions.size()       == 3);
   assert(task->regions.size() == 3);
-  assert(task->arglen == sizeof(TaskArgs));
-  TaskArgs arg = *((TaskArgs*)task->args);
+  assert(task->arglen         == sizeof(TaskArgs));
+  
+  TaskArgs arg       = *((TaskArgs*)task->args);
   int      u_ncol    = arg.ncol;
   int      u_col_beg = arg.col_beg;
   double   alpha     = arg.alpha;
@@ -371,7 +379,11 @@ GEMM_Reduce_Task::cpu_task(const Task *task,
   double beta = 1.0;
   int u_nrow = rect_u.dim_size(0);
   double * u  = u_ptr + u_col_beg * u_nrow;
-  blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, v_ptr, &k, u, &k, &beta, w_ptr, &m);
+  blas::dgemm_(&transa, &transb,
+	       &m,      &n,     &k,    &alpha,
+	       v_ptr,   &k,
+	       u,       &k,     &beta,
+	       w_ptr,   &m);
 }
 
 
@@ -390,28 +402,29 @@ GEMM_Broadcast_Task::GEMM_Broadcast_Task(
 /*static*/
 void GEMM_Broadcast_Task::register_tasks(void)
 {
-  TASKID =
-    HighLevelRuntime::register_legion_task<GEMM_Broadcast_Task::cpu_task>(
-    AUTO_GENERATE_ID,
-    Processor::LOC_PROC, 
-    true,
-    true,
-    AUTO_GENERATE_ID,
-    TaskConfigOptions(true/*leaf*/),
-    "GEMM_Broadcast");
-  
+  typedef GEMM_Broadcast_Task GBT;
+  TASKID = HighLevelRuntime::register_legion_task
+    <GBT::cpu_task>(AUTO_GENERATE_ID,
+		    Processor::LOC_PROC, 
+		    true,
+		    true,
+		    AUTO_GENERATE_ID,
+		    TaskConfigOptions(true/*leaf*/),
+		    "GEMM_Broadcast");
   printf("Register task %d : GEMM_Broadcast\n", TASKID);
 }
 
-void
-GEMM_Broadcast_Task::cpu_task(const Task *task,
-			   const std::vector<PhysicalRegion> &regions,
-			   Context ctx, HighLevelRuntime *runtime) {
 
-  assert(regions.size() == 2);
+void GEMM_Broadcast_Task::cpu_task
+  (const Task *task,
+   const std::vector<PhysicalRegion> &regions,
+   Context ctx, HighLevelRuntime *runtime)
+{
+  assert(regions.size()       == 2);
   assert(task->regions.size() == 2);
-  assert(task->arglen == sizeof(TaskArgs));
-  TaskArgs arg = *((TaskArgs*)task->args);
+  assert(task->arglen         == sizeof(TaskArgs));
+
+  TaskArgs arg       = *((TaskArgs*)task->args);
   int      u_ncol    = arg.u_ncol;
   int      d_ncol    = arg.d_ncol;
   int      u_col_beg = arg.u_col_beg;
@@ -442,7 +455,6 @@ GEMM_Broadcast_Task::cpu_task(const Task *task,
   double *v_ptr = acc_v.raw_rect_ptr<2>(rect_v, subrect, offsets);
   assert(rect_v == subrect);
 
-
   int u_rows = rect_u.dim_size(0);
   int u_cols = u_ncol;
   int v_rows = rect_v.dim_size(0);
@@ -459,7 +471,11 @@ GEMM_Broadcast_Task::cpu_task(const Task *task,
   
   double * u = u_ptr + u_col_beg * u_rows;
   double * d = u_ptr + d_col_beg * d_rows;
-  blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, u, &m, v_ptr, &k, &beta, d, &m);  
+  blas::dgemm_(&transa, &transb,
+	       &m,      &n,      &k,      &alpha,
+	       u,       &m,
+	       v_ptr,   &k,      &beta,
+	       d,       &m);  
 }
 
 

@@ -5,6 +5,11 @@
 #include "macros.h"
 
 
+/*--- for debugging purpose ---*/
+
+void print_legion_tree(FSTreeNode *);
+
+
 FSTreeNode::FSTreeNode(int nrow_, int ncol_,
 		       int row_beg_, int col_beg_,
 		       FSTreeNode *lchild_,

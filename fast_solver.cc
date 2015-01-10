@@ -114,10 +114,10 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   LMatrix *V0Td0 = 0;
   LMatrix *V1Tu1 = 0;
   LMatrix *V1Td1 = 0;
-  range ru0 = {b0->col_beg, b0->ncol};
-  range ru1 = {b1->col_beg, b1->ncol};
-  range rd0 = {0,           b0->col_beg};
-  range rd1 = {0,           b1->col_beg};
+  Range ru0(b0->col_beg, b0->ncol);
+  Range ru1(b1->col_beg, b1->ncol);
+  Range rd0(0,           b0->col_beg);
+  Range rd1(0,           b1->col_beg);
   gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
   gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
   gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
@@ -225,10 +225,10 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   LMatrix *V0Td0 = 0;
   LMatrix *V1Tu1 = 0;
   LMatrix *V1Td1 = 0;
-  range ru0 = {b0->col_beg, b0->ncol};
-  range ru1 = {b1->col_beg, b1->ncol};
-  range rd0 = {0,           b0->col_beg};
-  range rd1 = {0,           b1->col_beg};
+  Range ru0(b0->col_beg, b0->ncol);
+  Range ru1(b1->col_beg, b1->ncol);
+  Range rd0(0,           b0->col_beg);
+  Range rd1(0,           b1->col_beg);
   gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0,
 	      mappingTag0, ctx, runtime);
   gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1,

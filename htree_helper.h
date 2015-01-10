@@ -12,9 +12,12 @@ int max_row_size(FSTreeNode *);
 
 int count_leaf(FSTreeNode *node);
 
-void
-create_matrix(LMatrix *(&matrix), int nrow, int ncol,
-	      Context ctx, HighLevelRuntime *runtime);
+
+// TODO: move into LMatrix class
+void create_matrix
+  (LMatrix *(&matrix), int nrow, int ncol,
+   Context ctx, HighLevelRuntime *runtime);
+
 
 int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
 void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);

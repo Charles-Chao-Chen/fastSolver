@@ -23,11 +23,12 @@ enum MatrixType {
 };
 
 
+/*
 struct range {
   int col_beg;
   int ncol;
 };
-
+*/
 
 // U and V have the same row structure
 struct FSTreeNode {
@@ -115,10 +116,6 @@ class HodlrMatrix {
   int rhs_cols;
   int nleaf;
 };
-
-
-/*--- for debugging purpose ---*/
-void print_legion_tree(FSTreeNode *);
 
 
 void fill_circulant_Kmat(FSTreeNode * vnode, int, int r, double diag,
