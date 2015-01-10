@@ -8,7 +8,7 @@ void build_subtree(FSTreeNode *node, int row_beg) {
 
   node->row_beg = row_beg;
   
-  if (node->isRealLeaf()) { // real matrix leaf
+  if (node->is_real_leaf()) { // real matrix leaf
     return;
   } else {
     build_subtree(node->lchild, row_beg);
@@ -21,7 +21,7 @@ int count_matrix_column(FSTreeNode *node, int col_size) {
 
   col_size += node->ncol;
   
-  if (node->isRealLeaf())
+  if (node->is_real_leaf())
     return col_size;
   else {
     int nl = count_matrix_column(node->lchild, col_size);
@@ -33,7 +33,7 @@ int count_matrix_column(FSTreeNode *node, int col_size) {
 
 int max_row_size(FSTreeNode * vnode) {
 
-  if (vnode->isRealLeaf()) {
+  if (vnode->is_real_leaf()) {
     return vnode->nrow;
   }
 
@@ -112,7 +112,7 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
 
 
 int count_leaf(FSTreeNode *node) {
-  if (node->isRealLeaf())
+  if (node->is_real_leaf())
     return 1;
   else {
     int n1 = count_leaf(node->lchild);

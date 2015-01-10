@@ -65,8 +65,8 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 		      Range tag,
 		      Context ctx, HighLevelRuntime *runtime) {
 
-  if (unode->isLegionLeaf) {
-    assert(vnode->isLegionLeaf);
+  if (      unode->is_legion_leaf() ) {
+    assert( vnode->is_legion_leaf() );
 
     // pick a task tag id from tag_beg to tag_end.
     // here the first tag is picked.
@@ -94,9 +94,9 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   solve_dfs(b0, V0, tag0, ctx, runtime);
   solve_dfs(b1, V1, tag1, ctx, runtime);
   
-  assert(unode->isLegionLeaf == false);
-  assert(V0->Hmat != NULL);
-  assert(V1->Hmat != NULL);
+  assert( !unode->is_legion_leaf() );
+  assert( V0->Hmat != NULL );
+  assert( V1->Hmat != NULL );
 
 
   /*
@@ -177,8 +177,8 @@ FastSolver::solve_bfs(FSTreeNode * uroot, FSTreeNode *vroot,
     FSTreeNode *urchild = (*uit)->rchild;
     FSTreeNode *vlchild = (*vit)->lchild;
     FSTreeNode *vrchild = (*vit)->rchild;
-    if ((*uit)->isLegionLeaf == false) {
-      assert((*vit)->isLegionLeaf == false);
+    if (      (*uit)->is_legion_leaf() == false ) {
+      assert( (*vit)->is_legion_leaf() == false );
       ulist.push_back(ulchild);
       ulist.push_back(urchild);
       vlist.push_back(vlchild);
@@ -200,8 +200,8 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
 		       const Range mappingTag,
 		       Context ctx, HighLevelRuntime *runtime) {
   
-  if (unode->isLegionLeaf) {
-    assert(vnode->isLegionLeaf);
+  if (      unode->is_legion_leaf() ) {
+    assert( vnode->is_legion_leaf() );
     solve_legion_leaf(unode, vnode, mappingTag, ctx, runtime);
     return;
   }
@@ -214,9 +214,9 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   const Range mappingTag0 = mappingTag.lchild();
   const Range mappingTag1 = mappingTag.rchild();
 
-  assert(unode->isLegionLeaf == false);
-  assert(V0->Hmat != NULL);
-  assert(V1->Hmat != NULL);
+  assert( !unode->is_legion_leaf() );
+  assert( V0->Hmat != NULL );
+  assert( V1->Hmat != NULL );
 
   // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
   // from leaves to root in the H tree.

@@ -43,7 +43,9 @@ struct FSTreeNode {
 	     LMatrix *kmat=NULL,
 	     bool isLegionLeaf=false);
 
-  bool isRealLeaf();
+  bool is_real_leaf()   const;
+  bool is_legion_leaf() const {return isLegionLeaf;}
+  void set_legion_leaf(bool is) {isLegionLeaf = is;}
   
   int row_beg; // begin index in the region
   int col_beg;
@@ -56,7 +58,8 @@ struct FSTreeNode {
   
   LMatrix *lowrank_matrix; // low rank blocks
   LMatrix *dense_matrix;   // dense blocks
-    
+
+private:
   bool isLegionLeaf;
 };
 
@@ -69,7 +72,7 @@ class HodlrMatrix {
   
   void create_tree(int, int, int, int, int,
 		   Context, HighLevelRuntime *);
-  void init_right_hand_side(int, int, int, Context, HighLevelRuntime *);
+  void initialize_rhs(int, int, int, Context, HighLevelRuntime *);
   void init_circulant_matrix(double, int, Context, HighLevelRuntime *);
 
   int get_num_rhs() {return rhs_cols;}

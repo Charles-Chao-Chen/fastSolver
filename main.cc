@@ -95,8 +95,8 @@ void run_test(int rank, int N, int threshold,
 	    << std::endl;
 
   // random right hand size
-  hMatrix.init_right_hand_side(rand_seed, rhs_cols, num_node,
-			       ctx, runtime);
+  hMatrix.initialize_rhs(rand_seed, rhs_cols, num_node,
+			 ctx, runtime);
   
   // A = U U^T + diag and U is a circulant matrix
   hMatrix.init_circulant_matrix(diag, num_node, ctx, runtime);

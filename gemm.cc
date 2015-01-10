@@ -166,9 +166,8 @@ static void gemm_recursive
     
   // assume that u and v have the same tree structure
   // (down to Legion leaf level)
-  if (v->isLegionLeaf == true) {
-
-    assert(u->isLegionLeaf == true);
+  if (     v->is_legion_leaf() ) {
+    assert(u->is_legion_leaf() );
     assert(v->lowrank_matrix->data != LogicalRegion::NO_REGION);
     assert(u->lowrank_matrix->data != LogicalRegion::NO_REGION);
     assert(result->data            != LogicalRegion::NO_REGION);
@@ -244,10 +243,9 @@ void gemm_broadcast
  const Range tag,
  Context ctx, HighLevelRuntime *runtime) {
 
-  if (u->isLegionLeaf == true) {
-  
-    assert(v->isLegionLeaf == true);    
-    assert(u->lowrank_matrix->data == v->lowrank_matrix->data);
+  if (      u->is_legion_leaf() ) { 
+    assert( v->is_legion_leaf() );    
+    assert( u->lowrank_matrix->data == v->lowrank_matrix->data);
     
     GEMM_Broadcast_Task::TaskArgs
       args = {alpha, beta,

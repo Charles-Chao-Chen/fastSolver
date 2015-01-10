@@ -60,17 +60,17 @@ void LMatrix::zero
 }
 
 
-void LMatrix::init_circulant_matrix
-(int col_beg, int row_beg, int r, Range tag,
- Context ctx, HighLevelRuntime *runtime) {    
+void LMatrix::circulant
+  (int col_beg, int row_beg, int rank, Range taskTag,
+   Context ctx, HighLevelRuntime *runtime) {    
 
   typedef InitCirculantMatrixTask ICMT;
-  ICMT::TaskArgs args = {col_beg, row_beg, r};
+  ICMT::TaskArgs args = {col_beg, row_beg, rank};
   ICMT launcher(TaskArgument(&args,
 			     sizeof(args)),
 		Predicate::TRUE_PRED,
 		0,
-		tag.begin);
+		taskTag.begin);
   launcher.add_region_requirement(RegionRequirement
 				  (data,
 				   READ_WRITE,

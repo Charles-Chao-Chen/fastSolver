@@ -42,12 +42,24 @@ public:
   void zero
     (const Range&, Context, HighLevelRuntime*);
 
-  
-  void init_circulant_matrix
+  // initialize the a skinny circulant matrix 
+  // e.g. [ 0 1 2
+  //        1 2 0
+  //        2 0 1
+  //        0 1 2
+  //        1 2 0 ]
+  void circulant
     (int col_beg, int row_beg, int r, Range tag,
      Context ctx, HighLevelRuntime *runtime);
 
 
+  // initialize dense block as: U * U^T + D 
+  void dense
+    (int col_beg, int row_beg, int r, Range tag,
+     Context ctx, HighLevelRuntime *runtime);
+
+
+    
   /* --- class members --- */
   
   int rows;  

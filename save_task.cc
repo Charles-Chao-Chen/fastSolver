@@ -103,7 +103,7 @@ save_Htree(FSTreeNode * node, std::string filename,
 	   Context ctx, HighLevelRuntime *runtime,
 	   Range rg) {
 
-  if (node->isLegionLeaf == true) {
+  if ( node->is_legion_leaf() ) {
     save_region(node->lowrank_matrix->data, filename, ctx, runtime, rg);
   } else {
     save_Htree(node->lchild, filename, ctx, runtime, rg);

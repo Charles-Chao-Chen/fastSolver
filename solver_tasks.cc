@@ -434,7 +434,7 @@ serial_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode,
   printf("ulchild: %p, urchild: %p\n", unode->lchild, unode->rchild);
   */
     
-  if (unode->isRealLeaf()) {
+  if (unode->is_real_leaf()) {
     //printf("u nrow: %d, v nrow: %d\n", unode->nrow, vnode->nrow);
     assert(unode->nrow == vnode->nrow);
     int N     = unode->nrow;
