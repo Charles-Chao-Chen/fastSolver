@@ -1,7 +1,7 @@
 #ifndef _HTREE_HELPER
 #define _HTREE_HELPER
 
-#include "Htree.h"
+#include "hodlr_matrix.h"
 
 
 void build_subtree(FSTreeNode *node, int row_beg = 0);

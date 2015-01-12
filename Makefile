@@ -18,7 +18,7 @@ GEN_SRC		:= main.cc              \
 		   solver_tasks.cc      \
 		   gemm.cc              \
 		   zero_matrix_task.cc 	\
-		   Htree.cc 	   	\
+		   hodlr_matrix.cc 	\
 		   htree_helper.cc  	\
 		   legion_matrix.cc   	\
 		   init_matrix_tasks.cc \
@@ -196,4 +196,4 @@ test:
 	make -j 12
 	make r2n
 tar:	
-	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h Htree.cc Htree.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h
+	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h hodlr_matrix.h.cc hodlr_matrix.h.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h

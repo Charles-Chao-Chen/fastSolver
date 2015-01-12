@@ -1,7 +1,7 @@
 #ifndef _GEMM_H
 #define _GEMM_H
 
-#include "Htree.h"
+#include "hodlr_matrix.h"
 #include "legion.h"
 
 

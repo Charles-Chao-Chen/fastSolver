@@ -2,7 +2,7 @@
 #define INIT_MATRIX_TASKS_H
 
 #include "legion.h"
-#include "Htree.h"
+#include "hodlr_matrix.h"
 
 using namespace LegionRuntime::HighLevel;
 

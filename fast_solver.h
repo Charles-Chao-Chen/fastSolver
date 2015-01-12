@@ -2,7 +2,7 @@
 #define _FAST_SOLVER
 
 #include "legion.h"
-#include "Htree.h"
+#include "hodlr_matrix.h"
 
 
 void register_solver_tasks();

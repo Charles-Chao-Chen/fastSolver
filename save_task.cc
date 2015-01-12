@@ -94,19 +94,19 @@ save_solution(HodlrMatrix &matrix, std::string soln_file,
 	      Context ctx, HighLevelRuntime *runtime)
 {
   Range ru(matrix.get_num_rhs());
-  save_Htree(matrix.uroot, soln_file, ctx, runtime, ru);
+  save_HodlrMatrix(matrix.uroot, soln_file, ctx, runtime, ru);
 }
 
 
-void save_Htree
+void save_HodlrMatrix
   (FSTreeNode * node, std::string filename,
    Context ctx, HighLevelRuntime *runtime, Range rg)
 {
   if ( node->is_legion_leaf() ) {
     save_LMatrix(node->lowrank_matrix, filename, ctx, runtime, rg);
   } else {
-    save_Htree(node->lchild, filename, ctx, runtime, rg);
-    save_Htree(node->rchild, filename, ctx, runtime, rg);
+    save_HodlrMatrix(node->lchild, filename, ctx, runtime, rg);
+    save_HodlrMatrix(node->rchild, filename, ctx, runtime, rg);
   }
 }
 

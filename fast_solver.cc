@@ -103,7 +103,7 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   const char *gemm_bf = "debug_gemm_bf.txt";
   if (remove(gemm_bf) == 0)
     std::cout << "Remove file: " << gemm_bf << std::endl;
-  save_Htree(unode, gemm_bf, ctx, runtime);
+  save_HodlrMatrix(unode, gemm_bf, ctx, runtime);
 #endif
 
   
@@ -127,7 +127,7 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   const char *gemm_af = "debug_gemm_af.txt";
   if (remove(gemm_af) == 0)
     std::cout << "Remove file: " << gemm_af << std::endl;
-  save_Htree(unode, gemm_af, ctx, runtime);
+  save_HodlrMatrix(unode, gemm_af, ctx, runtime);
 #endif
   
     

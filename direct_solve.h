@@ -1,7 +1,7 @@
 #ifndef __DIRECT_SOLVE
 #define __DIRECT_SOLVE
 
-#include "Htree.h"
+#include "hodlr_matrix.h"
 
 /*
 void dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag);

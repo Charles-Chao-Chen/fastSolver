@@ -1,4 +1,4 @@
-#include "Htree.h"
+#include "hodlr_matrix.h"
 #include "htree_helper.h"
 #include "init_matrix_tasks.h"
 #include "lapack_blas.h"

@@ -1,5 +1,4 @@
 #include "solver_tasks.h"
-#include "Htree.h"
 #include "htree_helper.h"
 #include "save_task.h"
 #include "lapack_blas.h"

@@ -1,7 +1,7 @@
 #ifndef _SOLVER_TASKS_H
 #define _SOLVER_TASKS_H
 
-#include "Htree.h"
+#include "hodlr_matrix.h"
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
