@@ -14,15 +14,23 @@ void
 save_solution(HodlrMatrix &, std::string,
 	      Context ctx, HighLevelRuntime *runtime);
 
-void
-save_Htree(FSTreeNode * node, std::string filename,
-	   Context ctx, HighLevelRuntime *runtime,
-	   Range rg = (Range)(0,-1));
+void save_Htree
+  (FSTreeNode * node, std::string filename,
+   Context ctx, HighLevelRuntime *runtime,
+   Range rg = (Range)(0,-1));
 
+// TODO: move into LMatrix class
+void save_LMatrix
+  (const LMatrix *matrix, const std::string filename,
+   Context ctx, HighLevelRuntime *runtime, const Range &rg);
+
+/*
 void
 save_region(LogicalRegion data, std::string save_file,
 	    Context ctx, HighLevelRuntime *runtime,
 	    Range rg = (Range)(0,-1));
+*/
+
 
 void
 save_data(double *ptr, int nRows, int colBegin, int nCols,

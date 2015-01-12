@@ -99,13 +99,12 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   assert( V1->Hmat != NULL );
 
 
-  /*
-  const char *save_file0 = "Umat.txt";
-  if (remove(save_file0) == 0)
-    std::cout << "Remove file: " << save_file0 << std::endl;
-  save_Htree(unode, save_file0, ctx, runtime);
-  */
-
+#ifdef DEBUGGEMM
+  const char *gemm_bf = "debug_gemm_bf.txt";
+  if (remove(gemm_bf) == 0)
+    std::cout << "Remove file: " << gemm_bf << std::endl;
+  save_Htree(unode, gemm_bf, ctx, runtime);
+#endif
 
   
   // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
@@ -114,8 +113,8 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   LMatrix *V0Td0 = 0;
   LMatrix *V1Tu1 = 0;
   LMatrix *V1Td1 = 0;
-  Range ru0(b0->col_beg, b0->ncol);
-  Range ru1(b1->col_beg, b1->ncol);
+  Range ru0(b0->col_beg, b0->ncol   );
+  Range ru1(b1->col_beg, b1->ncol   );
   Range rd0(0,           b0->col_beg);
   Range rd1(0,           b1->col_beg);
   gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
@@ -124,13 +123,12 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
 
 
-  /*
-  const char *save_file1 = "Ufinish.txt";
-  if (remove(save_file1) == 0)
-    std::cout << "Remove file: " << save_file1 << std::endl;
-  save_Htree(unode, save_file1, ctx, runtime);
-  */
-
+#ifdef DEBUGGEMM
+  const char *gemm_af = "debug_gemm_af.txt";
+  if (remove(gemm_af) == 0)
+    std::cout << "Remove file: " << gemm_af << std::endl;
+  save_Htree(unode, gemm_af, ctx, runtime);
+#endif
   
     
   // V0Td0 and V1Td1 contain the solution on output.

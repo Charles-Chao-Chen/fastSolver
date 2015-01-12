@@ -190,7 +190,14 @@ static void gemm_recursive
     launcher.region_requirements[0].add_field(FID_X);
     launcher.region_requirements[1].add_field(FID_X);
     launcher.region_requirements[2].add_field(FID_X);
-    runtime->execute_task(ctx, launcher);
+
+    Future ft = runtime->execute_task(ctx, launcher);
+    
+#ifdef DEBUG
+    ft.get_void_result();
+    std::cout << "Waiting for gemm_reduce ..."
+	      << std::endl;
+#endif
       
   } else {
 
@@ -263,7 +270,13 @@ void gemm_broadcast
 				 eta->data)); // eta
     launcher.region_requirements[0].add_field(FID_X);
     launcher.region_requirements[1].add_field(FID_X);
-    runtime->execute_task(ctx, launcher);
+    Future ft = runtime->execute_task(ctx, launcher);
+
+#ifdef DEBUG
+    ft.get_void_result();
+    std::cout << "Waiting for gemm_broadcast ..."
+	      << std::endl;
+#endif
     
   } else {
     const Range tag0 = tag.lchild();

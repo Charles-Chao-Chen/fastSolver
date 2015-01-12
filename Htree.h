@@ -23,13 +23,6 @@ enum MatrixType {
 };
 
 
-/*
-struct range {
-  int col_beg;
-  int ncol;
-};
-*/
-
 // U and V have the same row structure
 struct FSTreeNode {
 
@@ -104,10 +97,10 @@ class HodlrMatrix {
 
   void create_Hmatrix(FSTreeNode *, FSTreeNode *, int,
 		      Context, HighLevelRuntime *);
-  void set_circulant_Hmatrix_data(FSTreeNode * Hmat,
-				  Range tag,
-				  Context, HighLevelRuntime *,
-				  int row_beg);
+  void set_circulant_Hmatrix_data
+    (FSTreeNode * Hmat, Range tag,
+     Context, HighLevelRuntime *,
+     int row_beg);
   
   
   /* --- private attributes --- */
@@ -118,7 +111,13 @@ class HodlrMatrix {
 };
 
 
-void fill_circulant_Kmat(FSTreeNode * vnode, int, int r, double diag,
-			 double *Kmat, int LD);
+
+// TODO: move into LMatrix class
+void fill_circulant_Kmat
+  (FSTreeNode * vnode, int, int r, double diag,
+   double *Kmat, int LD);
+
+
+
 
 #endif // _LEGION_TREE_

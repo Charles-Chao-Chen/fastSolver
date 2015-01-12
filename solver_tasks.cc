@@ -100,8 +100,11 @@ void solve_node_matrix
   launcher.region_requirements[3].add_field(FID_X);
 
   Future f = runtime->execute_task(ctx, launcher);
+
+#ifdef DEBUG
   f.get_void_result();
-  std::cout << "Wait for LU_solve task..." << std::endl;
+  std::cout << "Waiting for node_solve task ..." << std::endl;
+#endif
 }
 
 
@@ -330,27 +333,26 @@ LeafSolveTask::LeafSolveTask(
 /*static*/
 void LeafSolveTask::register_tasks(void)
 {
-  TASKID =
-  HighLevelRuntime::register_legion_task<LeafSolveTask::cpu_task>(
-    AUTO_GENERATE_ID,
-    Processor::LOC_PROC, 
-    true,
-    true,
-    AUTO_GENERATE_ID,
-    TaskConfigOptions(true/*leaf*/),
-    "Leaf_Solve");
-  
+  TASKID = HighLevelRuntime::register_legion_task
+    <LeafSolveTask::cpu_task>(
+			      AUTO_GENERATE_ID,
+			      Processor::LOC_PROC, 
+			      true,
+			      true,
+			      AUTO_GENERATE_ID,
+			      TaskConfigOptions(true/*leaf*/),
+			      "Leaf_Solve");
   printf("Register task %d : Leaf_Solve\n", TASKID);
 }
 
-static void
-serial_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode,
-		 double * u_ptr, double * v_ptr, double * k_ptr,
-		 int LD);
-void
-LeafSolveTask::cpu_task(const Task *task,
-			const std::vector<PhysicalRegion> &regions,
-			Context ctx, HighLevelRuntime *runtime) {
+static void serial_leaf_solve
+  (FSTreeNode * unode, FSTreeNode * vnode,
+   double * u_ptr, double * v_ptr, double * k_ptr, int LD);
+
+void LeafSolveTask::cpu_task
+  (const Task *task,
+   const std::vector<PhysicalRegion> &regions,
+   Context ctx, HighLevelRuntime *runtime) {
 
   assert(regions.size() == 3);
   assert(task->regions.size() == 3);
@@ -398,10 +400,6 @@ LeafSolveTask::cpu_task(const Task *task,
    assert(u_ptr != NULL);
    assert(rect_u == subrect);
 
-   //printf("U size: %d x %d\n", rect_u.dim_size(0), rect_u.dim_size(1));
-   //std::cout << "U Offset: " << offsets[0].offset
-   //	     << ", "         << offsets[1].offset << std::endl;
-
    double *v_ptr = NULL;
    if (rect_v.volume() != 0) {
      // if legion leaf coinsides real leaf, no V is needed
@@ -425,10 +423,10 @@ LeafSolveTask::cpu_task(const Task *task,
 }
 
 
-static void
-serial_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode,
-		 double * u_ptr, double * v_ptr, double * k_ptr,
-		 int LD) {
+static void serial_leaf_solve
+  (FSTreeNode * unode, FSTreeNode * vnode,
+   double * u_ptr, double * v_ptr, double * k_ptr, int LD)
+{
   /*
   printf("vlchild: %p, vrchild: %p\n", vnode->lchild, vnode->rchild);
   printf("ulchild: %p, urchild: %p\n", unode->lchild, unode->rchild);
@@ -564,10 +562,9 @@ serial_leaf_solve(FSTreeNode * unode, FSTreeNode * vnode,
 
 
 // this function wrapper launches leaf tasks
-void
-solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
-		  Range task_tag,
-		  Context ctx, HighLevelRuntime *runtime) {
+void solve_legion_leaf
+  (FSTreeNode * uleaf, FSTreeNode * vleaf, Range task_tag,
+   Context ctx, HighLevelRuntime *runtime) {
   
   int nleaf = count_leaf(uleaf);
   //assert(nleaf == nleaf_per_node);
@@ -613,7 +610,13 @@ solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
   launcher.region_requirements[0].add_field(FID_X);
   launcher.region_requirements[1].add_field(FID_X);
   launcher.region_requirements[2].add_field(FID_X);    
-  runtime->execute_task(ctx, launcher);
+  Future ft = runtime->execute_task(ctx, launcher);
+  
+#ifdef DEBUG
+  ft.get_void_result();
+  std::cout << "Waiting for leaf_solve task ..."
+	    << std::endl;
+#endif
 }
 
 

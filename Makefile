@@ -30,8 +30,12 @@ GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
-#CC_FLAGS	:= -g -std=c++11 -I ./ -DLEGION_PROF -DLEGION_SPY
-CC_FLAGS	:= -g -I ./ -DLEGION_PROF -DLEGION_SPY -DNODE_LOGGING
+CC_FLAGS	:= -g -I ./ 	  \
+		   -DLEGION_PROF  \
+		   -DLEGION_SPY   \
+		   -DNODE_LOGGING \
+		   -DDEBUG	  \
+		   -DDEBUGGEMM
 NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
@@ -98,11 +102,7 @@ all:
 
 # If we're using the general low-level runtime we have to link with nvcc
 $(OUTFILE) : $(ALL_OBJS)
-	#@echo ""
-	#@echo ""
-	#@echo "-------------- debugging mode on !!! ------------------"
-	#@echo ""
-	#@echo ""
+
 	@echo "---> Linking objects into one binary: $(OUTFILE)"
 ifdef SHARED_LOWLEVEL
 	$(GCC) -o $(OUTFILE) $(ALL_OBJS) $(LD_FLAGS) $(GASNET_FLAGS)
@@ -184,10 +184,12 @@ newfile:
 	#mv Ufinish.txt Ufinish_ref.txt
 	#mv V0Td0.txt          V0Td0_ref.txt
 	#mv V0Td0_finish.txt   V0Td0_finish_ref.txt
-	mv V1Td1.txt          V1Td1_ref.txt
-	mv V1Td1_finish.txt   V1Td1_finish_ref.txt
+	#mv V1Td1.txt          V1Td1_ref.txt
+	#mv V1Td1_finish.txt   V1Td1_finish_ref.txt
 	#mv V1Tu1.txt          V1Tu1_ref.txt
 	#mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
+	mv debug_gemm_bf.txt debug_gemm_bf_ref.txt
+	mv debug_gemm_af.txt debug_gemm_af_ref.txt
 
 test:
 	make clean
