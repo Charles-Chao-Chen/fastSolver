@@ -113,7 +113,7 @@ void save_HodlrMatrix
 
 void save_LMatrix
   (const LMatrix *matrix, const std::string filename,
-   Context ctx, HighLevelRuntime *runtime, const Range &rg) {
+   Context ctx, HighLevelRuntime *runtime, const Range rg) {
 
     SaveRegionTask::TaskArgs args;
     int len = filename.size();

@@ -35,11 +35,13 @@ CC_FLAGS	:= -g -I ./ 	  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
 		   -DDEBUG	  \
-		   -DDEBUGGEMM
+		   -DDEBUG_GEMM
+#		   -DDEBUG_NODE_SOLVE
+
 NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
-#lapack and blas on sapling
+# lapack and blas library on sapling
 #LD_FLAGS	:= -L /usr/lib/	-l :liblapack.so.3 -l :libblas.so.3 -lm
 LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
 
@@ -188,8 +190,9 @@ newfile:
 	#mv V1Td1_finish.txt   V1Td1_finish_ref.txt
 	#mv V1Tu1.txt          V1Tu1_ref.txt
 	#mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
-	mv debug_gemm_bf.txt debug_gemm_bf_ref.txt
-	mv debug_gemm_af.txt debug_gemm_af_ref.txt
+	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
+	#mv debug_v0td0_af.txt debug_v0td0_af_ref.txt
+	mv debug_umat.txt     debug_umat_ref.txt
 
 test:
 	make clean

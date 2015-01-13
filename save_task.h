@@ -22,7 +22,8 @@ void save_HodlrMatrix
 // TODO: move into LMatrix class
 void save_LMatrix
   (const LMatrix *matrix, const std::string filename,
-   Context ctx, HighLevelRuntime *runtime, const Range &rg);
+   Context ctx, HighLevelRuntime *runtime,
+   const Range rg = (Range)(0,-1));
 
 
 void

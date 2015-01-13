@@ -56,10 +56,10 @@ namespace {
 
 // legion task wrapper
 void solve_node_matrix
-(LMatrix *(&V0Tu0), LMatrix *(&V1Tu1),
- LMatrix *(&V0Td0), LMatrix *(&V1Td1),
- Range task_tag, Context ctx,
- HighLevelRuntime *runtime) {
+  (LMatrix *(&V0Tu0), LMatrix *(&V1Tu1),
+   LMatrix *(&V0Td0), LMatrix *(&V1Td1),
+   Range task_tag, Context ctx,
+   HighLevelRuntime *runtime) {
 
   // this task can be indexed by any tag in the range.
   // the first tag is picked here.
@@ -105,17 +105,6 @@ void solve_node_matrix
   std::cout << "Waiting for node_solve task ..." << std::endl;
 #endif
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 /* ---- LUSolveTask implementation ---- */
@@ -300,8 +289,6 @@ LUSolveTask::cpu_task(const Task *task,
     std::cout << "Remove file: " << save_file2 << std::endl;
   save_data(V1Td1, V1Td1_rows, 0, V1Td1_cols, save_file2);
   */
-
-
   
 
   // Solve: I * eta1 = V0Td0 - V0Tu0 * eta0

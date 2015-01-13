@@ -97,15 +97,6 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   assert( !unode->is_legion_leaf() );
   assert( V0->Hmat != NULL );
   assert( V1->Hmat != NULL );
-
-
-#ifdef DEBUGGEMM
-  const char *gemm_bf = "debug_gemm_bf.txt";
-  if (remove(gemm_bf) == 0)
-    std::cout << "Remove file: " << gemm_bf << std::endl;
-  save_HodlrMatrix(unode, gemm_bf, ctx, runtime);
-#endif
-
   
   // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
   // from leaves to root in the H tree.
@@ -117,23 +108,45 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   Range ru1(b1->col_beg, b1->ncol   );
   Range rd0(0,           b0->col_beg);
   Range rd1(0,           b1->col_beg);
+
+
+#ifdef DEBUG_GEMM
+  const char *gemmBf = "debug_umat.txt";
+  //if (remove(gemmBf) == 0)
+  //std::cout << "Remove file: " << gemmBf << std::endl;
+  save_HodlrMatrix(unode, gemmBf, ctx, runtime);
+  std::cout << "Create file: " << gemmBf << std::endl;
+#endif
+
+  
   gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
   gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
   gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
   gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
 
-
-#ifdef DEBUGGEMM
-  const char *gemm_af = "debug_gemm_af.txt";
-  if (remove(gemm_af) == 0)
-    std::cout << "Remove file: " << gemm_af << std::endl;
-  save_HodlrMatrix(unode, gemm_af, ctx, runtime);
+  
+#if defined(DEBUG_NODE_SOLVE) || defined(DEBUG_GEMM)
+  const char *nodeSolveBf = "debug_v0td0_bf.txt";
+  if (remove(nodeSolveBf) == 0)
+    std::cout << "Remove file: " << nodeSolveBf << std::endl;
+  save_LMatrix(V0Td0, nodeSolveBf, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveBf << std::endl;
 #endif
   
     
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1, eta1 = V0Td0.
   solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, tag, ctx, runtime);
+
+
+#ifdef DEBUG_NODE_SOLVE
+  const char *nodeSolveAf = "debug_v0td0_af.txt";
+  if (remove(nodeSolveAf) == 0)
+    std::cout << "Remove file: " << nodeSolveAf << std::endl;
+  save_LMatrix(V0Td0, nodeSolveAf, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveAf << std::endl;
+#endif
+
 
   // This step requires a broadcast of V0Td0 and V1Td1
   // from root to leaves.
