@@ -80,7 +80,10 @@ void run_test(int rank, int N, int threshold,
 	      Context ctx, HighLevelRuntime *runtime) {
 
   int rand_seed = 1123;
-  int num_node = 4;
+
+  // TODO: bug: it seems all leaf_solve tasks run on node0 when
+  //  num_node=4 with two machines
+  int num_node = 2;
   int rhs_cols = 2;
   int rhs_rows = N;
   
@@ -103,8 +106,8 @@ void run_test(int rank, int N, int threshold,
     
  
   FastSolver fs;
-  fs.solve_dfs(hMatrix, num_node, ctx, runtime);
-  //fs.solve_bfs(hMatrix, num_node, ctx, runtime);
+  //fs.solve_dfs(hMatrix, num_node, ctx, runtime);
+  fs.solve_bfs(hMatrix, num_node, ctx, runtime);
   
   std::cout << "Tasks launching time: " << fs.get_elapsed_time()
 	    << std::endl;

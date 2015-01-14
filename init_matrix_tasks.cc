@@ -3,23 +3,22 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
-using namespace LegionRuntime::Accessor;
 
 
 void register_init_tasks() {
-  InitRHSTask::register_tasks();
+  RandomMatrixTask::register_tasks();
   InitCirculantKmatTask::register_tasks();
   InitCirculantMatrixTask::register_tasks();
 }
 
 
-/* ---- InitRHSTask implementation ---- */
+/* ---- RandomMatrixTask implementation ---- */
 
 /*static*/
-int InitRHSTask::TASKID;
+int RandomMatrixTask::TASKID;
 
-InitRHSTask::
-InitRHSTask(TaskArgument arg,
+RandomMatrixTask::
+RandomMatrixTask(TaskArgument arg,
 	    Predicate pred /*= Predicate::TRUE_PRED*/,
 	    MapperID id /*= 0*/,
 	    MappingTagID tag /*= 0*/)
@@ -28,21 +27,20 @@ InitRHSTask(TaskArgument arg,
 }
 
 /*static*/
-void InitRHSTask::register_tasks(void)
+void RandomMatrixTask::register_tasks(void)
 {
-  TASKID =
-    HighLevelRuntime::register_legion_task
-    <InitRHSTask::cpu_task>(AUTO_GENERATE_ID,
-			    Processor::LOC_PROC, 
-			    true,
-			    true,
-			    AUTO_GENERATE_ID,
-			    TaskConfigOptions(true/*leaf*/),
-			    "init_RHS");
-  printf("Register task %d : init_RHS\n", TASKID);
+  TASKID = HighLevelRuntime::register_legion_task
+    <RandomMatrixTask::cpu_task>(AUTO_GENERATE_ID,
+				 Processor::LOC_PROC, 
+				 true,
+				 true,
+				 AUTO_GENERATE_ID,
+				 TaskConfigOptions(true/*leaf*/),
+				 "random_matrix");
+  printf("Register task %d : randomize_matrix\n", TASKID);
 }
 
-void InitRHSTask::
+void RandomMatrixTask::
 cpu_task(const Task *task,
 	 const std::vector<PhysicalRegion> &regions,
 	 Context ctx, HighLevelRuntime *runtime)

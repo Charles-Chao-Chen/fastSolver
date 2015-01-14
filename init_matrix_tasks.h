@@ -5,12 +5,13 @@
 #include "hodlr_matrix.h"
 
 using namespace LegionRuntime::HighLevel;
+using namespace LegionRuntime::Accessor;
 
 
 void register_init_tasks();
 
 
-class InitRHSTask : public TaskLauncher {
+class RandomMatrixTask : public TaskLauncher {
  public:
   struct TaskArgs {
     int rand_seed;
@@ -18,7 +19,7 @@ class InitRHSTask : public TaskLauncher {
     //char filename[25];
   };
   
-  InitRHSTask(TaskArgument arg,
+  RandomMatrixTask(TaskArgument arg,
 	      Predicate pred = Predicate::TRUE_PRED,
 	      MapperID id = 0,
 	      MappingTagID tag = 0);

@@ -25,11 +25,11 @@ void LMatrix::rand
   (const int randSeed, const Range &range, const Range &taskTag,
    Context ctx, HighLevelRuntime *runtime) {
 
-  InitRHSTask::TaskArgs args = {randSeed, range.size};
-  InitRHSTask launcher(TaskArgument(&args, sizeof(args)),
-		       Predicate::TRUE_PRED,
-		       0,
-		       taskTag.begin);
+  RandomMatrixTask::TaskArgs args = {randSeed, range.size};
+  RandomMatrixTask launcher(TaskArgument(&args, sizeof(args)),
+			    Predicate::TRUE_PRED,
+			    0,
+			    taskTag.begin);
     
   launcher.add_region_requirement(RegionRequirement
 				  (data,
@@ -40,8 +40,7 @@ void LMatrix::rand
 				  );
   Future ft = runtime->execute_task(ctx, launcher);
   ft.get_void_result();
-  std::cout << "Waiting for initializing rhs ..."
-	    << std::endl;
+  //  std::cout << "Waiting for initializing rhs ..." << std::endl;
 }
 
 

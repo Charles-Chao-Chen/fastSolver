@@ -36,6 +36,9 @@ void
 FastSolver::solve_dfs(HodlrMatrix &matrix, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
+  std::cout << "Traverse tree in depth first order."
+	    << std::endl;
+  
   /*
   const char *save_file = "Umat.txt";
   if (remove(save_file) == 0)
@@ -180,6 +183,9 @@ void
 FastSolver::solve_bfs(HodlrMatrix &lr_mat, int tag_size,
 		      Context ctx, HighLevelRuntime *runtime)
 {
+  std::cout << "Traverse tree in breadth first order."
+	    << std::endl;
+
   Range tag(0, tag_size);
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
 }
