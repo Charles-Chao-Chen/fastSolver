@@ -197,7 +197,7 @@ void compute_L2_error
   const char *soln_file = "soln.txt";
   if (remove(soln_file) == 0)
     std::cout << "Remove old solution file." << std::endl;
-  
+  std::cout << "Create " << soln_file << std::endl;
   save_solution(lr_mat, soln_file, ctx, runtime);
   
   dirct_circulant_solve(soln_file, rand_seed, rhs_rows, nregions,

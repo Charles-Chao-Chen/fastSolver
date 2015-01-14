@@ -112,8 +112,8 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 
 #ifdef DEBUG_GEMM
   const char *gemmBf = "debug_umat.txt";
-  //if (remove(gemmBf) == 0)
-  //std::cout << "Remove file: " << gemmBf << std::endl;
+  if (remove(gemmBf) == 0)
+    std::cout << "Remove file: " << gemmBf << std::endl;
   save_HodlrMatrix(unode, gemmBf, ctx, runtime);
   std::cout << "Create file: " << gemmBf << std::endl;
 #endif
@@ -131,6 +131,26 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
     std::cout << "Remove file: " << nodeSolveBf << std::endl;
   save_LMatrix(V0Td0, nodeSolveBf, ctx, runtime);
   std::cout << "Create file: " << nodeSolveBf << std::endl;
+
+  const char *nodeSolveBf3 = "debug_v0tu0_bf.txt";
+  if (remove(nodeSolveBf3) == 0)
+    std::cout << "Remove file: " << nodeSolveBf3 << std::endl;
+  save_LMatrix(V0Tu0, nodeSolveBf3, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveBf3 << std::endl;
+
+  /*
+  const char *nodeSolveBf1 = "debug_v1td1_bf.txt";
+  if (remove(nodeSolveBf1) == 0)
+    std::cout << "Remove file: " << nodeSolveBf1 << std::endl;
+  save_LMatrix(V1Td1, nodeSolveBf1, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveBf1 << std::endl;
+
+  const char *nodeSolveBf2 = "debug_v1tu1_bf.txt";
+  if (remove(nodeSolveBf2) == 0)
+    std::cout << "Remove file: " << nodeSolveBf2 << std::endl;
+  save_LMatrix(V1Tu1, nodeSolveBf2, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveBf2 << std::endl;
+*/
 #endif
   
     

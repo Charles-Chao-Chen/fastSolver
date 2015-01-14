@@ -11,21 +11,22 @@ USE_CUDA=0
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 
 # Put the binary file name here
-OUTFILE		:= main
+OUTFILE	:= main
 # List all the application source files here
-GEN_SRC		:= main.cc              \
-		   fast_solver.cc       \
-		   solver_tasks.cc      \
-		   gemm.cc              \
-		   zero_matrix_task.cc 	\
-		   hodlr_matrix.cc 	\
-		   htree_helper.cc  	\
-		   legion_matrix.cc   	\
-		   init_matrix_tasks.cc \
-		   save_task.cc     	\
-		   direct_solve.cc 	\
-		   timer.cc 	   	\
-		   custom_mapper.cc # .cc files
+GEN_SRC	:= main.cc              \
+	   fast_solver.cc       \
+	   solver_tasks.cc      \
+	   gemm.cc              \
+	   zero_matrix_task.cc 	\
+	   hodlr_matrix.cc 	\
+	   htree_helper.cc  	\
+	   legion_matrix.cc   	\
+	   init_matrix_tasks.cc \
+	   save_task.cc     	\
+	   direct_solve.cc 	\
+	   timer.cc 	   	\
+	   custom_mapper.cc
+
 GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
@@ -34,16 +35,26 @@ CC_FLAGS	:= -g -I ./ 	  \
 		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
-		   -DDEBUG	  \
-		   -DDEBUG_GEMM
+#		   -DDEBUG	  \
+#		   -DDEBUG_GEMM
 #		   -DDEBUG_NODE_SOLVE
 
 NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
-# lapack and blas library on sapling
-#LD_FLAGS	:= -L /usr/lib/	-l :liblapack.so.3 -l :libblas.so.3 -lm
-LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+# gnu blas and lapack
+#LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+
+# mkl linking flags
+LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
+	-L/share/apps/intel/intel-14/lib/intel64/ \
+	-lmkl_intel_lp64 	\
+	-lmkl_core		\
+	-lmkl_intel_thread 	\
+	-liomp5 		\
+	-lpthread 		\
+	-lm
+
 
 ###########################################################################
 #
@@ -147,7 +158,7 @@ r1n:
 	-hl:sched 8192 -hl:window 8192
 
 r2n:
-	mpiexec -hosts compute-55-2,compute-55-4 \
+	mpiexec -hosts compute-120-1,compute-110-4 \
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
@@ -155,6 +166,18 @@ r2n:
 	./main -level 5 \
 	-ll:cpu 12 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
+
+r4n:
+	mpiexec -n 4 \
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -level 5 \
+	-ll:cpu 12 -ll:csize 10000 \
+	-hl:sched 8192 -hl:window 8192
+
+
 
 prof1:
 	mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \
@@ -182,16 +205,10 @@ spy2:
 	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
 
 newfile:
-	#mv Umat.txt    Umat_ref.txt
-	#mv Ufinish.txt Ufinish_ref.txt
-	#mv V0Td0.txt          V0Td0_ref.txt
-	#mv V0Td0_finish.txt   V0Td0_finish_ref.txt
-	#mv V1Td1.txt          V1Td1_ref.txt
-	#mv V1Td1_finish.txt   V1Td1_finish_ref.txt
-	#mv V1Tu1.txt          V1Tu1_ref.txt
-	#mv V1Tu1_finish.txt   V1Tu1_finish_ref.txt
 	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
-	#mv debug_v0td0_af.txt debug_v0td0_af_ref.txt
+	mv debug_v1td1_bf.txt debug_v1td1_bf_ref.txt
+	mv debug_v0tu0_bf.txt debug_v0tu0_bf_ref.txt
+	mv debug_v1tu1_bf.txt debug_v1tu1_bf_ref.txt
 	mv debug_umat.txt     debug_umat_ref.txt
 
 test:
@@ -199,4 +216,19 @@ test:
 	make -j 12
 	make r2n
 tar:	
-	tar cvfz fastSolver.tgz Makefile Readme main.cc fastSolver.cc fastSolver.h hodlr_matrix.h.cc hodlr_matrix.h.h gemm.cc gemm.h utility.cc utility.h custom_mapper.cc custom_mapper.h
+	tar cvfz fastSolver.tgz 	\
+		Makefile Readme TODO 	\
+		main.cc 		\
+		fast_solver.cc  	fast_solver.h 		\
+		solver_tasks.cc		solver_tasks.h		\
+		gemm.cc         	gemm.h  		\
+		zero_matrix_task.cc	zero_matrix_task.h 	\
+		hodlr_matrix.cc 	hodlr_matrix.h 		\
+		htree_helper.cc		htree_helper.h		\
+		legion_matrix.cc	legion_matrix.h		\
+		init_matrix_tasks.cc	init_matrix_tasks.h 	\
+		save_task.cc		save_task.h		\
+		direct_solve.cc		direct_solve.h		\
+		timer.cc		timer.h			\
+		lapack_blas.h		macros.h		\
+		custom_mapper.cc	custom_mapper.h 	\
