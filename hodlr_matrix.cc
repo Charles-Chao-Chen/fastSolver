@@ -128,8 +128,8 @@ void init_rhs_recursive
  Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::
-initialize_rhs(int rand_seed, int ncol, int node_num,
-	       Context ctx, HighLevelRuntime *runtime)
+init_rhs(int rand_seed, int ncol, int node_num,
+	 Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "initializing " << rhs_cols
 	    << " columns of right hand side ..."

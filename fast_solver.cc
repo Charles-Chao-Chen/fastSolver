@@ -32,62 +32,33 @@ FastSolver::FastSolver():
   time_launcher(-1) {}
 
 
-void
-FastSolver::solve_dfs(HodlrMatrix &matrix, int tag_size,
-		      Context ctx, HighLevelRuntime *runtime)
+void FastSolver::solve_dfs
+(HodlrMatrix &matrix, int nProc,
+ Context ctx, HighLevelRuntime *runtime)
 {
-  std::cout << "Traverse tree in depth first order."
+  std::cout << "Launch tasks in depth first order."
 	    << std::endl;
-  
-  /*
-  const char *save_file = "Umat.txt";
-  if (remove(save_file) == 0)
-    std::cout << "Remove file: " << save_file << std::endl;
-  save_Htree(matrix.uroot, save_file, ctx, runtime);
-*/
-
     
-  Range tag(0, tag_size);
+  Range taskTag(nProc);
   double t0 = timer();
-  solve_dfs(matrix.uroot, matrix.vroot, tag, ctx, runtime);
+  solve_dfs(matrix.uroot, matrix.vroot, taskTag, ctx, runtime);
   double t1 = timer();
   this->time_launcher = t1 - t0;
-
-
-  /*
-  const char *save_file = "Ufinish.txt";
-  if (remove(save_file) == 0)
-    std::cout << "Remove file: " << save_file << std::endl;
-  save_Htree(matrix.uroot, save_file, ctx, runtime);
-  */
 }
 
 
-void
-FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
-		      Range tag,
-		      Context ctx, HighLevelRuntime *runtime) {
+void FastSolver::solve_dfs
+(FSTreeNode * unode, FSTreeNode * vnode,
+ Range taskTag, Context ctx, HighLevelRuntime *runtime) {
 
   if (      unode->is_legion_leaf() ) {
     assert( vnode->is_legion_leaf() );
-
-    // pick a task tag id from tag_beg to tag_end.
-    // here the first tag is picked.
-    //save_Htree(unode, "Uinit.txt", ctx, runtime);
-    solve_legion_leaf(unode, vnode, tag, ctx, runtime);
-
-    /*
-    const char *save_file = "Umat.txt";
-    if (remove(save_file) == 0)
-      std::cout << "Remove file: " << save_file << std::endl;
-    save_Htree(unode, save_file, ctx, runtime);
-    */
+    solve_legion_leaf(unode, vnode, taskTag, ctx, runtime);
     return;
   }
 
-  int   half = tag.size/2;
-  Range tag0 = tag.lchild();
-  Range tag1 = tag.rchild();
+  Range tag0 = taskTag.lchild();
+  Range tag1 = taskTag.rchild();
   
   FSTreeNode * b0 = unode->lchild;
   FSTreeNode * b1 = unode->rchild;
@@ -141,25 +112,14 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
   save_LMatrix(V0Tu0, nodeSolveBf3, ctx, runtime);
   std::cout << "Create file: " << nodeSolveBf3 << std::endl;
 
-  /*
-  const char *nodeSolveBf1 = "debug_v1td1_bf.txt";
-  if (remove(nodeSolveBf1) == 0)
-    std::cout << "Remove file: " << nodeSolveBf1 << std::endl;
-  save_LMatrix(V1Td1, nodeSolveBf1, ctx, runtime);
-  std::cout << "Create file: " << nodeSolveBf1 << std::endl;
-
-  const char *nodeSolveBf2 = "debug_v1tu1_bf.txt";
-  if (remove(nodeSolveBf2) == 0)
-    std::cout << "Remove file: " << nodeSolveBf2 << std::endl;
-  save_LMatrix(V1Tu1, nodeSolveBf2, ctx, runtime);
-  std::cout << "Create file: " << nodeSolveBf2 << std::endl;
-*/
 #endif
   
     
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1, eta1 = V0Td0.
-  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, tag, ctx, runtime);
+  solve_node_matrix(V0Tu0, V1Tu1,
+		    V0Td0, V1Td1,
+		    taskTag, ctx, runtime);
 
 
 #ifdef DEBUG_NODE_SOLVE
@@ -179,14 +139,14 @@ FastSolver::solve_dfs(FSTreeNode * unode, FSTreeNode * vnode,
 }
 
 
-void
-FastSolver::solve_bfs(HodlrMatrix &lr_mat, int tag_size,
-		      Context ctx, HighLevelRuntime *runtime)
+void FastSolver::solve_bfs
+(HodlrMatrix &lr_mat, int nProc,
+ Context ctx, HighLevelRuntime *runtime)
 {
-  std::cout << "Traverse tree in breadth first order."
+  std::cout << "Launch tasks in breadth first order."
 	    << std::endl;
 
-  Range tag(0, tag_size);
+  Range tag(nProc);
   double t0 = timer();
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
   double t1 = timer();
@@ -194,51 +154,54 @@ FastSolver::solve_bfs(HodlrMatrix &lr_mat, int tag_size,
 }
 
 
-void
-FastSolver::solve_bfs(FSTreeNode * uroot, FSTreeNode *vroot,
-		      Range mappingTag,
-		      Context ctx, HighLevelRuntime *runtime) {
+void FastSolver::solve_bfs
+(FSTreeNode * uroot, FSTreeNode *vroot,
+ Range mappingTag, Context ctx, HighLevelRuntime *runtime) {
 
   std::list<FSTreeNode *> ulist;
   std::list<FSTreeNode *> vlist;
   ulist.push_back(uroot);
   vlist.push_back(vroot);
-  
-  std::list<Range> rangeList;
-  rangeList.push_back(mappingTag);
+  typedef std::list<FSTreeNode *>::iterator         Titer;
+  typedef std::list<FSTreeNode *>::reverse_iterator RTiter;
 
-  typedef std::list<FSTreeNode *>::iterator         ITER;
-  typedef std::list<FSTreeNode *>::reverse_iterator RITER;
-  typedef std::list<Range>::reverse_iterator        RRITER;
-  ITER uit = ulist.begin();
-  ITER vit = vlist.begin();
-  for (; uit != ulist.end(); uit++, vit++) {
+  std::list<Range> rglist;
+  rglist.push_back(mappingTag);
+  typedef std::list<Range>::iterator         Riter;
+  typedef std::list<Range>::reverse_iterator RRiter;
+
+  Titer uit = ulist.begin();
+  Titer vit = vlist.begin();
+  Riter rit = rglist.begin();
+  for (; uit != ulist.end(); uit++, vit++, rit++) {
+    Range rglchild = rit->lchild();
+    Range rgrchild = rit->rchild();
     FSTreeNode *ulchild = (*uit)->lchild;
     FSTreeNode *urchild = (*uit)->rchild;
     FSTreeNode *vlchild = (*vit)->lchild;
     FSTreeNode *vrchild = (*vit)->rchild;
-    if (      (*uit)->is_legion_leaf() == false ) {
-      assert( (*vit)->is_legion_leaf() == false );
-      ulist.push_back(ulchild);
-      ulist.push_back(urchild);
-      vlist.push_back(vlchild);
-      vlist.push_back(vrchild);
-      rangeList.push_back(mappingTag.lchild());
-      rangeList.push_back(mappingTag.rchild());
+    if (      ! (*uit)->is_legion_leaf() ) {
+      assert( ! (*vit)->is_legion_leaf() );
+      ulist.push_back( ulchild );
+      ulist.push_back( urchild );
+      vlist.push_back( vlchild );
+      vlist.push_back( vrchild );
+      rglist.push_back( rglchild );
+      rglist.push_back( rgrchild );
     }
   }
-  RITER ruit = ulist.rbegin();
-  RITER rvit = vlist.rbegin();
-  RRITER rrit = rangeList.rbegin();
-  for (; ruit != ulist.rend(); ruit++, rvit++, rrit++)
-    visit(*ruit, *rvit, *rrit, ctx, runtime);
-
+  RTiter ruit  = ulist.rbegin();
+  RTiter rvit  = vlist.rbegin();
+  RRiter rrgit = rglist.rbegin();
+  for (; ruit != ulist.rend(); ruit++, rvit++, rrgit++)
+    visit(*ruit, *rvit, *rrgit, ctx, runtime);
 }
 
 
-void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
-		       const Range mappingTag,
-		       Context ctx, HighLevelRuntime *runtime) {
+void FastSolver::visit
+(FSTreeNode *unode, FSTreeNode *vnode,
+ const Range mappingTag, Context ctx, HighLevelRuntime *runtime)
+{
   
   if (      unode->is_legion_leaf() ) {
     assert( vnode->is_legion_leaf() );
@@ -254,7 +217,7 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   const Range mappingTag0 = mappingTag.lchild();
   const Range mappingTag1 = mappingTag.rchild();
 
-  assert( !unode->is_legion_leaf() );
+  assert( ! unode->is_legion_leaf() );
   assert( V0->Hmat != NULL );
   assert( V1->Hmat != NULL );
 
@@ -281,7 +244,9 @@ void FastSolver::visit(FSTreeNode *unode, FSTreeNode *vnode,
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1
   // eta1 = V0Td0
-  solve_node_matrix(V0Tu0, V1Tu1, V0Td0, V1Td1, mappingTag0, ctx, runtime);  
+  solve_node_matrix(V0Tu0, V1Tu1,
+		    V0Td0, V1Td1,
+		    mappingTag0, ctx, runtime);  
 
   // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
   // Assemble x from d0 and d1: merge two trees

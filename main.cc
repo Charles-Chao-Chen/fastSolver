@@ -46,10 +46,10 @@ void top_level_task(const Task *task,
 		    const std::vector<PhysicalRegion> &regions,
 		    Context ctx, HighLevelRuntime *runtime) {
 
-#if 1
+#if 0
   //test_accuracy
   run_test(6,   /* rank */
-	   15*(16),  /* N */
+	   15*(8),  /* N */
 	   15,   /* threshold*/
 	   1,    /* nleaf_per_legion_node */
 	   1.e1, /* diagonal */
@@ -58,10 +58,10 @@ void top_level_task(const Task *task,
 	   runtime);
 #else
   //test_performance
-  run_test(150,   /* rank */
-	   1<<14, /* N */
-	   1<<8,  /* threshold*/
-	   1,     /* nleaf_per_legion_node */
+  run_test(400,   /* rank */
+	   1<<15, /* N */
+	   1<<9,  /* threshold*/
+	   2,     /* nleaf_per_legion_node */
 	   1.e5,  /* diagonal */
 	   false, /* compute accuracy */
 	   ctx,
@@ -83,7 +83,7 @@ void run_test(int rank, int N, int threshold,
 
   // TODO: bug: it seems all leaf_solve tasks run on node0 when
   //  num_node=4 with two machines
-  int num_node = 2;
+  int num_proc = 2;
   int rhs_cols = 2;
   int rhs_rows = N;
   
@@ -98,16 +98,15 @@ void run_test(int rank, int N, int threshold,
 	    << std::endl;
 
   // random right hand size
-  hMatrix.initialize_rhs(rand_seed, rhs_cols, num_node,
-			 ctx, runtime);
+  hMatrix.init_rhs(rand_seed, rhs_cols, num_proc, ctx, runtime);
   
   // A = U U^T + diag and U is a circulant matrix
-  hMatrix.init_circulant_matrix(diag, num_node, ctx, runtime);
+  hMatrix.init_circulant_matrix(diag, num_proc, ctx, runtime);
     
  
   FastSolver fs;
-  fs.solve_dfs(hMatrix, num_node, ctx, runtime);
-  //fs.solve_bfs(hMatrix, num_node, ctx, runtime);
+  fs.solve_dfs(hMatrix, num_proc, ctx, runtime);
+  //fs.solve_bfs(hMatrix, num_proc, ctx, runtime);
   
   std::cout << "Tasks launching time: " << fs.get_elapsed_time()
 	    << std::endl;

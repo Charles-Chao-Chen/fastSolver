@@ -44,10 +44,10 @@ NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
 # gnu blas and lapack
-LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+#LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
 
 # mkl linking flags
-#LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
+LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
 	-L/share/apps/intel/intel-14/lib/intel64/ \
 	-lmkl_intel_lp64 	\
 	-lmkl_core		\
@@ -178,6 +178,7 @@ r4n:
 	-ll:cpu 12 -ll:csize 10000 \
 	-hl:sched 8192 -hl:window 8192
 
+# --- legion profile ---
 prof1:
 	mpiexec -n 1 -ppn 1	\
 	-env OMP_NUM_THREADS=12	\
@@ -191,7 +192,7 @@ prof1:
 
 prof2:
 	mpiexec -n 2 -ppn 1	\
-	-env OMP_NUM_THREADS=4	\
+	-env OMP_NUM_THREADS=1	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
@@ -200,15 +201,23 @@ prof2:
 	-ll:cpu 12 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
 
-prof4:
-	numactl -m 0 -N 0 mpirun -H n0002 -H n0003 -H n0000 -H n0001 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
-	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
+node0:
+	python ~/legion/tools/legion_prof.py -p node_0.log
 
+node1:
+	python ~/legion/tools/legion_prof.py -p node_1.log
+
+# --- legion spy ---
 spy2:
-	mpirun -H n0001 -H n0002 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -cat legion_spy -level 2 \
-	-ll:cpu 12 -ll:csize 30000 -hl:sched 600
+	mpiexec -n 2 -ppn 1	\
+	-env OMP_NUM_THREADS=1	\
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -cat legion_spy -level 2 \
+	-ll:cpu 12 -ll:csize 30000 \
+	-hl:sched 8192 -hl:window 8192
 
 newfile:
 	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
@@ -221,6 +230,7 @@ test:
 	make clean
 	make -j 12
 	make r2n
+
 tar:	
 	tar cvfz fastSolver.tgz 	\
 		Makefile Readme TODO 	\

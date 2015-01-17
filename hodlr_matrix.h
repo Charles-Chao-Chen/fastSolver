@@ -62,7 +62,7 @@ class HodlrMatrix {
   void create_tree
     (int, int, int, int, int,
      Context, HighLevelRuntime *);
-  void initialize_rhs
+  void init_rhs
     (int, int, int, Context, HighLevelRuntime *);
   void init_circulant_matrix
     (double, int, Context, HighLevelRuntime *);
