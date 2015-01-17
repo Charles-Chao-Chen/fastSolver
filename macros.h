@@ -13,12 +13,20 @@ enum {
 };
 
 
+// used in SaveRegionTask::TaskArgs
+// for the length of the file name
+//const int MAX_FILE_NAME_LENGTH = 50;
+
+// used in InitCirculantKmatTask::TaskArgs
+// for the subtree stored in array
+const int MAX_TREE_SIZE = 30;
+
+
+
 /* Uniform random number generator */
-
-//#define frand(xmin,xmax) 1.234567
-
-#define frand(xmin,xmax) ((double)xmin+(double)(xmax-xmin)*rand()/	\
-  			  (double)RAND_MAX) 
+#define frand(xmin,xmax)			\
+  ((double)xmin+(double)(xmax-xmin)*rand()/	\
+   (double)RAND_MAX) 
 
 
 /* Macros to throw exceptions */

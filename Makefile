@@ -22,8 +22,9 @@ GEN_SRC	:= main.cc              \
 	   htree_helper.cc  	\
 	   legion_matrix.cc   	\
 	   init_matrix_tasks.cc \
-	   save_task.cc     	\
+	   save_region_task.cc  \
 	   direct_solve.cc 	\
+	   range.cc		\
 	   timer.cc 	   	\
 	   custom_mapper.cc
 
@@ -158,8 +159,7 @@ r1n:
 	-hl:sched 8192 -hl:window 8192
 
 r2n:
-#	mpiexec -hosts compute-120-1,compute-110-4
-	mpiexec -n 2 \
+	mpiexec -n 2 -ppn 1 	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
@@ -169,7 +169,7 @@ r2n:
 	-hl:sched 8192 -hl:window 8192
 
 r4n:
-	mpiexec -n 4 \
+	mpiexec -n 4 -ppn 1	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
@@ -178,15 +178,20 @@ r4n:
 	-ll:cpu 12 -ll:csize 10000 \
 	-hl:sched 8192 -hl:window 8192
 
-
-
 prof1:
-	mpirun -H n0000 -bind-to none -x GASNET_IB_SPAWNER -x \
-	GASNET_BACKTRACE=1 ./main -cat legion_prof -level 2 \
-	-ll:cpu 12 -ll:csize 30000 -hl:sched 8192 -hl:window 8192
+	mpiexec -n 1 -ppn 1	\
+	-env OMP_NUM_THREADS=12	\
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -cat legion_prof -level 2 \
+	-ll:cpu 1 -ll:csize 30000 \
+	-hl:sched 8192 -hl:window 8192
 
 prof2:
-	mpiexec -hosts compute-55-2,compute-55-4 \
+	mpiexec -n 2 -ppn 1	\
+	-env OMP_NUM_THREADS=4	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
@@ -228,7 +233,8 @@ tar:
 		htree_helper.cc		htree_helper.h		\
 		legion_matrix.cc	legion_matrix.h		\
 		init_matrix_tasks.cc	init_matrix_tasks.h 	\
-		save_task.cc		save_task.h		\
+		save_region_task.cc	save_region_task.h	\
+		range.cc		range.h 		\
 		direct_solve.cc		direct_solve.h		\
 		timer.cc		timer.h			\
 		lapack_blas.h		macros.h		\

@@ -2,22 +2,10 @@
 #define LEGION_MATRIX_H
 
 #include "legion.h"
+#include "range.h"
 
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
-
-
-class Range {
- public:
- Range(                   ): begin(0),     size(0)    {}
- Range(int size           ): begin(0),     size(size) {}
- Range(int begin, int size): begin(begin), size(size) {}
-  Range lchild() const;
-  Range rchild() const;
- public:
-  int begin;
-  int size;
-};
 
 
 // Data at leaf nodes is stored in column major fashion.
@@ -59,7 +47,11 @@ public:
      Context ctx, HighLevelRuntime *runtime);
 
 
-    
+  void save
+    (const std::string,
+    Context, HighLevelRuntime *, const Range);
+
+
   /* --- class members --- */
   
   int rows;  

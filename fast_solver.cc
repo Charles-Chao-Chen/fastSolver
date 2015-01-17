@@ -6,7 +6,7 @@
 #include "gemm.h"
 #include "zero_matrix_task.h"
 #include "init_matrix_tasks.h"
-#include "save_task.h"
+#include "save_region_task.h"
 #include "lapack_blas.h"
 #include "timer.h"
 #include "macros.h"
@@ -23,7 +23,7 @@ void register_solver_tasks() {
   register_gemm_tasks();
   register_zero_matrix_task();
   register_init_tasks();
-  register_output_tasks();
+  register_save_region_task();
   std::cout << std::endl;
 }
 
@@ -51,7 +51,7 @@ FastSolver::solve_dfs(HodlrMatrix &matrix, int tag_size,
   double t0 = timer();
   solve_dfs(matrix.uroot, matrix.vroot, tag, ctx, runtime);
   double t1 = timer();
-  time_launcher = t1 - t0;
+  this->time_launcher = t1 - t0;
 
 
   /*
@@ -187,7 +187,10 @@ FastSolver::solve_bfs(HodlrMatrix &lr_mat, int tag_size,
 	    << std::endl;
 
   Range tag(0, tag_size);
+  double t0 = timer();
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+  double t1 = timer();
+  this->time_launcher = t1 - t0;
 }
 
 

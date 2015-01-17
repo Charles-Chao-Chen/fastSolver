@@ -535,3 +535,11 @@ void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag
   fill_circulant_Kmat(vnode->lchild, row_beg_glo, r, diag, Kmat, LD);
   fill_circulant_Kmat(vnode->rchild, row_beg_glo, r, diag, Kmat, LD);
 }
+
+
+void HodlrMatrix::save_rhs
+(std::string soln_file, Context ctx, HighLevelRuntime *runtime)
+{
+  Range rRhs(this->rhs_cols);
+  save_HodlrMatrix(this->uroot, soln_file, ctx, runtime, rRhs);
+}

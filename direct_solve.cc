@@ -6,7 +6,6 @@
 #include <iomanip>
 
 #include "direct_solve.h"
-#include "save_task.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
@@ -198,7 +197,7 @@ void compute_L2_error
   if (remove(soln_file) == 0)
     std::cout << "Remove old solution file." << std::endl;
   std::cout << "Create " << soln_file << std::endl;
-  save_solution(lr_mat, soln_file, ctx, runtime);
+  lr_mat.save_rhs(soln_file, ctx, runtime);
   
   dirct_circulant_solve(soln_file, rand_seed, rhs_rows, nregions,
 			rhs_cols, rank, diag); 

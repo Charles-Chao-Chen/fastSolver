@@ -12,11 +12,6 @@
 using namespace LegionRuntime::HighLevel;
 
 
-// used in InitCirculantKmatTask::TaskArgs
-// for the subtree stored in array
-#define MAX_TREE_SIZE 30
-
-
 enum MatrixType {
   UMatrix,
   VMatrix,
@@ -64,11 +59,19 @@ class HodlrMatrix {
   // HodlrMatrix() {}
   //~HodlrMatrix();
   
-  void create_tree(int, int, int, int, int,
-		   Context, HighLevelRuntime *);
-  void initialize_rhs(int, int, int, Context, HighLevelRuntime *);
-  void init_circulant_matrix(double, int, Context, HighLevelRuntime *);
+  void create_tree
+    (int, int, int, int, int,
+     Context, HighLevelRuntime *);
+  void initialize_rhs
+    (int, int, int, Context, HighLevelRuntime *);
+  void init_circulant_matrix
+    (double, int, Context, HighLevelRuntime *);
 
+  // rhs becomes solution after the solver
+  void save_rhs
+    (std::string, Context, HighLevelRuntime *);
+
+  
   int get_num_rhs() {return rhs_cols;}
   int get_num_leaf() {return nleaf;}
   int set_num_leaf(int nleaf) {this->nleaf = nleaf;}

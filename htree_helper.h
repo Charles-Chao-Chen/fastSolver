@@ -25,5 +25,15 @@ void array_to_tree(FSTreeNode *, int);
 void array_to_tree(FSTreeNode *, int, int);
 
 
+void save_HodlrMatrix
+(FSTreeNode * node, std::string filename,
+ Context ctx, HighLevelRuntime *runtime,
+ Range rg = (Range)(0,-1));
+
+
+
+//void print_Vmat
+//(FSTreeNode *node, std::string filename);
+
 
 #endif // _HTREE_HELPER

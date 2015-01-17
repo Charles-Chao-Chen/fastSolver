@@ -143,3 +143,38 @@ create_matrix(LMatrix *(&matrix), int nrow, int ncol,
   matrix->data = runtime->create_logical_region(ctx, is, fs);
   assert(matrix->data != LogicalRegion::NO_REGION);
 }
+
+
+void save_HodlrMatrix
+(FSTreeNode * node, std::string filename,
+ Context ctx, HighLevelRuntime *runtime, Range rg)
+{
+  if ( node->is_legion_leaf() ) {
+    //save_LMatrix(node->lowrank_matrix, filename, ctx, runtime,rg);
+    node->lowrank_matrix->save(filename, ctx, runtime, rg);
+  } else {
+    save_HodlrMatrix(node->lchild, filename, ctx, runtime, rg);
+    save_HodlrMatrix(node->rchild, filename, ctx, runtime, rg);
+  }
+}
+
+
+
+
+/*
+  void HodlrMatrix::print_Vmat(FSTreeNode *node, std::string filename) {
+
+  //  if (node == vroot)
+  //save_region(node, filename, ctx, runtime); // print big V matrix
+
+  if (node->Hmat != NULL)
+  save_region(node->Hmat, filename, ctx, runtime);
+  else if (node != vroot)
+  return;
+
+  if (node->lchild != NULL && node->rchild != NULL) {
+  print_Vmat(node->lchild, filename);
+  print_Vmat(node->rchild, filename);
+  }
+  }
+*/

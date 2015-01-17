@@ -1,22 +1,8 @@
 #include "legion_matrix.h"
 #include "init_matrix_tasks.h"
 #include "zero_matrix_task.h"
+#include "save_region_task.h"
 #include "macros.h"
-
-/* ---- Range class methods ---- */
-
-Range Range::lchild () const
-{
-  int half_size = size/2;
-  return (Range){begin, half_size};
-}
-
-
-Range Range::rchild () const
-{
-  int half_size = size/2;
-  return (Range){begin+half_size, half_size};
-}
 
 
 /* ---- LMatrix class methods ---- */
@@ -82,3 +68,25 @@ void LMatrix::circulant
   launcher.region_requirements[0].add_field(FID_X);
   runtime->execute_task(ctx, launcher);
 }
+
+
+void LMatrix::save
+(const std::string filename,
+ Context ctx, HighLevelRuntime *runtime, const Range rg) {
+
+  SaveRegionTask::TaskArgs args;
+  args.filename  = filename;
+  args.col_range = rg;
+    
+  SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));  
+  launcher.add_region_requirement(RegionRequirement
+				  (this->data,
+				   READ_ONLY,
+				   EXCLUSIVE,
+				   this->data).
+				  add_field(FID_X)
+				  );
+  Future fm = runtime->execute_task(ctx, launcher);
+  fm.get_void_result(); // wait until finish
+}
+

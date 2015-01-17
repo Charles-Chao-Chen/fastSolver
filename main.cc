@@ -46,7 +46,7 @@ void top_level_task(const Task *task,
 		    const std::vector<PhysicalRegion> &regions,
 		    Context ctx, HighLevelRuntime *runtime) {
 
-#if 0
+#if 1
   //test_accuracy
   run_test(6,   /* rank */
 	   15*(16),  /* N */
@@ -106,8 +106,8 @@ void run_test(int rank, int N, int threshold,
     
  
   FastSolver fs;
-  //fs.solve_dfs(hMatrix, num_node, ctx, runtime);
-  fs.solve_bfs(hMatrix, num_node, ctx, runtime);
+  fs.solve_dfs(hMatrix, num_node, ctx, runtime);
+  //fs.solve_bfs(hMatrix, num_node, ctx, runtime);
   
   std::cout << "Tasks launching time: " << fs.get_elapsed_time()
 	    << std::endl;
