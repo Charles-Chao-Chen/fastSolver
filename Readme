@@ -1,11 +1,16 @@
 
-Define DEBUG in makefile to serialize task execution for debuging
+- Define DEBUG in makefile to serialize task execution for debuging
 purpose.
 
-The number of tasks: Consider the balanced binary tree. 
+- The number of tasks: Consider the balanced binary tree. 
 When the number of legion leaf is N, there are log_2(N) levels.
 (1) leaf solve happens N times
 (2) LU node solve happens on every node except the legion leaves, so there are N-1 of them
 (3) broadcast happens at every node, so it is N log_2(N)
 (4) reduce needs to be done for d and U, so twice as many as broadcast, i.e. 2N log_2(N)
 Above all, there are 3N log_2(N) + 2N -1 tasks in the solver.
+
+- Breadth-first traversal is crucial in this case. Consider runing on two nodes, tasks on node 1 always start later than those on node 0 using depth-first traversal, which can cause a huge delay (e.g. 128 legion leaves). 
+
+
+ 
