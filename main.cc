@@ -58,10 +58,10 @@ void top_level_task(const Task *task,
 	   runtime);
 #else
   //test_performance
-  run_test(400,   /* rank */
+  run_test(150,   /* rank */
 	   1<<15, /* N */
-	   1<<9,  /* threshold*/
-	   2,     /* nleaf_per_legion_node */
+	   1<<8,  /* threshold*/
+	   1,     /* nleaf_per_legion_node */
 	   1.e5,  /* diagonal */
 	   false, /* compute accuracy */
 	   ctx,
