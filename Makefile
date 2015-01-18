@@ -44,10 +44,10 @@ NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
 # gnu blas and lapack
-LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+#LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
 
 # mkl linking flags
-#LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
+LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
 	-L/share/apps/intel/intel-14/lib/intel64/ \
 	-lmkl_intel_lp64 	\
 	-lmkl_core		\

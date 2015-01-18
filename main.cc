@@ -46,7 +46,7 @@ void top_level_task(const Task *task,
 		    const std::vector<PhysicalRegion> &regions,
 		    Context ctx, HighLevelRuntime *runtime) {
 
-#if 0
+#if 1
   //test_accuracy
   run_test(6,   /* rank */
 	   15*(8),  /* N */
@@ -61,7 +61,7 @@ void top_level_task(const Task *task,
   run_test(150,   /* rank */
 	   1<<15, /* N */
 	   1<<8,  /* threshold*/
-	   1,     /* nleaf_per_legion_node */
+	   2,     /* nleaf_per_legion_node */
 	   1.e5,  /* diagonal */
 	   false, /* compute accuracy */
 	   ctx,

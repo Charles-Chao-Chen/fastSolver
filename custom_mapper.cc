@@ -235,55 +235,53 @@ AdversarialMapper::AdversarialMapper(Machine *m,
 
 void AdversarialMapper::select_task_options(Task *task)
 {
-  task->inline_task = false;
-  task->spawn_task = false;
-  task->map_locally = false; // turn on remote mapping
-  task->profile_task = false;
+  task->inline_task   = false;
+  task->spawn_task    = false;
+  task->map_locally   = false; // turn on remote mapping
+  task->profile_task  = false;
   task->task_priority = 0;
-  const std::set<Processor> &all_procs = machine->get_all_processors();
-  
-  //  assert(task->tag == 0);
-  //printf("task tag: %d.\n", task->tag);
-  
-  const std::set<Memory> &all_mems = machine->get_all_memories();
-  //printf("There are %ld memories:\n", all_mems.size());
+  //const std::set<Processor> &all_procs
+  //= machine->get_all_processors();
 
-  std::vector<Memory> valid_mems;
-  for (std::set<Memory>::const_iterator it = all_mems.begin();
-       it != all_mems.end(); it++) {
-    
+
+  typedef const std::set<Memory>              CSM;
+  typedef const std::set<Processor>           CSP;
+  typedef std::set<Memory>::const_iterator    SMCI;
+  typedef std::set<Processor>::const_iterator SPCI;
+
+  std::vector<Memory>    valid_mems;
+  std::vector<Processor> valid_options;
+
+  // select valid memories
+  CSM &all_mems = machine->get_all_memories();
+  for (SMCI it = all_mems.begin(); it != all_mems.end(); ) {
     Memory::Kind kind = machine->get_memory_kind(*it);
     if (kind == Memory::SYSTEM_MEM)
       valid_mems.push_back(*it);
+    it++;
   }
 
-  //assert(task->tag < valid_mems.size());
-  int mem_idx = task->tag % valid_mems.size();
-
+  // the task tag decides the memory
+  assert(task->tag < valid_mems.size());  
+  Memory mem = valid_mems[task->tag];
   
-  //mem_idx = 1- mem_idx;
-
-  
-  Memory mem = valid_mems[mem_idx];
-  const std::set<Processor> & options = machine->get_shared_processors(mem);
-  //printf("There are %d option processors.\n", options.size());
-	
-  std::vector<Processor> valid_options;
-  for (std::set<Processor>::const_iterator it = options.begin();
-       it != options.end(); it++) {
-    if (machine->get_processor_kind(*it) == Processor::LOC_PROC)
+  // select valid processors
+  CSP &options  = machine->get_shared_processors(mem);
+  for (SPCI it = options.begin(); it != options.end(); ) {
+    Processor::Kind kind = machine->get_processor_kind(*it);
+    if (kind == Processor::LOC_PROC)
       valid_options.push_back(*it);
+    it++;
   }
   
-  //printf("There are %d valid processors.\n", valid_options.size());
-  if (!valid_options.empty()) {
+  if ( !valid_options.empty() ) {
     task->target_proc = valid_options[0];
-    task->additional_procs.insert(valid_options.begin(), valid_options.end());
+    task->additional_procs.insert(valid_options.begin(),
+				  valid_options.end());
   } else {
     task->target_proc = Processor::NO_PROC;
     assert(false);
   }
-   
 }
 
 
