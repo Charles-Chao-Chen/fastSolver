@@ -51,7 +51,7 @@ void HodlrMatrix::create_tree
   this->rhs_rows = N;
   this->rhs_cols = rhs_cols;
 
-  uroot  = new FSTreeNode(N, rhs_cols);
+  uroot = new FSTreeNode(N, rhs_cols);
 
   // create the H-tree for U matrices
   create_balanced_tree(uroot, rank, threshold);
@@ -63,7 +63,7 @@ void HodlrMatrix::create_tree
   set_num_leaf( create_legion_node(uroot, ctx, runtime) );
 
   // create V tree 
-  vroot  = new FSTreeNode(uroot->nrow, 0);
+  vroot = new FSTreeNode(uroot->nrow, 0);
   create_vnode_from_unode(uroot, vroot, ctx, runtime);
 
   // print_legion_tree(uroot);
@@ -115,10 +115,15 @@ create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
     create_balanced_tree(node->lchild, rank, threshold);
     create_balanced_tree(node->rchild, rank, threshold);
     
-  } else {
+  }
+
+  /*
+  else {
+    std::cout << "Error: " << std::endl;
     assert(N > rank); // assume the size of dense blocks is larger
                       // than the rank
   }
+  */
 }
 
 
@@ -312,7 +317,7 @@ void HodlrMatrix::create_vnode_from_unode
    Context ctx, HighLevelRuntime *runtime)
 {
   // create V tree
-  if (!unode->is_real_leaf()) {
+  if ( ! unode->is_real_leaf() ) {
 
     int lnrow = unode->lchild->nrow;
     int rnrow = unode->rchild->nrow;
