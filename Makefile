@@ -14,6 +14,7 @@ USE_CUDA=0
 OUTFILE	:= main
 # List all the application source files here
 GEN_SRC	:= main.cc              \
+	   test.cc		\
 	   fast_solver.cc       \
 	   solver_tasks.cc      \
 	   gemm.cc              \
@@ -51,10 +52,14 @@ LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
 	-L/share/apps/intel/intel-14/lib/intel64/ \
 	-lmkl_intel_lp64 	\
 	-lmkl_core		\
-	-lmkl_intel_thread 	\
-	-liomp5 		\
+	-lmkl_sequential	\
 	-lpthread 		\
 	-lm
+
+#	-lmkl_intel_thread 	\
+	-liomp5 		\
+	-lmkl_sequential	\
+
 
 
 ###########################################################################
@@ -187,7 +192,7 @@ prof1:
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
 	./main -cat legion_prof -level 2 \
-	-ll:cpu 1 -ll:csize 30000 \
+	-ll:cpu 4 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
 
 prof2:
@@ -197,15 +202,73 @@ prof2:
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	./main -cat legion_prof -level 2 \
-	-ll:cpu 12 -ll:csize 30000 \
-	-hl:sched 8192 -hl:window 8192
+	numactl			\
+	-m 0 -N 0		\
+	./main			\
+	-np 2 			\
+	-cat legion_prof	\
+	-level 2 		\
+	-ll:cpu    4		\
+	-ll:util   2 		\
+	-ll:csize  30000 	\
+	-hl:sched  8192  	\
+	-hl:window 8192
+
+
+prof4:
+	mpiexec -n 4 -ppn 1		\
+	-env OMP_NUM_THREADS=1		\
+	-env MV2_SHOW_CPU_BINDING=1 	\
+	-env MV2_ENABLE_AFFINITY=0  	\
+	-env GASNET_IB_SPAWNER=mpi  	\
+	-env GASNET_BACKTRACE=1     	\
+	numactl				\
+	-m 0 -N 0			\
+	./main				\
+	-np 4 				\
+	-cat legion_prof		\
+	-level 2 			\
+	-ll:cpu    4			\
+	-ll:util   2 			\
+	-ll:csize  30000 		\
+	-hl:sched  8192  		\
+	-hl:window 8192
+
+prof8:
+	mpiexec -n 8 -ppn 1	\
+	-env OMP_NUM_THREADS=1	\
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	numactl			\
+	-m 0 -N 0		\
+	./main			\
+	-np 8 			\
+	-cat legion_prof	\
+	-level 2 		\
+	-ll:cpu    4		\
+	-ll:util   2 		\
+	-ll:csize  30000 	\
+	-hl:sched  8192  	\
+	-hl:window 8192
 
 node0:
 	python ~/legion/tools/legion_prof.py -p node_0.log
 
 node1:
 	python ~/legion/tools/legion_prof.py -p node_1.log
+
+node2:
+	python ~/legion/tools/legion_prof.py -p node_2.log
+
+node3:
+	python ~/legion/tools/legion_prof.py -p node_3.log
+
+node7:
+	python ~/legion/tools/legion_prof.py -p node_7.log
+
+
 
 # --- legion spy ---
 spy2:
@@ -218,6 +281,18 @@ spy2:
 	./main -cat legion_spy -level 2 \
 	-ll:cpu 12 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
+
+spy4:
+	mpiexec -n 8 -ppn 1	\
+	-env OMP_NUM_THREADS=1	\
+	-env MV2_SHOW_CPU_BINDING=1 \
+	-env MV2_ENABLE_AFFINITY=0  \
+	-env GASNET_IB_SPAWNER=mpi  \
+	-env GASNET_BACKTRACE=1     \
+	./main -cat legion_spy -level 2 \
+	-ll:cpu 12 -ll:csize 30000 \
+	-hl:sched 8192 -hl:window 8192
+
 
 newfile:
 	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
@@ -235,6 +310,7 @@ tar:
 	tar cvfz fastSolver.tgz 	\
 		Makefile Readme TODO 	\
 		main.cc 		\
+		test.cc			test.h			\
 		fast_solver.cc  	fast_solver.h 		\
 		solver_tasks.cc		solver_tasks.h		\
 		gemm.cc         	gemm.h  		\
