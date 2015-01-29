@@ -164,14 +164,19 @@ r1n:
 	-hl:sched 8192 -hl:window 8192
 
 r2n:
-	mpiexec -n 2 -ppn 1 	\
+	mpiexec -n 2 -ppn 1	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	./main -level 5 \
-	-ll:cpu 12 -ll:csize 30000 \
-	-hl:sched 8192 -hl:window 8192
+	./main			\
+	-np 2 			\
+	-level 5 		\
+	-ll:cpu    8		\
+	-ll:util   4 		\
+	-ll:csize  30000 	\
+	-hl:sched  8192  	\
+	-hl:window 8192
 
 r4n:
 	mpiexec -n 4 -ppn 1	\
@@ -184,86 +189,51 @@ r4n:
 	-hl:sched 8192 -hl:window 8192
 
 # --- legion profile ---
-prof1:
-	mpiexec -n 1 -ppn 1	\
-	-env OMP_NUM_THREADS=12	\
+
+prof:
+	mpiexec -n $(nproc) -ppn 1	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	./main -cat legion_prof -level 2 \
-	-ll:cpu 4 -ll:csize 30000 \
-	-hl:sched 8192 -hl:window 8192
+	$(numa) \
+	./main			\
+	-test 1			\
+	-np $(nproc) 			\
+	-cat legion_prof	\
+	-level 2 		\
+	-ll:cpu    $(ncpu)		\
+	-ll:util   $(nutil) 		\
+	-ll:csize  30000 	\
+	-hl:sched  8192  	\
+	-hl:window 8192
+
+node:
+	python ~/legion/tools/legion_prof.py -p node_$(idx).log
+	python ~/legion/tools/legion_prof.py -p node_$(idx).log > \
+	legion_node$(idx).txt
 
 prof2:
 	mpiexec -n 2 -ppn 1	\
-	-env OMP_NUM_THREADS=1	\
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	numactl			\
-	-m 0 -N 0		\
 	./main			\
+	-test 1			\
 	-np 2 			\
 	-cat legion_prof	\
 	-level 2 		\
-	-ll:cpu    4		\
-	-ll:util   2 		\
+	-ll:cpu    11		\
+	-ll:util   1 		\
 	-ll:csize  30000 	\
 	-hl:sched  8192  	\
 	-hl:window 8192
-
-
-prof4:
-	mpiexec -n 4 -ppn 1		\
-	-env OMP_NUM_THREADS=1		\
-	-env MV2_SHOW_CPU_BINDING=1 	\
-	-env MV2_ENABLE_AFFINITY=0  	\
-	-env GASNET_IB_SPAWNER=mpi  	\
-	-env GASNET_BACKTRACE=1     	\
-	numactl				\
-	-m 0 -N 0			\
-	./main				\
-	-np 4 				\
-	-cat legion_prof		\
-	-level 2 			\
-	-ll:cpu    4			\
-	-ll:util   2 			\
-	-ll:csize  30000 		\
-	-hl:sched  8192  		\
-	-hl:window 8192
-
-prof8:
-	mpiexec -n 8 -ppn 1	\
-	-env OMP_NUM_THREADS=1	\
-	-env MV2_SHOW_CPU_BINDING=1 \
-	-env MV2_ENABLE_AFFINITY=0  \
-	-env GASNET_IB_SPAWNER=mpi  \
-	-env GASNET_BACKTRACE=1     \
-	numactl			\
+#	numactl			\
 	-m 0 -N 0		\
-	./main			\
-	-np 8 			\
-	-cat legion_prof	\
-	-level 2 		\
-	-ll:cpu    4		\
-	-ll:util   2 		\
-	-ll:csize  30000 	\
-	-hl:sched  8192  	\
-	-hl:window 8192
 
-node0:
-	python ~/legion/tools/legion_prof.py -p node_0.log
-
-node1:
-	python ~/legion/tools/legion_prof.py -p node_1.log
-
-node2:
-	python ~/legion/tools/legion_prof.py -p node_2.log
-
-node3:
-	python ~/legion/tools/legion_prof.py -p node_3.log
+node4:
+	python ~/legion/tools/legion_prof.py -p node_4.log
 
 node7:
 	python ~/legion/tools/legion_prof.py -p node_7.log
