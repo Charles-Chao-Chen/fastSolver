@@ -51,6 +51,7 @@ void FastSolver::solve_dfs
 (FSTreeNode * unode, FSTreeNode * vnode,
  Range taskTag, Context ctx, HighLevelRuntime *runtime) {
 
+  /*
   if (      unode->is_legion_leaf() ) {
     assert( vnode->is_legion_leaf() );
     solve_legion_leaf(unode, vnode, taskTag, ctx, runtime);
@@ -135,7 +136,9 @@ void FastSolver::solve_dfs
   // from root to leaves.
   // Assemble x from d0 and d1: merge two trees
   gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
-  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx, runtime);
+  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx,
+  // runtime);
+  */
 }
 
 
@@ -193,14 +196,22 @@ void FastSolver::solve_bfs
   RTiter ruit  = ulist.rbegin();
   RTiter rvit  = vlist.rbegin();
   RRiter rrgit = rglist.rbegin();
+
+  double tRed = 0, tCreate = 0, tBroad = 0;
   for (; ruit != ulist.rend(); ruit++, rvit++, rrgit++)
-    visit(*ruit, *rvit, *rrgit, ctx, runtime);
+    visit(*ruit, *rvit, *rrgit,
+	  tRed, tBroad, tCreate,
+	  ctx, runtime);
+  std::cout << "launch reduction task: " << tRed   << std::endl
+	    << "launch create task: " << tCreate   << std::endl
+	    << "launch broadcast task: " << tBroad << std::endl;
 }
 
 
 void FastSolver::visit
-(FSTreeNode *unode, FSTreeNode *vnode,
- const Range mappingTag, Context ctx, HighLevelRuntime *runtime)
+(FSTreeNode *unode, FSTreeNode *vnode, const Range mappingTag,
+ double& tRed, double& tBroad, double& tCreate,
+ Context ctx, HighLevelRuntime *runtime)
 {
   
   if (      unode->is_legion_leaf() ) {
@@ -232,15 +243,18 @@ void FastSolver::visit
   Range ru1(b1->col_beg, b1->ncol);
   Range rd0(0,           b0->col_beg);
   Range rd1(0,           b1->col_beg);
-  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0,
-	      mappingTag0, ctx, runtime);
-  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1,
-	      mappingTag1, ctx, runtime);
-  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0,
-	      mappingTag0, ctx, runtime);
-  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1,
-	      mappingTag1, ctx, runtime);
 
+  double t0 = timer();
+  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0,
+	      mappingTag0, tCreate, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1,
+	      mappingTag1, tCreate, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0,
+	      mappingTag0, tCreate, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1,
+	      mappingTag1, tCreate, ctx, runtime);
+  tRed += timer() - t0;
+  
   // V0Td0 and V1Td1 contain the solution on output.
   // eta0 = V1Td1
   // eta1 = V0Td0
@@ -248,10 +262,14 @@ void FastSolver::visit
 		    V0Td0, V1Td1,
 		    mappingTag0, ctx, runtime);  
 
-  // This step requires a broadcast of V0Td0 and V1Td1 from root to leaves.
+  // This step requires a broadcast of V0Td0 and V1Td1
+  // from root to leaves.
   // Assemble x from d0 and d1: merge two trees
+
+  double t1 = timer();
   gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0,
 		 mappingTag0, ctx, runtime);
   gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1,
 		 mappingTag1, ctx, runtime);
+  tBroad += timer() - t1;
 }

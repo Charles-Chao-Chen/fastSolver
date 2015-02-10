@@ -49,17 +49,18 @@ ZeroMatrixTask::ZeroMatrixTask(
 /*static*/
 void ZeroMatrixTask::register_task(void)
 {
-  TASKID =
-    HighLevelRuntime::register_legion_task<ZeroMatrixTask::cpu_task>(
-    AUTO_GENERATE_ID,
-    Processor::LOC_PROC, 
-    true,
-    true,
-    AUTO_GENERATE_ID,
-    TaskConfigOptions(true/*leaf*/),
-    "Init_Zero_Matrix");
-  
+  TASKID = HighLevelRuntime::register_legion_task
+    <ZeroMatrixTask::cpu_task>(
+			       AUTO_GENERATE_ID,
+			       Processor::LOC_PROC, 
+			       true,
+			       true,
+			       AUTO_GENERATE_ID,
+			       TaskConfigOptions(true/*leaf*/),
+			       "Init_Zero_Matrix");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : ZeroMatrix\n", TASKID);
+#endif
 }
 
 void

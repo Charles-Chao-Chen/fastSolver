@@ -33,10 +33,11 @@ GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
-CC_FLAGS	:= -g -I ./ 	  \
+CC_FLAGS	:= -I ./ 	  \
 		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
+#		   -DNDEBUG	  \
 #		   -DDEBUG	  \
 #		   -DDEBUG_GEMM
 #		   -DDEBUG_NODE_SOLVE
@@ -153,6 +154,40 @@ clean:
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
 
+
+newfile:
+	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
+	mv debug_v1td1_bf.txt debug_v1td1_bf_ref.txt
+	mv debug_v0tu0_bf.txt debug_v0tu0_bf_ref.txt
+	mv debug_v1tu1_bf.txt debug_v1tu1_bf_ref.txt
+	mv debug_umat.txt     debug_umat_ref.txt
+
+test:
+	make clean
+	make -j 12
+	make r2n
+
+tar:	
+	tar cvfz fastSolver.tgz 	\
+		Makefile Readme TODO 	\
+		main.cc 		\
+		test.cc			test.h			\
+		fast_solver.cc  	fast_solver.h 		\
+		solver_tasks.cc		solver_tasks.h		\
+		gemm.cc         	gemm.h  		\
+		zero_matrix_task.cc	zero_matrix_task.h 	\
+		hodlr_matrix.cc 	hodlr_matrix.h 		\
+		htree_helper.cc		htree_helper.h		\
+		legion_matrix.cc	legion_matrix.h		\
+		init_matrix_tasks.cc	init_matrix_tasks.h 	\
+		save_region_task.cc	save_region_task.h	\
+		range.cc		range.h 		\
+		direct_solve.cc		direct_solve.h		\
+		timer.cc		timer.h			\
+		lapack_blas.h		macros.h		\
+		custom_mapper.cc	custom_mapper.h 	\
+
+
 r1n:
 	mpiexec -n 1 \
 	-env MV2_SHOW_CPU_BINDING=1 \
@@ -190,55 +225,40 @@ r4n:
 
 # --- legion profile ---
 
+# nproc : the number of processes, and there should be one
+#  process for every node
+# numa  : can be set to 'numactl -m 0 -N 0' to use numa node
+# ncpu  :
+# nutil :
+# leaf  : legion leaf size
 prof:
-	mpiexec -n $(nproc) -ppn 1	\
+	mpiexec -n $(nproc) -ppn 1  \
 	-env MV2_SHOW_CPU_BINDING=1 \
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	$(numa) \
+	$(numa) 		\
 	./main			\
-	-test 1			\
-	-np $(nproc) 			\
+	-test 3			\
+	-np $(nproc) 		\
+	-leaf $(leaf)		\
 	-cat legion_prof	\
 	-level 2 		\
-	-ll:cpu    $(ncpu)		\
-	-ll:util   $(nutil) 		\
-	-ll:csize  30000 	\
+	-ll:cpu    $(ncpu)	\
+	-ll:util   $(nutil)	\
+	-ll:csize  20000 	\
 	-hl:sched  8192  	\
 	-hl:window 8192
 
-node:
-	python ~/legion/tools/legion_prof.py -p node_$(idx).log
-	python ~/legion/tools/legion_prof.py -p node_$(idx).log > \
-	legion_node$(idx).txt
-
-prof2:
-	mpiexec -n 2 -ppn 1	\
-	-env MV2_SHOW_CPU_BINDING=1 \
-	-env MV2_ENABLE_AFFINITY=0  \
-	-env GASNET_IB_SPAWNER=mpi  \
-	-env GASNET_BACKTRACE=1     \
-	./main			\
-	-test 1			\
-	-np 2 			\
-	-cat legion_prof	\
-	-level 2 		\
-	-ll:cpu    11		\
-	-ll:util   1 		\
-	-ll:csize  30000 	\
-	-hl:sched  8192  	\
-	-hl:window 8192
+#	-hl:prof   1		\
 #	numactl			\
 	-m 0 -N 0		\
 
-node4:
-	python ~/legion/tools/legion_prof.py -p node_4.log
-
-node7:
-	python ~/legion/tools/legion_prof.py -p node_7.log
-
-
+# idx : node index
+node:
+	python ~/legion/tools/legion_prof.py -p node_$(idx).log
+#	python ~/legion/tools/legion_prof.py -p node_$(idx).log \
+	> legion_node.txt
 
 # --- legion spy ---
 spy2:
@@ -251,47 +271,3 @@ spy2:
 	./main -cat legion_spy -level 2 \
 	-ll:cpu 12 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
-
-spy4:
-	mpiexec -n 8 -ppn 1	\
-	-env OMP_NUM_THREADS=1	\
-	-env MV2_SHOW_CPU_BINDING=1 \
-	-env MV2_ENABLE_AFFINITY=0  \
-	-env GASNET_IB_SPAWNER=mpi  \
-	-env GASNET_BACKTRACE=1     \
-	./main -cat legion_spy -level 2 \
-	-ll:cpu 12 -ll:csize 30000 \
-	-hl:sched 8192 -hl:window 8192
-
-
-newfile:
-	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
-	mv debug_v1td1_bf.txt debug_v1td1_bf_ref.txt
-	mv debug_v0tu0_bf.txt debug_v0tu0_bf_ref.txt
-	mv debug_v1tu1_bf.txt debug_v1tu1_bf_ref.txt
-	mv debug_umat.txt     debug_umat_ref.txt
-
-test:
-	make clean
-	make -j 12
-	make r2n
-
-tar:	
-	tar cvfz fastSolver.tgz 	\
-		Makefile Readme TODO 	\
-		main.cc 		\
-		test.cc			test.h			\
-		fast_solver.cc  	fast_solver.h 		\
-		solver_tasks.cc		solver_tasks.h		\
-		gemm.cc         	gemm.h  		\
-		zero_matrix_task.cc	zero_matrix_task.h 	\
-		hodlr_matrix.cc 	hodlr_matrix.h 		\
-		htree_helper.cc		htree_helper.h		\
-		legion_matrix.cc	legion_matrix.h		\
-		init_matrix_tasks.cc	init_matrix_tasks.h 	\
-		save_region_task.cc	save_region_task.h	\
-		range.cc		range.h 		\
-		direct_solve.cc		direct_solve.h		\
-		timer.cc		timer.h			\
-		lapack_blas.h		macros.h		\
-		custom_mapper.cc	custom_mapper.h 	\

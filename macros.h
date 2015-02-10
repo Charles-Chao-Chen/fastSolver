@@ -19,7 +19,7 @@ enum {
 
 // used in InitCirculantKmatTask::TaskArgs
 // for the subtree stored in array
-const int MAX_TREE_SIZE = 30;
+const int MAX_TREE_SIZE = 100;
 
 
 

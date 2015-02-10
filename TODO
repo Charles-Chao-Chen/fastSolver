@@ -1,3 +1,5 @@
+TODO: Automake, use CMake perhaps.
+
 TODO: create matrix inside fill_circulant_Kmat
 
 BUG: nleaf_per_legion_node = 1.

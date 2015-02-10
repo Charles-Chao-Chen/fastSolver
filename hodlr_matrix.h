@@ -92,6 +92,7 @@ class HodlrMatrix {
 
   void init_Umat(FSTreeNode *node, Range tag,
 		 Context, HighLevelRuntime *, int row_beg = 0);
+  
   void init_Vmat(FSTreeNode *node, double diag, Range tag,
 		 Context, HighLevelRuntime *, int row_beg = 0);
 
@@ -100,6 +101,7 @@ class HodlrMatrix {
 
   void create_Hmatrix(FSTreeNode *, FSTreeNode *, int,
 		      Context, HighLevelRuntime *);
+  
   void set_circulant_Hmatrix_data
     (FSTreeNode * Hmat, Range tag,
      Context, HighLevelRuntime *,

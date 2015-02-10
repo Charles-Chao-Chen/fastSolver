@@ -32,7 +32,9 @@ void SaveRegionTask::register_tasks(void)
 			       AUTO_GENERATE_ID,
 			       TaskConfigOptions(true/*leaf*/),
 			       "save_rhs");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : save_rhs\n", TASKID);
+#endif
 }
 
 

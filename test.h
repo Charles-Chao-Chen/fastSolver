@@ -16,6 +16,11 @@ void test_accuracy(Context ctx, HighLevelRuntime *runtime);
 
 void test_performance(Context ctx, HighLevelRuntime *runtime);
 
+void test1(int, Context ctx, HighLevelRuntime *runtime);
+
+void test2(int, Context ctx, HighLevelRuntime *runtime);
+
+void test3(int, int, Context ctx, HighLevelRuntime *runtime);
 
 
 #endif // TEST_H

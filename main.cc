@@ -13,6 +13,12 @@ void top_level_task(const Task *task,
 
   int nproc = 1; // number of processes, which equals to
                  // the number of nodes
+  int test  = 0;
+  int nleaf = 1;
+  
+  printf("Usage:\n"
+	 "  -np : number of processes; default is 1.\n"
+	 "  -test : 0 for accuracy; default is 0.\n");
   
   // Check for any command line arguments
   {
@@ -21,16 +27,32 @@ void top_level_task(const Task *task,
     for (int i = 1; i < command_args.argc; i++) {
       if (!strcmp(command_args.argv[i],"-np"))
 	nproc = atoi(command_args.argv[++i]);
+      if (!strcmp(command_args.argv[i],"-test"))
+	test  = atoi(command_args.argv[++i]);
+      if (!strcmp(command_args.argv[i],"-leaf"))
+	nleaf = atoi(command_args.argv[++i]);
     }
   }
-  printf("Running fast solver for %d processes...\n", nproc);
+  printf("Running test %d with %d processes...\n nleaf=%d\n\n",
+	 test, nproc, nleaf);
   
 
-  //test_accuracy(ctx, runtime);
-  //test_performance(ctx, runtime);
-  //test2(ctx, runtime);
-  test1(nproc, ctx, runtime);
+  switch (test) {
+  case 1 :
+    test1(nproc, ctx, runtime);
+    break;
+  case 3:
+    test3(nproc, nleaf, ctx, runtime);
+    break;
+  default:
+    test_accuracy(ctx, runtime);
+  }
 
+  //test_performance(ctx, runtime);
+  //test2(nproc, ctx, runtime);
+  //test1(nproc, ctx, runtime);
+
+ 
   return;
 }
 

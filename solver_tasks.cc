@@ -130,8 +130,10 @@ void LUSolveTask::register_tasks(void)
 			    AUTO_GENERATE_ID,
 			    TaskConfigOptions(true/*leaf*/),
 			    "LU_Solve");
-  
+
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : LU_Solve\n", TASKID);
+#endif
 }
 
 void
@@ -327,7 +329,9 @@ void LeafSolveTask::register_tasks(void)
 			      AUTO_GENERATE_ID,
 			      TaskConfigOptions(true/*leaf*/),
 			      "Leaf_Solve");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : Leaf_Solve\n", TASKID);
+#endif
 }
 
 static void serial_leaf_solve

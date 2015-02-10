@@ -24,10 +24,11 @@ class FastSolver {
   void solve_dfs(FSTreeNode *, FSTreeNode *, Range,
 		 Context, HighLevelRuntime *);
 
-  void solve_bfs(FSTreeNode *, FSTreeNode *, Range,
+  void solve_bfs(FSTreeNode *, FSTreeNode *, Range, 
 		 Context, HighLevelRuntime *);
 
   void visit(FSTreeNode *, FSTreeNode *, const Range,
+	     double&, double&, double&,
 	     Context, HighLevelRuntime *);
 
  private:

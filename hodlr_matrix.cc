@@ -79,13 +79,12 @@ void HodlrMatrix::create_tree
  *   RHS  - right hand side of the problem
  */
 void HodlrMatrix::init_circulant_matrix
-(double diag, int num_node,
- Context ctx, HighLevelRuntime
- *runtime) {
+(double diag, int num_node, Context ctx,
+ HighLevelRuntime *runtime) {
 
-  Range tag(num_node);
-  init_Umat(uroot, tag, ctx, runtime);       // row_beg = 0
-  init_Vmat(vroot, diag, tag, ctx, runtime); // row_beg = 0
+  Range taskTag(num_node);
+  init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
+  init_Vmat(vroot, diag, taskTag, ctx, runtime); // row_beg = 0
 
   //print_legion_tree(uroot);
   //print_legion_tree(vroot);
@@ -168,15 +167,15 @@ init_rhs(int rand_seed, int ncol, int node_num,
 }
 
 
-void HodlrMatrix::
-init_Umat(FSTreeNode *node, Range tag, Context ctx,
-	  HighLevelRuntime *runtime, int row_beg) {
+void HodlrMatrix::init_Umat
+(FSTreeNode *node, Range tag, Context ctx,
+ HighLevelRuntime *runtime, int row_beg) {
 
   if ( node->is_legion_leaf() ) {
 
-    assert(node->lowrank_matrix != NULL); // initialize region here
+    assert(node->lowrank_matrix != NULL); // initialize region
     node->lowrank_matrix->circulant(rhs_cols, row_beg,
-					rank, tag, ctx, runtime);
+				    rank, tag, ctx, runtime);
   } else {
     int   half = tag.size/2;
     Range ltag = tag.lchild();
@@ -358,17 +357,16 @@ void HodlrMatrix::create_vnode_from_unode
 
   // create H-tiled matrices for two children
   // including Legion leaf
-  if ( !unode->is_legion_leaf() ) {
-    
-    vnode -> lchild -> Hmat =  new FSTreeNode;
-    vnode -> rchild -> Hmat =  new FSTreeNode;
+  if ( ! unode->is_legion_leaf() ) {
 
-    vnode -> lchild -> Hmat -> nrow = vnode -> lchild -> nrow;
-    vnode -> rchild -> Hmat -> nrow = vnode -> rchild -> nrow;
+    int lnrow = vnode -> lchild -> nrow;
+    int rnrow = vnode -> rchild -> nrow;
+    int lncol = vnode -> lchild -> ncol;
+    int rncol = vnode -> rchild -> ncol;
 
-    vnode -> lchild -> Hmat -> ncol = vnode -> lchild -> ncol;
-    vnode -> rchild -> Hmat -> ncol = vnode -> rchild -> ncol;
-    
+    vnode -> lchild -> Hmat =  new FSTreeNode(lnrow, lncol);
+    vnode -> rchild -> Hmat =  new FSTreeNode(rnrow, rncol);
+
     create_Hmatrix(vnode->lchild,
 		   vnode->lchild->Hmat,
 		   vnode->lchild->ncol,
@@ -377,14 +375,11 @@ void HodlrMatrix::create_vnode_from_unode
 		   vnode->rchild->Hmat,
 		   vnode->rchild->ncol,
 		   ctx, runtime);
-    
-    //vnode -> matrix -> rows = vnode -> nrow;
-    //vnode -> matrix -> cols = vnode -> ncol;
-    //create_matrix(vnode->lowrank_matrix->data, vnode -> matrix -> rows, vnode -> matrix -> cols, ctx, runtime);
   }
 
     
-  // create a big rectangle at Legion leaf for lower levels not including Legion leaf
+  // create a big rectangle at Legion leaf for lower levels
+  // not including Legion leaf
   // please refer to Eric's slides of ver 2
   if (unode->lowrank_matrix != NULL) {
 
@@ -396,17 +391,20 @@ void HodlrMatrix::create_vnode_from_unode
 
     // when the legion leaf is the real leaf, there is
     // no data here.
-    create_matrix(vnode->lowrank_matrix, vrow, vcol, ctx, runtime);
+    create_matrix(vnode->lowrank_matrix, vrow, vcol,
+		  ctx, runtime);
  
     // create K matrix
-    create_matrix(vnode->dense_matrix, vnode->nrow, max_row_size(vnode), ctx, runtime);
+    int ncol = max_row_size(vnode);
+    create_matrix(vnode->dense_matrix, vnode->nrow, ncol,
+		  ctx, runtime);
   }
 }
 
 
-void HodlrMatrix::
-create_Hmatrix(FSTreeNode *node, FSTreeNode * Hmat, int ncol,
-	       Context ctx, HighLevelRuntime *runtime) {
+void HodlrMatrix::create_Hmatrix
+(FSTreeNode *node, FSTreeNode * Hmat, int ncol,
+ Context ctx, HighLevelRuntime *runtime) {
 
   if ( node->is_legion_leaf() ) {
 
@@ -436,10 +434,9 @@ create_Hmatrix(FSTreeNode *node, FSTreeNode * Hmat, int ncol,
 }
 
 
-void HodlrMatrix::
-set_circulant_Hmatrix_data(FSTreeNode * Hmat, Range tag,
-			   Context ctx, HighLevelRuntime *runtime,
-			   int row_beg) {
+void HodlrMatrix::set_circulant_Hmatrix_data
+(FSTreeNode * Hmat, Range tag, Context ctx,
+ HighLevelRuntime *runtime, int row_beg) {
 
   if (Hmat->is_real_leaf()) {
 

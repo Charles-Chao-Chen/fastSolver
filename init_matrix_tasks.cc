@@ -37,7 +37,9 @@ void RandomMatrixTask::register_tasks(void)
 				 AUTO_GENERATE_ID,
 				 TaskConfigOptions(true/*leaf*/),
 				 "random_matrix");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : randomize_matrix\n", TASKID);
+#endif
 }
 
 void RandomMatrixTask::
@@ -102,9 +104,11 @@ void InitCirculantKmatTask::register_tasks(void)
 				      true,
 				      true,
 				      AUTO_GENERATE_ID,
-				      TaskConfigOptions(true/*leaf*/),
+				      TaskConfigOptions(true),
 				      "init_Kmat");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : Init_Dense_Block\n", TASKID);
+#endif
 }
 
 void InitCirculantKmatTask::
@@ -162,16 +166,17 @@ InitCirculantMatrixTask(TaskArgument arg,
 /*static*/
 void InitCirculantMatrixTask::register_tasks(void)
 {
-  TASKID =
-    HighLevelRuntime::register_legion_task
+  TASKID = HighLevelRuntime::register_legion_task
     <InitCirculantMatrixTask::cpu_task>(AUTO_GENERATE_ID,
 					Processor::LOC_PROC, 
 					true,
 					true,
 					AUTO_GENERATE_ID,
-					TaskConfigOptions(true/*leaf*/),
+					TaskConfigOptions(true),
 					"init_low_rank_block");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : Init_Low_Rank_Block\n", TASKID);
+#endif
 }
 
 void InitCirculantMatrixTask::

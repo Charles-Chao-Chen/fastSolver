@@ -240,9 +240,6 @@ void AdversarialMapper::select_task_options(Task *task)
   task->map_locally   = false; // turn on remote mapping
   task->profile_task  = false;
   task->task_priority = 0;
-  //const std::set<Processor> &all_procs
-  //= machine->get_all_processors();
-
 
   typedef const std::set<Memory>              CSM;
   typedef const std::set<Processor>           CSP;
@@ -252,18 +249,22 @@ void AdversarialMapper::select_task_options(Task *task)
   std::vector<Memory>    valid_mems;
   std::vector<Processor> valid_options;
 
-  // select valid memories
+  // pick the target memory idexed by task->tag
+  Memory mem = Memory::NO_MEMORY;
+  int mem_idx = 0;
   CSM &all_mems = machine->get_all_memories();
-  for (SMCI it = all_mems.begin(); it != all_mems.end(); ) {
+  for (SMCI it = all_mems.begin(); it != all_mems.end(); it++) {
     Memory::Kind kind = machine->get_memory_kind(*it);
-    if (kind == Memory::SYSTEM_MEM)
-      valid_mems.push_back(*it);
-    it++;
+    if (kind == Memory::SYSTEM_MEM) {
+      if (mem_idx == task->tag) {
+	mem = *it;
+	break;
+      }
+      else
+	mem_idx++;
+    }
   }
-
-  // the task tag decides the memory
-  assert(task->tag < valid_mems.size());  
-  Memory mem = valid_mems[task->tag];
+  assert(mem != Memory::NO_MEMORY);
   
   // select valid processors
   CSP &options  = machine->get_shared_processors(mem);
@@ -280,8 +281,8 @@ void AdversarialMapper::select_task_options(Task *task)
 				  valid_options.end());
   } else {
     task->target_proc = Processor::NO_PROC;
-    assert(false);
   }
+  assert(task->target_proc != Processor::NO_PROC);
 }
 
 

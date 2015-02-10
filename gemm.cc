@@ -2,6 +2,7 @@
 #include "zero_matrix_task.h"
 #include "htree_helper.h"
 #include "lapack_blas.h"
+#include "timer.h"
 #include "macros.h"
 
 enum {
@@ -215,20 +216,22 @@ void gemm_reduce
   (const double alpha,
    const FSTreeNode *v, const FSTreeNode *u, const Range &ru,
    const double beta,   LMatrix *(&result),  const Range taskTag,
+   double& tCreate,
    Context ctx, HighLevelRuntime *runtime) {
 
-
-  if (result == 0) { // create and initialize the result
+  double t0 = timer();
     
+  if (result == 0) { // create and initialize the result
     int nrow = v->ncol;
     int ncol = ru.size;
     assert(v->nrow == u->nrow);
-    create_matrix(result, nrow, ncol, ctx, runtime);
+    create_matrix(result, nrow, ncol, ctx, runtime); 
     result->zero(taskTag, ctx, runtime);
-
   } else
     scale_matrix(beta, result->data, ctx, runtime);
 
+  tCreate += timer() - t0;
+    
   gemm_recursive(alpha, v, u, ru, result, taskTag,
 		 ctx, runtime);
 }
@@ -281,10 +284,12 @@ void gemm_broadcast
   } else {
     const Range tag0 = tag.lchild();
     const Range tag1 = tag.rchild();
-    gemm_broadcast(alpha, u->lchild, ru, eta, beta, v->lchild, rv,
-		   tag0, ctx, runtime);
-    gemm_broadcast(alpha, u->rchild, ru, eta, beta, v->rchild, rv,
-		   tag1, ctx, runtime);
+    gemm_broadcast(alpha, u->lchild, ru, eta,
+		   beta,  v->lchild, rv,
+		   tag0,  ctx, runtime);
+    gemm_broadcast(alpha, u->rchild, ru, eta,
+		   beta,  v->rchild, rv,
+		   tag1,  ctx, runtime);
   }  
 }
 
@@ -329,7 +334,9 @@ void GEMM_Reduce_Task::register_tasks(void)
 				 AUTO_GENERATE_ID,
 				 TaskConfigOptions(true/*leaf*/),
 				 "GEMM_Reduce");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : GEMM_Reduce\n", TASKID);
+#endif
 }
 
 void GEMM_Reduce_Task::cpu_task
@@ -424,7 +431,9 @@ void GEMM_Broadcast_Task::register_tasks(void)
 		    AUTO_GENERATE_ID,
 		    TaskConfigOptions(true/*leaf*/),
 		    "GEMM_Broadcast");
+#ifdef SHOW_REGISTER_TASKS
   printf("Register task %d : GEMM_Broadcast\n", TASKID);
+#endif
 }
 
 
