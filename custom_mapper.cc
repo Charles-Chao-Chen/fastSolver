@@ -13,10 +13,9 @@ void mapper_registration(Machine *machine, HighLevelRuntime *rt,
 			 const std::set<Processor> &local_procs)
 {
   for (std::set<Processor>::const_iterator it = local_procs.begin();
-       it != local_procs.end(); it++)
-    {
-      rt->replace_default_mapper(new AdversarialMapper(machine, rt, *it), *it);
-    }
+       it != local_procs.end(); it++) {
+    rt->replace_default_mapper(new AdversarialMapper(machine, rt, *it), *it);
+  }
 }
 
 // Here is the constructor for our adversial mapper.
@@ -196,8 +195,6 @@ AdversarialMapper::AdversarialMapper(Machine *m,
 		 it->id, affinities[0].bandwidth, affinities[0].latency);
 	}
     }
-
-
 }
 
 // The first mapper call that we override is the 

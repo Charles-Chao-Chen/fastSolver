@@ -37,8 +37,9 @@ CC_FLAGS	:= -I ./ 	  \
 		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
-#		   -DNDEBUG	  \
+#		   -g		\
 #		   -DDEBUG	  \
+#		   -DNDEBUG	  \
 #		   -DDEBUG_GEMM
 #		   -DDEBUG_NODE_SOLVE
 
@@ -175,6 +176,7 @@ tar:
 		fast_solver.cc  	fast_solver.h 		\
 		solver_tasks.cc		solver_tasks.h		\
 		gemm.cc         	gemm.h  		\
+					launch_node_task.h	\
 		zero_matrix_task.cc	zero_matrix_task.h 	\
 		hodlr_matrix.cc 	hodlr_matrix.h 		\
 		htree_helper.cc		htree_helper.h		\
@@ -237,7 +239,6 @@ prof:
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	$(numa) 		\
 	./main			\
 	-test 3			\
 	-np $(nproc) 		\
@@ -253,6 +254,7 @@ prof:
 #	-hl:prof   1		\
 #	numactl			\
 	-m 0 -N 0		\
+	$(numa) 		\
 
 # idx : node index
 node:

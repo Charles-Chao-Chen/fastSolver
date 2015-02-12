@@ -147,6 +147,11 @@ void run_test(int rank, int N, int threshold,
 	      bool compute_accuracy,
 	      Context ctx, HighLevelRuntime *runtime) {
 
+#ifdef DEBUG
+  std::cout << "************* debugging mode ************"
+	    << std::endl;
+#endif
+  
   int rhs_cols = 2;
   int rhs_rows = N;
   int rand_seed = 1123;
@@ -157,10 +162,17 @@ void run_test(int rank, int N, int threshold,
   hMatrix.create_tree(N, threshold, rhs_cols, rank,
 		      leaf_size, ctx, runtime);
   int nleaf = hMatrix.get_num_leaf();
-  std::cout << "Legion leaf / node: "
+  std::cout << "Legion leaf : "
+	    << nleaf
+	    << std::endl
+	    << "Legion leaf / node: "
 	    << nleaf / num_proc
 	    << std::endl;
 
+  std::cout << "Launch node : "
+	    << hMatrix.get_num_launch_node()
+	    << std::endl;
+  
   double t0 = timer();
   
   // random right hand size
@@ -175,7 +187,8 @@ void run_test(int rank, int N, int threshold,
   
  
   FastSolver fs;
-  fs.solve_bfs(hMatrix, num_proc, ctx, runtime);
+  fs.bfs_solve(hMatrix, num_proc, ctx, runtime);
+  //fs.solve_bfs(hMatrix, num_proc, ctx, runtime);
   //fs.solve_dfs(hMatrix, num_proc, ctx, runtime);
   
   std::cout << "Tasks launching time: " << fs.get_elapsed_time()

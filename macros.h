@@ -18,8 +18,9 @@ enum {
 //const int MAX_FILE_NAME_LENGTH = 50;
 
 // used in InitCirculantKmatTask::TaskArgs
+//  and NodeLaunchTask::TaskArgs
 // for the subtree stored in array
-const int MAX_TREE_SIZE = 100;
+const int MAX_TREE_SIZE = 150;
 
 
 

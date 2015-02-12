@@ -35,6 +35,8 @@ struct FSTreeNode {
   bool is_real_leaf()   const;
   bool is_legion_leaf() const {return isLegionLeaf;}
   void set_legion_leaf(bool is) {isLegionLeaf = is;}
+  bool is_launch_node() const {return isLaunchNode;}
+  void set_launch_node(bool is) {isLaunchNode = is;}
   
   int row_beg; // begin index in the region
   int col_beg;
@@ -50,6 +52,7 @@ struct FSTreeNode {
 
 private:
   bool isLegionLeaf;
+  bool isLaunchNode;
 };
 
 
@@ -75,6 +78,8 @@ class HodlrMatrix {
   int get_num_rhs() {return rhs_cols;}
   int get_num_leaf() {return nleaf;}
   int set_num_leaf(int nleaf) {this->nleaf = nleaf;}
+  int get_num_launch_node() {return nLaunchNode;}
+  int set_num_launch_node(int n) {nLaunchNode = n;}
   
   /* --- tree root --- */
   //int nleaf_per_node;
@@ -113,6 +118,7 @@ class HodlrMatrix {
   int rhs_rows;
   int rhs_cols;
   int nleaf;
+  int nLaunchNode;
 };
 
 
