@@ -63,12 +63,12 @@ class HodlrMatrix {
   //~HodlrMatrix();
   
   void create_tree
-    (int, int, int, int, int,
+    (int, int, int, int, int, int,
      Context, HighLevelRuntime *);
   void init_rhs
-    (int, int, int, Context, HighLevelRuntime *);
+    (int, int, Context, HighLevelRuntime *);
   void init_circulant_matrix
-    (double, int, Context, HighLevelRuntime *);
+    (double, Context, HighLevelRuntime *);
 
   // rhs becomes solution after the solver
   void save_rhs
@@ -117,7 +117,11 @@ class HodlrMatrix {
   int rank; // only if every block has the same rank
   int rhs_rows;
   int rhs_cols;
+
+  // controlling corse and fine granularity
+ private:
   int nleaf;
+  int nProc;
   int nLaunchNode;
 };
 

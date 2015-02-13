@@ -46,13 +46,15 @@ static int create_legion_node
  */
 void HodlrMatrix::create_tree
   (int N, int threshold, int rhs_cols,
-   int rank, int nleaf_per_legion_node,
+   int rank, int nleaf_per_legion_node, int num_proc,
    Context ctx, HighLevelRuntime *runtime) {
 
   this->rank     = rank;
   this->rhs_rows = N;
   this->rhs_cols = rhs_cols;
-
+  
+  this->nProc = num_proc;
+  
   uroot = new FSTreeNode(N, rhs_cols);
 
   // create the H-tree for U matrices
@@ -87,10 +89,10 @@ void HodlrMatrix::create_tree
  *   RHS  - right hand side of the problem
  */
 void HodlrMatrix::init_circulant_matrix
-(double diag, int num_node, Context ctx,
+(double diag, Context ctx,
  HighLevelRuntime *runtime) {
 
-  Range taskTag(num_node);
+  Range taskTag(this->nProc);
   init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
   init_Vmat(vroot, diag, taskTag, ctx, runtime); // row_beg = 0
 
@@ -140,13 +142,13 @@ void init_rhs_recursive
  Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::
-init_rhs(int rand_seed, int ncol, int node_num,
+init_rhs(int rand_seed, int ncol,
 	 Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "initializing " << rhs_cols
 	    << " columns of right hand side ..."
 	    << std::endl;
-  Range tag(node_num);
+  Range tag(this->nProc);
   init_rhs_recursive(uroot, rand_seed, ncol, tag, ctx, runtime); 
 }
 

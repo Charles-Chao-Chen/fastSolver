@@ -153,8 +153,6 @@ void run_test(int rank, int N, int threshold,
 #endif
 
   printf(" %d processes\n %d leaves\n\n", num_proc, leaf_size);
-
-
      
   int rhs_cols = 2;
   int rhs_rows = N;
@@ -164,7 +162,7 @@ void run_test(int rank, int N, int threshold,
 
   // create H-tree with legion leaf
   hMatrix.create_tree(N, threshold, rhs_cols, rank,
-		      leaf_size, ctx, runtime);
+		      leaf_size, num_proc, ctx, runtime);
   int nleaf = hMatrix.get_num_leaf();
   std::cout << "Legion leaf : "
 	    << nleaf
@@ -180,10 +178,10 @@ void run_test(int rank, int N, int threshold,
   double t0 = timer();
   
   // random right hand size
-  hMatrix.init_rhs(rand_seed, rhs_cols, num_proc, ctx, runtime);
+  hMatrix.init_rhs(rand_seed, rhs_cols, ctx, runtime);
   
   // A = U U^T + diag and U is a circulant matrix
-  hMatrix.init_circulant_matrix(diag, num_proc, ctx, runtime);
+  hMatrix.init_circulant_matrix(diag, ctx, runtime);
 
   double t1 = timer();
   std::cout << "Init launching time: " << t1 - t0
