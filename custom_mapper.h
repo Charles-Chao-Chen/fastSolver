@@ -7,7 +7,7 @@ using namespace LegionRuntime::Arrays;
 
 class AdversarialMapper : public DefaultMapper {
 public:
-  AdversarialMapper(Machine *machine, 
+  AdversarialMapper(Machine machine, 
       HighLevelRuntime *rt, Processor local);
 public:
   virtual void select_task_options(Task *task);
@@ -16,11 +16,13 @@ public:
   virtual bool map_task(Task *task); 
   //virtual void notify_mapping_result(const Mappable *mappable);
   virtual void notify_mapping_failed(const Mappable *mappable);
+ private:
+  std::vector<Memory> valid_mems;
 };
 
 
 void register_custom_mapper();
-void mapper_registration(Machine *machine, HighLevelRuntime *rt,
+void mapper_registration(Machine machine, HighLevelRuntime *rt,
 			 const std::set<Processor> &local_procs);
 
 

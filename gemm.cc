@@ -365,13 +365,15 @@ void GEMM_Reduce_Task::cpu_task
   Rect<2> rect_u = dom_u.get_rect<2>();
   Rect<2> rect_w = dom_w.get_rect<2>();
 
+  /*
   RegionAccessor<AccessorType::Generic, double> acc_v =
     regions[0].get_field_accessor(FID_X).typeify<double>();
   RegionAccessor<AccessorType::Generic, double> acc_u =
     regions[1].get_field_accessor(FID_X).typeify<double>();
   RegionAccessor<AccessorType::Generic, double> acc_w =
     regions[2].get_accessor().typeify<double>();
-  
+  */
+    
   Rect<2> subrect;
   ByteOffset offsets[2];
 
@@ -448,7 +450,7 @@ void GEMM_Broadcast_Task::cpu_task
 
   TaskArgs arg       = *((TaskArgs*)task->args);
   int      u_ncol    = arg.u_ncol;
-  int      d_ncol    = arg.d_ncol;
+  //int      d_ncol    = arg.d_ncol;
   int      u_col_beg = arg.u_col_beg;
   int      d_col_beg = arg.d_col_beg;
   double   alpha     = arg.alpha;
@@ -482,7 +484,7 @@ void GEMM_Broadcast_Task::cpu_task
   int v_rows = rect_v.dim_size(0);
   int v_cols = rect_v.dim_size(1);
   int d_rows = rect_u.dim_size(0);
-  int d_cols = d_ncol;
+  //int d_cols = d_ncol;
   
   char transa = 'n';
   char transb = 'n';

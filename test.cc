@@ -72,13 +72,13 @@ run_test(300,
 }
 */
 
-void test_accuracy(Context ctx, HighLevelRuntime *runtime) {
+void test_accuracy(int nproc, Context ctx, HighLevelRuntime *runtime) {
   run_test(6,   /* rank */
 	   15*(8),  /* N */
 	   15,   /* threshold*/
 	   1,    /* nleaf_per_legion_node */
 	   1.e1, /* diagonal */
-	   1,    /* # of processors */
+	   nproc,    /* # of processors */
 	   true, /* compute accuracy */
 	   ctx,
 	   runtime);
@@ -151,7 +151,11 @@ void run_test(int rank, int N, int threshold,
   std::cout << "************* debugging mode ************"
 	    << std::endl;
 #endif
-  
+
+  printf(" %d processes\n %d leaves\n\n", num_proc, leaf_size);
+
+
+     
   int rhs_cols = 2;
   int rhs_rows = N;
   int rand_seed = 1123;
@@ -197,7 +201,8 @@ void run_test(int rank, int N, int threshold,
   if (compute_accuracy) {
     assert( N%threshold == 0 );
     int nregion = nleaf;
-    compute_L2_error(hMatrix, rand_seed, rhs_rows, nregion,
-		     rhs_cols, rank, diag, ctx, runtime);
+    compute_L2_error(hMatrix, rand_seed, rhs_rows,
+		     nregion, rhs_cols,
+		     rank, diag, ctx, runtime);
   }
 }

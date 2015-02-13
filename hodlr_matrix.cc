@@ -185,7 +185,6 @@ void HodlrMatrix::init_Umat
     node->lowrank_matrix->circulant(rhs_cols, row_beg,
 				    rank, tag, ctx, runtime);
   } else {
-    int   half = tag.size/2;
     Range ltag = tag.lchild();
     Range rtag = tag.rchild();
     init_Umat(node->lchild, ltag, ctx, runtime, row_beg);
@@ -218,12 +217,11 @@ init_Vmat(FSTreeNode *node, double diag, Range tag,
 					  tag, ctx, runtime);
 
     // init K
-    int nrow = node->dense_matrix->rows;
-    int ncol = node->dense_matrix->cols;
+    //int nrow = node->dense_matrix->rows;
+    //int ncol = node->dense_matrix->cols;
     init_circulant_Kmat(node, row_beg, rank, diag, tag, ctx, runtime);
     
   } else {
-    int   half = tag.size/2;
     Range ltag = tag.lchild();
     Range rtag = tag.rchild();
     init_Vmat(node->lchild, diag, ltag,
@@ -481,7 +479,6 @@ void HodlrMatrix::set_circulant_Hmatrix_data
 					tag, ctx, runtime);
     
   } else {
-    int   half = tag.size/2;
     Range ltag = tag.lchild();
     Range rtag = tag.rchild();
     set_circulant_Hmatrix_data(Hmat->lchild, ltag,
@@ -574,7 +571,8 @@ void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag
 
 
 void HodlrMatrix::save_rhs
-(std::string soln_file, Context ctx, HighLevelRuntime *runtime)
+(std::string soln_file,
+ Context ctx, HighLevelRuntime *runtime)
 {
   Range rRhs(this->rhs_cols);
   save_HodlrMatrix(this->uroot, soln_file, ctx, runtime, rRhs);

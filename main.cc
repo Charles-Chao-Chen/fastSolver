@@ -33,8 +33,7 @@ void top_level_task(const Task *task,
 	nleaf = atoi(command_args.argv[++i]);
     }
   }
-  printf("Running test %d with %d processes...\n nleaf=%d\n\n",
-	 test, nproc, nleaf);
+  printf("Running test %d\n\n", test);
   
 
   switch (test) {
@@ -45,7 +44,7 @@ void top_level_task(const Task *task,
     test3(nproc, nleaf, ctx, runtime);
     break;
   default:
-    test_accuracy(ctx, runtime);
+    test_accuracy(nproc, ctx, runtime);
   }
 
   //test_performance(ctx, runtime);

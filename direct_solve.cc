@@ -9,6 +9,7 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
+/*
 static void
 dirct_circulant_solve(double *soln, double *rhs, int rhs_rows, int rhs_cols, int r, double diag) {
 
@@ -107,7 +108,7 @@ dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
   free(U);
   free(A);
 }
-
+*/
 
 static void
 dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,

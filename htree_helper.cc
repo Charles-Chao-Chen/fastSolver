@@ -150,7 +150,6 @@ void save_HodlrMatrix
  Context ctx, HighLevelRuntime *runtime, Range rg)
 {
   if ( node->is_legion_leaf() ) {
-    //save_LMatrix(node->lowrank_matrix, filename, ctx, runtime,rg);
     node->lowrank_matrix->save(filename, ctx, runtime, rg);
   } else {
     save_HodlrMatrix(node->lchild, filename, ctx, runtime, rg);

@@ -342,13 +342,13 @@ void launch_solve_tasks
 			  0,
 			  task_tag.begin
 			  );
-
+  /*
   // add regions
   add_all_regions(launcher, unode, vnode);
   // add field
   for (int i=0; i<launcher.region_requirements.size(); i++)
     launcher.region_requirements[i].add_field(FID_X);
-
+  */
     
   Future ft = runtime->execute_task(ctx, launcher);
 			  

@@ -78,7 +78,8 @@ void LMatrix::save
   args.filename  = filename;
   args.col_range = rg;
     
-  SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));  
+  SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));
+
   launcher.add_region_requirement(RegionRequirement
 				  (this->data,
 				   READ_ONLY,

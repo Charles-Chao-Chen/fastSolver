@@ -47,10 +47,10 @@ NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
 # gnu blas and lapack
-#LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
 
 # mkl linking flags
-LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
+#LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
 	-L/share/apps/intel/intel-14/lib/intel64/ \
 	-lmkl_intel_lp64 	\
 	-lmkl_core		\
@@ -263,7 +263,7 @@ node:
 	> legion_node.txt
 
 # --- legion spy ---
-spy2:
+#spy2:\
 	mpiexec -n 2 -ppn 1	\
 	-env OMP_NUM_THREADS=1	\
 	-env MV2_SHOW_CPU_BINDING=1 \
@@ -273,3 +273,30 @@ spy2:
 	./main -cat legion_spy -level 2 \
 	-ll:cpu 12 -ll:csize 30000 \
 	-hl:sched 8192 -hl:window 8192
+
+# --- Sapling commands ---
+
+# check task execution (data movement)
+spy2:
+	mpirun -H n0001,n0002 \
+	-bind-to none \
+	-x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 \
+	./main \
+	-np 2 -leaf 1 \
+	-cat legion_spy -level 2 \
+	-ll:cpu 11 -ll:util 1 \
+	-ll:csize 30000 \
+	-hl:sched 8192
+#	python ~/legion/tools/legion_spy.py -p node_0.log
+
+prof2:
+	mpirun -H n0001,n0002 \
+	-bind-to none \
+	-x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 \
+	./main \
+	-np 2 -leaf 1 \
+	-cat legion_prof -level 2 \
+	-ll:cpu 11 -ll:util 1 \
+	-ll:csize 30000 \
+	-hl:sched 8192
+
