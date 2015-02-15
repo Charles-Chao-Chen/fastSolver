@@ -61,116 +61,6 @@ FastSolver::FastSolver():
   time_launcher(-1) {}
 
 
-void FastSolver::solve_dfs
-(HodlrMatrix &matrix, int nProc,
- Context ctx, HighLevelRuntime *runtime)
-{
-  std::cout << "Launch tasks in depth first order."
-	    << std::endl;
-    
-  Range taskTag(nProc);
-  double t0 = timer();
-  solve_dfs(matrix.uroot, matrix.vroot, taskTag, ctx, runtime);
-  double t1 = timer();
-  this->time_launcher = t1 - t0;
-}
-
-
-void FastSolver::solve_dfs
-(FSTreeNode * unode, FSTreeNode * vnode,
- Range taskTag, Context ctx, HighLevelRuntime *runtime) {
-
-  /*
-  if (      unode->is_legion_leaf() ) {
-    assert( vnode->is_legion_leaf() );
-    solve_legion_leaf(unode, vnode, taskTag, ctx, runtime);
-    return;
-  }
-
-  Range tag0 = taskTag.lchild();
-  Range tag1 = taskTag.rchild();
-  
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
-
-  solve_dfs(b0, V0, tag0, ctx, runtime);
-  solve_dfs(b1, V1, tag1, ctx, runtime);
-  
-  assert( !unode->is_legion_leaf() );
-  assert( V0->Hmat != NULL );
-  assert( V1->Hmat != NULL );
-  
-  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
-  // from leaves to root in the H tree.
-  LMatrix *V0Tu0 = 0;
-  LMatrix *V0Td0 = 0;
-  LMatrix *V1Tu1 = 0;
-  LMatrix *V1Td1 = 0;
-  Range ru0(b0->col_beg, b0->ncol   );
-  Range ru1(b1->col_beg, b1->ncol   );
-  Range rd0(0,           b0->col_beg);
-  Range rd1(0,           b1->col_beg);
-
-
-#ifdef DEBUG_GEMM
-  const char *gemmBf = "debug_umat.txt";
-  if (remove(gemmBf) == 0)
-    std::cout << "Remove file: " << gemmBf << std::endl;
-  save_HodlrMatrix(unode, gemmBf, ctx, runtime);
-  std::cout << "Create file: " << gemmBf << std::endl;
-#endif
-
-  
-  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
-  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
-  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
-  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
-
-  
-#if defined(DEBUG_NODE_SOLVE) || defined(DEBUG_GEMM)
-  const char *nodeSolveBf = "debug_v0td0_bf.txt";
-  if (remove(nodeSolveBf) == 0)
-    std::cout << "Remove file: " << nodeSolveBf << std::endl;
-  save_LMatrix(V0Td0, nodeSolveBf, ctx, runtime);
-  std::cout << "Create file: " << nodeSolveBf << std::endl;
-
-  const char *nodeSolveBf3 = "debug_v0tu0_bf.txt";
-  if (remove(nodeSolveBf3) == 0)
-    std::cout << "Remove file: " << nodeSolveBf3 << std::endl;
-  save_LMatrix(V0Tu0, nodeSolveBf3, ctx, runtime);
-  std::cout << "Create file: " << nodeSolveBf3 << std::endl;
-
-#endif
-  
-    
-  // V0Td0 and V1Td1 contain the solution on output.
-  // eta0 = V1Td1, eta1 = V0Td0.
-  solve_node_matrix(V0Tu0, V1Tu1,
-		    V0Td0, V1Td1,
-		    taskTag, ctx, runtime);
-
-
-#ifdef DEBUG_NODE_SOLVE
-  const char *nodeSolveAf = "debug_v0td0_af.txt";
-  if (remove(nodeSolveAf) == 0)
-    std::cout << "Remove file: " << nodeSolveAf << std::endl;
-  save_LMatrix(V0Td0, nodeSolveAf, ctx, runtime);
-  std::cout << "Create file: " << nodeSolveAf << std::endl;
-#endif
-
-
-  // This step requires a broadcast of V0Td0 and V1Td1
-  // from root to leaves.
-  // Assemble x from d0 and d1: merge two trees
-  gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
-  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx,
-  // runtime);
-  */
-}
-
-
 //void FastSolver::solve_bfs
 void FastSolver::bfs_solve
 (HodlrMatrix &lr_mat, int nProc,
@@ -189,8 +79,10 @@ void FastSolver::bfs_solve
 
 
 // TODO: this can also be implemented using dfs
-//  and there is no difference when only leaf nodes
-//  are visited
+//  and there is no difference in traversal order
+//  when only leaf nodes are visited
+// rmk: bfs may be more expensive because of the
+//  push operations
 void solve_bfs_launch
 (FSTreeNode *uroot, FSTreeNode *vroot,
  Range mappingTag, Context ctx, HighLevelRuntime *runtime) {
@@ -337,10 +229,12 @@ void launch_solve_tasks
   args.treeArray[subtree_size] = *unode;
   tree_to_array(unode, args.treeArray, 0, subtree_size);
 
+  // special mapping ID for launch node tasks
+  //  the regions will be virtually mapped
   LaunchNodeTask launcher(TaskArgument( &args, sizeof(args)),
 			  Predicate::TRUE_PRED,
 			  0,
-			  task_tag.begin
+			  -(task_tag.begin)
 			  );
   /*
   // add regions
@@ -557,4 +451,114 @@ void visit
 
 void register_launch_node_task() {
   LaunchNodeTask::register_tasks();
+}
+
+
+void FastSolver::solve_dfs
+(HodlrMatrix &matrix, int nProc,
+ Context ctx, HighLevelRuntime *runtime)
+{
+  std::cout << "Launch tasks in depth first order."
+	    << std::endl;
+    
+  Range taskTag(nProc);
+  double t0 = timer();
+  solve_dfs(matrix.uroot, matrix.vroot, taskTag, ctx, runtime);
+  double t1 = timer();
+  this->time_launcher = t1 - t0;
+}
+
+
+void FastSolver::solve_dfs
+(FSTreeNode * unode, FSTreeNode * vnode,
+ Range taskTag, Context ctx, HighLevelRuntime *runtime) {
+
+  /*
+  if (      unode->is_legion_leaf() ) {
+    assert( vnode->is_legion_leaf() );
+    solve_legion_leaf(unode, vnode, taskTag, ctx, runtime);
+    return;
+  }
+
+  Range tag0 = taskTag.lchild();
+  Range tag1 = taskTag.rchild();
+  
+  FSTreeNode * b0 = unode->lchild;
+  FSTreeNode * b1 = unode->rchild;
+  FSTreeNode * V0 = vnode->lchild;
+  FSTreeNode * V1 = vnode->rchild;
+
+  solve_dfs(b0, V0, tag0, ctx, runtime);
+  solve_dfs(b1, V1, tag1, ctx, runtime);
+  
+  assert( !unode->is_legion_leaf() );
+  assert( V0->Hmat != NULL );
+  assert( V1->Hmat != NULL );
+  
+  // This involves a reduction for V0Tu0, V0Td0, V1Tu1, V1Td1
+  // from leaves to root in the H tree.
+  LMatrix *V0Tu0 = 0;
+  LMatrix *V0Td0 = 0;
+  LMatrix *V1Tu1 = 0;
+  LMatrix *V1Td1 = 0;
+  Range ru0(b0->col_beg, b0->ncol   );
+  Range ru1(b1->col_beg, b1->ncol   );
+  Range rd0(0,           b0->col_beg);
+  Range rd1(0,           b1->col_beg);
+
+
+#ifdef DEBUG_GEMM
+  const char *gemmBf = "debug_umat.txt";
+  if (remove(gemmBf) == 0)
+    std::cout << "Remove file: " << gemmBf << std::endl;
+  save_HodlrMatrix(unode, gemmBf, ctx, runtime);
+  std::cout << "Create file: " << gemmBf << std::endl;
+#endif
+
+  
+  gemm_reduce(1., V0->Hmat, b0, ru0, 0., V0Tu0, tag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, ru1, 0., V1Tu1, tag1, ctx, runtime);
+  gemm_reduce(1., V0->Hmat, b0, rd0, 0., V0Td0, tag0, ctx, runtime);
+  gemm_reduce(1., V1->Hmat, b1, rd1, 0., V1Td1, tag1, ctx, runtime);
+
+  
+#if defined(DEBUG_NODE_SOLVE) || defined(DEBUG_GEMM)
+  const char *nodeSolveBf = "debug_v0td0_bf.txt";
+  if (remove(nodeSolveBf) == 0)
+    std::cout << "Remove file: " << nodeSolveBf << std::endl;
+  save_LMatrix(V0Td0, nodeSolveBf, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveBf << std::endl;
+
+  const char *nodeSolveBf3 = "debug_v0tu0_bf.txt";
+  if (remove(nodeSolveBf3) == 0)
+    std::cout << "Remove file: " << nodeSolveBf3 << std::endl;
+  save_LMatrix(V0Tu0, nodeSolveBf3, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveBf3 << std::endl;
+
+#endif
+  
+    
+  // V0Td0 and V1Td1 contain the solution on output.
+  // eta0 = V1Td1, eta1 = V0Td0.
+  solve_node_matrix(V0Tu0, V1Tu1,
+		    V0Td0, V1Td1,
+		    taskTag, ctx, runtime);
+
+
+#ifdef DEBUG_NODE_SOLVE
+  const char *nodeSolveAf = "debug_v0td0_af.txt";
+  if (remove(nodeSolveAf) == 0)
+    std::cout << "Remove file: " << nodeSolveAf << std::endl;
+  save_LMatrix(V0Td0, nodeSolveAf, ctx, runtime);
+  std::cout << "Create file: " << nodeSolveAf << std::endl;
+#endif
+
+
+  // This step requires a broadcast of V0Td0 and V1Td1
+  // from root to leaves.
+  // Assemble x from d0 and d1: merge two trees
+  gemm_broadcast(-1., b0, ru0, V1Td1, 1., b0, rd0, tag0, ctx, runtime);
+  gemm_broadcast(-1., b1, ru1, V0Td0, 1., b1, rd1, tag1, ctx,
+  // runtime);
+  */
 }

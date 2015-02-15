@@ -81,8 +81,10 @@ void AdversarialMapper::select_task_options(Task *task)
   task->task_priority = 0;
 
   // pick the target memory idexed by task->tag
-  assert(task->tag < valid_mems.size());
-  Memory mem = valid_mems[task->tag];
+  // note launch node tasks have negative tags
+  unsigned taskTag = abs(task->tag);
+  assert(taskTag < valid_mems.size());
+  Memory mem = valid_mems[taskTag];
   assert(mem != Memory::NO_MEMORY);
   
   // select valid processors
@@ -109,53 +111,6 @@ void AdversarialMapper::select_task_options(Task *task)
 }
 
 
-
-// The second call that we override is the slice_domain
-// method. The slice_domain call is used by the runtime
-// to query the mapper about the best way to distribute
-// the points in an index space task launch throughout
-// the machine. The maper is given the task and the domain
-// to slice and then asked to generate sub-domains to be
-// sent to different processors in the form of DomainSplit
-// objects. DomainSplit objects describe the sub-domain,
-// the target processor for the sub-domain, whether the
-// generated slice can be stolen, and finally whether 
-// slice_domain' should be recursively called on the
-// slice when it arrives at its destination.
-//
-// In this example we use a utility method from the DefaultMapper
-// called decompose_index_space to decompose our domain. We 
-// recursively split the domain in half during each call of
-// slice_domain and send each slice to a random processor.
-// We continue doing this until the leaf domains have only
-// a single point in them. This creates a tree of slices of
-// depth log(N) in the number of points in the domain with
-// each slice being sent to a random processor.
-/*
-  void AdversarialMapper::slice_domain(const Task *task, const Domain &domain,
-  std::vector<DomainSplit> &slices)
-  {
-  const std::set<Processor> &all_procs = machine.get_all_processors();
-  std::vector<Processor> split_set;
-  for (unsigned idx = 0; idx < 2; idx++)
-  {
-  split_set.push_back(DefaultMapper::select_random_processor(
-  all_procs, Processor::LOC_PROC, machine));
-  }
-
-  DefaultMapper::decompose_index_space(domain, split_set, 
-  1, slices);
-  for (std::vector<DomainSplit>::iterator it = slices.begin();
-  it != slices.end(); it++)
-  {
-  Rect<1> rect = it->domain.get_rect<1>();
-  if (rect.volume() == 1)
-  it->recurse = false;
-  else
-  it->recurse = true;
-  }
-  }
-*/
 // The next mapping call that we override is the map_task
 // mapper method. Once a task has been assigned to map on
 // a specific processor (the target_proc) then this method
@@ -195,7 +150,10 @@ bool AdversarialMapper::map_task(Task *task)
   for (unsigned idx = 0; idx < task->regions.size(); idx++)
     {
       task->regions[idx].target_ranking.push_back(sys_mem);
-      task->regions[idx].virtual_map = false;
+
+      // special mapping ID for launch node tasks
+      //  the regions will be virtually mapped
+      task->regions[idx].virtual_map = task->tag < 0 ? true : false;
       task->regions[idx].enable_WAR_optimization = war_enabled;
       task->regions[idx].reduction_list = false;
       		
@@ -211,25 +169,6 @@ void AdversarialMapper::notify_mapping_failed(const Mappable *mappable)
   printf("WARNING: MAPPING FAILED!  Retrying...\n");
 }
 
-/*
-  bool AdversarialMapper::map_task(Task *task) {
-
-  // Put everything in the system memory
-  Memory sys_mem = 
-  machine_interface.find_memory_kind(task->target_proc,
-  Memory::SYSTEM_MEM);
-  assert(sys_mem.exists());
-  for (unsigned idx = 0; idx < task->regions.size(); idx++)
-  {
-  task->regions[idx].target_ranking.push_back(sys_mem);
-  task->regions[idx].virtual_map = false;
-  task->regions[idx].enable_WAR_optimization = war_enabled;
-  task->regions[idx].reduction_list = false;
-  task->regions[idx].blocking_factor = 1;
-  } 
-  return true;
-  }
-*/
 
 // The last mapper call we override is the notify_mapping_result
 // call which is invoked by the runtime if the mapper indicated

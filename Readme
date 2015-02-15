@@ -1,4 +1,8 @@
 
+- Launch node tasks are given negative mapping tags to be differentiate
+   from normal tasks. So use abs(task->tag) to select memroy and 
+   set virtual_map field in map_task().
+
 - Define DEBUG in makefile to serialize task execution for debuging
 purpose.
 
