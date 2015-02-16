@@ -104,16 +104,9 @@ class HodlrMatrix {
     
   /*--- helper functions ---*/
 
-  void create_Hmatrix(FSTreeNode *, FSTreeNode *, int,
-		      Context, HighLevelRuntime *);
-  
-  void set_circulant_Hmatrix_data
-    (FSTreeNode * Hmat, Range tag,
-     Context, HighLevelRuntime *,
-     int row_beg);
-  
   
   /* --- private attributes --- */
+  
   int rank; // only if every block has the same rank
   int rhs_rows;
   int rhs_cols;
@@ -125,6 +118,15 @@ class HodlrMatrix {
   int nLaunchNode;
 };
 
+
+void create_Hmatrix(FSTreeNode *, FSTreeNode *, int,
+		    Context, HighLevelRuntime *);
+  
+void set_circulant_Hmatrix_data
+(FSTreeNode * Hmat, Range tag,
+ Context, HighLevelRuntime *,
+ int row_beg);
+  
 
 
 // TODO: move into LMatrix class

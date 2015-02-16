@@ -5,6 +5,18 @@
 #include "macros.h"
 
 
+void create_Vtree
+(FSTreeNode *unode, FSTreeNode *vnode);
+
+void create_Vregions
+(FSTreeNode *unode, FSTreeNode *vnode,
+ Context ctx, HighLevelRuntime *runtime);
+
+void create_Kregions
+(FSTreeNode *unode, FSTreeNode *vnode,
+ Context ctx, HighLevelRuntime *runtime);
+  
+
 /*--- for debugging purpose ---*/
 
 void print_legion_tree(FSTreeNode *);
@@ -72,17 +84,26 @@ void HodlrMatrix::create_tree
   mark_launch_node(uroot, 4);
   set_num_launch_node( count_launch_node(uroot) );
 
-  // create V tree 
-  vroot = new FSTreeNode(uroot->nrow, 0);
-  create_vnode_from_unode(uroot, vroot, ctx, runtime);
+  // create V tree
+  int v_rhs = 0; // no rhs
+  vroot = new FSTreeNode(uroot->nrow, v_rhs);
+  //create_vnode_from_unode(uroot, vroot, ctx, runtime);
+  
+  create_Vtree(uroot, vroot);
+
+  create_Vregions(uroot, vroot, ctx, runtime);
+
+  create_Kregions(uroot, vroot, ctx, runtime);
 
   // print_legion_tree(uroot);
   // print_legion_tree(vroot);
 }
 
 
-/* Implicit input: a rank R matrix U U^T plus diagonal (to make it non-singular)
- *   if U has a specific pattern, it does not require be stored as a whole matrix. E.g. U(:,1) = (1:N)%m, U(:,2) = (2:N+1)%m
+/* Implicit input: a rank R matrix U U^T plus diagonal
+ *   (to make it non-singular)
+ *   if U has a specific pattern, it does not require be stored
+ *   as a whole matrix. E.g. U(:,1) = (1:N)%m, U(:,2) = (2:N+1)%m
  *
  * Args:
  *   diag - the diagonal entry for the dense block
@@ -346,8 +367,8 @@ mark_launch_node(FSTreeNode *node, int threshold) {
 
 
 void HodlrMatrix::create_vnode_from_unode
-  (FSTreeNode *unode, FSTreeNode *vnode,
-   Context ctx, HighLevelRuntime *runtime)
+(FSTreeNode *unode, FSTreeNode *vnode,
+ Context ctx, HighLevelRuntime *runtime)
 {
   // create V tree
   if ( ! unode->is_real_leaf() ) {
@@ -436,7 +457,126 @@ void HodlrMatrix::create_vnode_from_unode
 }
 
 
-void HodlrMatrix::create_Hmatrix
+void create_Vtree
+(FSTreeNode *unode, FSTreeNode *vnode) {
+  
+  if ( ! unode->is_real_leaf() ) {
+
+    int lnrow = unode->lchild->nrow;
+    int rnrow = unode->rchild->nrow;
+    int lncol = unode->rchild->ncol; // notice the order here
+    int rncol = unode->lchild->ncol; // it is reversed in v
+    int lrow_beg = unode->lchild->row_beg; // u and v have the
+    int rrow_beg = unode->rchild->row_beg; // same row structure
+    
+    vnode -> lchild = new FSTreeNode(lnrow, lncol, lrow_beg);
+    vnode -> rchild = new FSTreeNode(rnrow, rncol, rrow_beg);
+
+    // set column begin index for Legion leaf,
+    // to be used in the big V matrix at Legion leaf
+    if (unode->is_legion_leaf()) {
+
+      vnode->set_legion_leaf(true);
+
+      if (unode->lowrank_matrix == NULL) { // skip Legion leaf
+	vnode -> lchild -> col_beg = vnode -> col_beg + vnode -> ncol;
+	vnode -> rchild -> col_beg = vnode -> col_beg + vnode -> ncol;
+      }
+    }
+      
+    create_Vtree(unode->lchild, vnode->lchild);
+    create_Vtree(unode->rchild, vnode->rchild);
+    
+  } else {
+    vnode -> lchild = NULL;
+    vnode -> rchild = NULL;
+
+    if ( unode->is_legion_leaf() ) {
+      vnode->set_legion_leaf(true);
+    }
+  }
+}
+
+
+void create_Vregions
+(FSTreeNode *unode, FSTreeNode *vnode,
+ Context ctx, HighLevelRuntime *runtime)
+{
+  // create H-tiled matrices for two children
+  // including Legion leaf
+  if ( ! unode->is_legion_leaf() ) {
+
+    int lnrow = vnode -> lchild -> nrow;
+    int rnrow = vnode -> rchild -> nrow;
+    int lncol = vnode -> lchild -> ncol;
+    int rncol = vnode -> rchild -> ncol;
+
+    vnode -> lchild -> Hmat =  new FSTreeNode(lnrow, lncol);
+    vnode -> rchild -> Hmat =  new FSTreeNode(rnrow, rncol);
+
+    create_Hmatrix(vnode->lchild,
+		   vnode->lchild->Hmat,
+		   vnode->lchild->ncol,
+		   ctx, runtime);
+    create_Hmatrix(vnode->rchild,
+		   vnode->rchild->Hmat,
+		   vnode->rchild->ncol,
+		   ctx, runtime);
+  }
+
+    
+  // create a big rectangle at Legion leaf for lower levels
+  // not including Legion leaf
+  // please refer to Eric's slides of ver 2
+  if (unode->lowrank_matrix != NULL) {
+
+    assert(unode->nrow == vnode->nrow);
+    int urow = unode->lowrank_matrix->rows;
+    int ucol = unode->lowrank_matrix->cols;
+    int vrow = urow;
+    int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
+
+    // when the legion leaf is the real leaf, there is
+    // no data here.
+    create_matrix(vnode->lowrank_matrix, vrow, vcol, ctx, runtime);
+  }
+
+  if ( ! unode->is_real_leaf() ) {
+    create_Vregions(unode->lchild, vnode->lchild, ctx, runtime);
+    create_Vregions(unode->rchild, vnode->rchild, ctx, runtime);
+  }
+}
+
+
+void create_Kregions
+(FSTreeNode *unode, FSTreeNode *vnode,
+ Context ctx, HighLevelRuntime *runtime)
+{
+    
+  // create a big rectangle at Legion leaf for lower levels
+  // not including Legion leaf
+  // please refer to Eric's slides of ver 2
+  if (unode->lowrank_matrix != NULL) {
+
+    assert(unode->nrow == vnode->nrow);
+    //int urow = unode->lowrank_matrix->rows;
+    //int ucol = unode->lowrank_matrix->cols;
+    //int vrow = urow;
+    //int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
+ 
+    // create K matrix
+    int ncol = max_row_size(vnode);
+    create_matrix(vnode->dense_matrix, vnode->nrow, ncol, ctx, runtime);
+  }
+
+  if ( ! unode->is_real_leaf() ) {
+    create_Kregions(unode->lchild, vnode->lchild, ctx, runtime);
+    create_Kregions(unode->rchild, vnode->rchild, ctx, runtime);
+  }
+}
+
+
+void create_Hmatrix
 (FSTreeNode *node, FSTreeNode * Hmat, int ncol,
  Context ctx, HighLevelRuntime *runtime) {
 
@@ -468,7 +608,8 @@ void HodlrMatrix::create_Hmatrix
 }
 
 
-void HodlrMatrix::set_circulant_Hmatrix_data
+//void HodlrMatrix::set_circulant_Hmatrix_data
+void set_circulant_Hmatrix_data
 (FSTreeNode * Hmat, Range tag, Context ctx,
  HighLevelRuntime *runtime, int row_beg) {
 
@@ -476,9 +617,10 @@ void HodlrMatrix::set_circulant_Hmatrix_data
 
     int glo = row_beg;
     int loc = Hmat->row_beg;
-    assert(Hmat->ncol == rank);
+    int rank = Hmat->ncol;
+    //assert(Hmat->ncol == rank);
     Hmat->lowrank_matrix->circulant(0, glo + loc, rank,
-					tag, ctx, runtime);
+				    tag, ctx, runtime);
     
   } else {
     Range ltag = tag.lchild();
