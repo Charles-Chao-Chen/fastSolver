@@ -33,7 +33,7 @@ GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
-CC_FLAGS	:= -I ./ 	  \
+CC_FLAGS	:= -g -I ./ 	  \
 		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \

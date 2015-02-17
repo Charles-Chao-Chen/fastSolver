@@ -36,7 +36,7 @@ void visit
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime);
 
-void add_all_regions
+void add_subtree_regions
 (LaunchNodeTask &launcher, FSTreeNode *uroot, FSTreeNode *vroot);
 
 
@@ -236,13 +236,16 @@ void launch_solve_tasks
 			  0,
 			  -(task_tag.begin)
 			  );
+
   /*
   // add regions
-  add_all_regions(launcher, unode, vnode);
-  // add field
+  add_subtree_regions(launcher, unode, vnode);
+  
+  // add fields
   for (int i=0; i<launcher.region_requirements.size(); i++)
     launcher.region_requirements[i].add_field(FID_X);
-  */
+*/
+    
     
   Future ft = runtime->execute_task(ctx, launcher);
 			  
@@ -254,8 +257,18 @@ void launch_solve_tasks
 }
 
 
-void add_all_regions
+void add_subtree_regions 
 (LaunchNodeTask &launcher, FSTreeNode *unode, FSTreeNode *vnode) {
+
+  //add_UMat_regions();
+  //add_VMat_regions();
+  //add_KMat_regions();
+}
+
+
+void add_Umat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *unode) {
+    
   if (unode->is_legion_leaf()) {
     launcher.add_region_requirement(
 	       RegionRequirement(unode->lowrank_matrix->data,
@@ -265,11 +278,12 @@ void add_all_regions
 				    );
   }
   else {
-    add_all_regions(launcher, unode->lchild, vnode->lchild);
-    add_all_regions(launcher, unode->rchild, vnode->rchild);
+    add_Umat_regions(launcher, unode->lchild);
+    add_Umat_regions(launcher, unode->rchild);
   }
 }
-    
+
+
 /* ---- NodeLaunchTask implementation ---- */
 
 /*static*/
