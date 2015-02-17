@@ -12,7 +12,8 @@ void run_test
  Context ctx, HighLevelRuntime *runtime );
 
 
-void test_accuracy(int, Context ctx, HighLevelRuntime *runtime);
+void test_accuracy
+(int, int, Context ctx, HighLevelRuntime *runtime);
 
 void test_performance(Context ctx, HighLevelRuntime *runtime);
 

@@ -522,28 +522,32 @@ void create_Vregions
 		   vnode->rchild->Hmat,
 		   vnode->rchild->ncol,
 		   ctx, runtime);
+
+    // recursive call
+    create_Vregions(unode->lchild, vnode->lchild, ctx, runtime);
+    create_Vregions(unode->rchild, vnode->rchild, ctx, runtime);
   }
 
     
   // create a big rectangle at Legion leaf for lower levels
-  // not including Legion leaf
+  // not including Legion leaf. So when the legion leaf and
+  // the real leaf conincide, there is such big rectangle
+  // region there.
   // please refer to Eric's slides of ver 2
-  if (unode->lowrank_matrix != NULL) {
+  if (unode->lowrank_matrix != NULL) { // Legion leaf level
 
     assert(unode->nrow == vnode->nrow);
     int urow = unode->lowrank_matrix->rows;
     int ucol = unode->lowrank_matrix->cols;
+
+    // u and v have the same size under Legion leaf
     int vrow = urow;
-    int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
+    int vcol = ucol - (unode->col_beg + unode->ncol);
 
     // when the legion leaf is the real leaf, there is
     // no data here.
-    create_matrix(vnode->lowrank_matrix, vrow, vcol, ctx, runtime);
-  }
-
-  if ( ! unode->is_real_leaf() ) {
-    create_Vregions(unode->lchild, vnode->lchild, ctx, runtime);
-    create_Vregions(unode->rchild, vnode->rchild, ctx, runtime);
+    create_matrix(vnode->lowrank_matrix,
+		  vrow, vcol, ctx, runtime);
   }
 }
 
@@ -552,24 +556,15 @@ void create_Kregions
 (FSTreeNode *unode, FSTreeNode *vnode,
  Context ctx, HighLevelRuntime *runtime)
 {
-    
-  // create a big rectangle at Legion leaf for lower levels
-  // not including Legion leaf
-  // please refer to Eric's slides of ver 2
   if (unode->lowrank_matrix != NULL) {
-
     assert(unode->nrow == vnode->nrow);
-    //int urow = unode->lowrank_matrix->rows;
-    //int ucol = unode->lowrank_matrix->cols;
-    //int vrow = urow;
-    //int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
- 
+    
     // create K matrix
     int ncol = max_row_size(vnode);
     create_matrix(vnode->dense_matrix, vnode->nrow, ncol, ctx, runtime);
   }
 
-  if ( ! unode->is_real_leaf() ) {
+  if ( ! unode->is_legion_leaf() ) {
     create_Kregions(unode->lchild, vnode->lchild, ctx, runtime);
     create_Kregions(unode->rchild, vnode->rchild, ctx, runtime);
   }

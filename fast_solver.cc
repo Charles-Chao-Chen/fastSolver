@@ -39,6 +39,19 @@ void visit
 void add_subtree_regions
 (LaunchNodeTask &launcher, FSTreeNode *uroot, FSTreeNode *vroot);
 
+void add_umat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *unode);
+
+void add_vmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *hnode);
+
+void add_hmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *hnode);
+
+void add_kmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *hnode);
+
+
 
 void register_solver_tasks() {
 
@@ -237,14 +250,14 @@ void launch_solve_tasks
 			  -(task_tag.begin)
 			  );
 
-  /*
+  
   // add regions
   add_subtree_regions(launcher, unode, vnode);
   
   // add fields
-  for (int i=0; i<launcher.region_requirements.size(); i++)
+  for (unsigned i=0; i<launcher.region_requirements.size(); i++)
     launcher.region_requirements[i].add_field(FID_X);
-*/
+ 
     
     
   Future ft = runtime->execute_task(ctx, launcher);
@@ -260,13 +273,13 @@ void launch_solve_tasks
 void add_subtree_regions 
 (LaunchNodeTask &launcher, FSTreeNode *unode, FSTreeNode *vnode) {
 
-  //add_UMat_regions();
-  //add_VMat_regions();
-  //add_KMat_regions();
+  add_umat_regions( launcher, unode );
+  add_vmat_regions( launcher, vnode );
+  add_kmat_regions( launcher, vnode );
 }
 
 
-void add_Umat_regions 
+void add_umat_regions 
 (LaunchNodeTask &launcher, FSTreeNode *unode) {
     
   if (unode->is_legion_leaf()) {
@@ -278,10 +291,75 @@ void add_Umat_regions
 				    );
   }
   else {
-    add_Umat_regions(launcher, unode->lchild);
-    add_Umat_regions(launcher, unode->rchild);
+    add_umat_regions(launcher, unode->lchild);
+    add_umat_regions(launcher, unode->rchild);
   }
 }
+
+
+void add_vmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *vnode) {
+    
+  if ( ! vnode->is_legion_leaf() ) {
+
+    add_hmat_regions(launcher, vnode->lchild->Hmat);
+    add_hmat_regions(launcher, vnode->rchild->Hmat);
+
+    // recursive call
+    add_vmat_regions(launcher, vnode->lchild);
+    add_vmat_regions(launcher, vnode->rchild);
+  }
+
+  if (vnode->lowrank_matrix != NULL) {
+    launcher.add_region_requirement(
+	       RegionRequirement(vnode->lowrank_matrix->data,
+				 READ_ONLY,
+				 EXCLUSIVE,
+				 vnode->lowrank_matrix->data)
+				    );
+  }     
+}
+
+
+// Hmat has the same structure as umat, except
+//  the region privilege is READ_ONLY
+void add_hmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *vnode) {
+    
+  if (vnode->is_legion_leaf()) {
+    launcher.add_region_requirement(
+	       RegionRequirement(vnode->lowrank_matrix->data,
+				 READ_ONLY,
+				 EXCLUSIVE,
+				 vnode->lowrank_matrix->data)
+				    );
+  }
+  else {
+    add_hmat_regions(launcher, vnode->lchild);
+    add_hmat_regions(launcher, vnode->rchild);
+  }
+}
+
+
+void add_kmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *vnode) {
+    
+  if (vnode->lowrank_matrix != NULL) {
+    launcher.add_region_requirement(
+	       RegionRequirement(vnode->dense_matrix->data,
+				 READ_ONLY,
+				 EXCLUSIVE,
+				 vnode->dense_matrix->data)
+				    );
+  }
+
+  // recursive call
+  if ( ! vnode->is_legion_leaf() ) {
+    add_kmat_regions(launcher, vnode->lchild);
+    add_kmat_regions(launcher, vnode->rchild);
+  }
+}
+
 
 
 /* ---- NodeLaunchTask implementation ---- */

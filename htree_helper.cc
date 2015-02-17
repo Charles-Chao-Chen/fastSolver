@@ -122,9 +122,9 @@ int count_leaf(FSTreeNode *node) {
 }
 
 
-void
-create_matrix(LMatrix *(&matrix), int nrow, int ncol,
-	      Context ctx, HighLevelRuntime *runtime) {
+void create_matrix
+(LMatrix *(&matrix), int nrow, int ncol,
+ Context ctx, HighLevelRuntime *runtime) {
 
   // ncol can be 0 for the matrix below legion node
   // in v tree

@@ -44,7 +44,7 @@ void top_level_task(const Task *task,
     test3(nproc, nleaf, ctx, runtime);
     break;
   default:
-    test_accuracy(nproc, ctx, runtime);
+    test_accuracy(nproc, nleaf, ctx, runtime);
   }
 
   //test_performance(ctx, runtime);

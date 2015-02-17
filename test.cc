@@ -72,11 +72,12 @@ run_test(300,
 }
 */
 
-void test_accuracy(int nproc, Context ctx, HighLevelRuntime *runtime) {
+void test_accuracy(int nproc, int nleaf,
+		   Context ctx, HighLevelRuntime *runtime) {
   run_test(6,   /* rank */
 	   15*(8),  /* N */
 	   15,   /* threshold*/
-	   1,    /* nleaf_per_legion_node */
+	   nleaf,/* nleaf_per_legion_node */
 	   1.e1, /* diagonal */
 	   nproc,    /* # of processors */
 	   true, /* compute accuracy */

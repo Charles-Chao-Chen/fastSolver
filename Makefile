@@ -240,7 +240,7 @@ prof:
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
 	./main			\
-	-test 3			\
+	-test $(test)		\
 	-np $(nproc) 		\
 	-leaf $(leaf)		\
 	-cat legion_prof	\
