@@ -75,7 +75,7 @@ run_test(300,
 void test_accuracy(int nproc, int nleaf,
 		   Context ctx, HighLevelRuntime *runtime) {
   run_test(6,   /* rank */
-	   15*(8),  /* N */
+	   15*(2<<4),  /* N */
 	   15,   /* threshold*/
 	   nleaf,/* nleaf_per_legion_node */
 	   1.e1, /* diagonal */

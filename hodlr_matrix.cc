@@ -87,14 +87,17 @@ void HodlrMatrix::create_tree
   // create V tree
   int v_rhs = 0; // no rhs
   vroot = new FSTreeNode(uroot->nrow, v_rhs);
+
   //create_vnode_from_unode(uroot, vroot, ctx, runtime);
-  
+
+
   create_Vtree(uroot, vroot);
 
   create_Vregions(uroot, vroot, ctx, runtime);
 
   create_Kregions(uroot, vroot, ctx, runtime);
 
+    
   // print_legion_tree(uroot);
   // print_legion_tree(vroot);
 }
@@ -233,16 +236,15 @@ init_Vmat(FSTreeNode *node, double diag, Range tag,
 
   if ( node->is_legion_leaf() ) {
 
-    // init V
-    // when the legion leaf is the real leaf, there is no data here.
+    // init V. when the legion leaf is the real leaf,
+    //  there is no data here.
     if (node->lowrank_matrix->cols > 0)
       node->lowrank_matrix->circulant(0, row_beg, rank,
 					  tag, ctx, runtime);
 
     // init K
-    //int nrow = node->dense_matrix->rows;
-    //int ncol = node->dense_matrix->cols;
-    init_circulant_Kmat(node, row_beg, rank, diag, tag, ctx, runtime);
+    init_circulant_Kmat(node, row_beg, rank, diag,
+			tag, ctx, runtime);
     
   } else {
     Range ltag = tag.lchild();
@@ -561,7 +563,8 @@ void create_Kregions
     
     // create K matrix
     int ncol = max_row_size(vnode);
-    create_matrix(vnode->dense_matrix, vnode->nrow, ncol, ctx, runtime);
+    create_matrix(vnode->dense_matrix, vnode->nrow,
+		  ncol, ctx, runtime);
   }
 
   if ( ! unode->is_legion_leaf() ) {

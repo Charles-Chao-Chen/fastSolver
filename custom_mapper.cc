@@ -12,8 +12,8 @@ void register_custom_mapper() {
 void mapper_registration(Machine machine, HighLevelRuntime *rt,
 			 const std::set<Processor> &local_procs)
 {
-  for (std::set<Processor>::const_iterator it = local_procs.begin();
-       it != local_procs.end(); it++) {
+  std::set<Processor>::const_iterator it = local_procs.begin();
+  for (; it != local_procs.end(); it++) {
     rt->replace_default_mapper(
 	new AdversarialMapper(machine, rt, *it), *it);
   }
@@ -22,11 +22,11 @@ void mapper_registration(Machine machine, HighLevelRuntime *rt,
 // Here is the constructor for our adversial mapper.
 // We'll use the constructor to illustrate how mappers can
 // get access to information regarding the current machine.
-AdversarialMapper::AdversarialMapper(Machine m, 
-                                     HighLevelRuntime *rt, Processor p)
-  : DefaultMapper(m, rt, p) // pass arguments through to DefaultMapper
+AdversarialMapper::AdversarialMapper
+(Machine m, HighLevelRuntime *rt, Processor p)
+  : DefaultMapper(m, rt, p)
 {
-  typedef std::set<Memory>::const_iterator    SMCI;
+  typedef std::set<Memory>::const_iterator SMCI;
 
   std::set<Memory> all_mems;
   machine.get_all_memories(all_mems);
@@ -153,7 +153,7 @@ bool AdversarialMapper::map_task(Task *task)
 
       // special mapping ID for launch node tasks
       //  the regions will be virtually mapped
-      task->regions[idx].virtual_map = task->tag < 0 ? true : false;
+      task->regions[idx].virtual_map = false; //task->tag < 0 ? true : false;
       task->regions[idx].enable_WAR_optimization = war_enabled;
       task->regions[idx].reduction_list = false;
       		
@@ -179,20 +179,21 @@ void AdversarialMapper::notify_mapping_failed(const Mappable *mappable)
 // this example to record the memories in which physical instances
 // were mapped for each logical region of each task so we can
 // see that the assignment truly is random.
+
 /*
-  void AdversarialMapper::notify_mapping_result(const Mappable *mappable)
-  {
+void AdversarialMapper::notify_mapping_result(const Mappable *mappable)
+{
   if (mappable->get_mappable_kind() == Mappable::TASK_MAPPABLE)
-  {
-  const Task *task = mappable->as_mappable_task();
-  assert(task != NULL);
-  for (unsigned idx = 0; idx < task->regions.size(); idx++)
-  {
-  printf("Mapped region %d of task %s (ID %lld) to memory %x\n",
-  idx, task->variants->name, 
-  task->get_unique_task_id(),
-  task->regions[idx].selected_memory.id);
-  }
-  }
-  }
+    {
+      const Task *task = mappable->as_mappable_task();
+      assert(task != NULL);
+      for (unsigned idx = 0; idx < task->regions.size(); idx++)
+	{
+	  printf("Mapped region %d of task %s (ID %lld) to memory %x\n",
+		 idx, task->variants->name, 
+		 task->get_unique_task_id(),
+		 task->regions[idx].selected_memory.id);
+	}
+    }
+}
 */

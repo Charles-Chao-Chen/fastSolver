@@ -43,13 +43,13 @@ void add_umat_regions
 (LaunchNodeTask &launcher, FSTreeNode *unode);
 
 void add_vmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *hnode);
+(LaunchNodeTask &launcher, FSTreeNode *vnode);
 
 void add_hmat_regions 
 (LaunchNodeTask &launcher, FSTreeNode *hnode);
 
 void add_kmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *hnode);
+(LaunchNodeTask &launcher, FSTreeNode *vnode);
 
 
 
@@ -84,8 +84,8 @@ void FastSolver::bfs_solve
 
   Range tag(nProc);
   double t0 = timer();
-  //solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
-  solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+  solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+  //solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
   double t1 = timer();
   this->time_launcher = t1 - t0;
 }
@@ -153,9 +153,11 @@ void solve_bfs_launch
     //visit(*ruit, *rvit, *rrgit,
     //	  tRed, tBroad, tCreate,
     //	  ctx, runtime);
+  /*
   std::cout << "launch reduction task: " << tRed   << std::endl
 	    << "launch create task: " << tCreate   << std::endl
 	    << "launch broadcast task: " << tBroad << std::endl;
+  */
 }
 
 
@@ -257,8 +259,12 @@ void launch_solve_tasks
   // add fields
   for (unsigned i=0; i<launcher.region_requirements.size(); i++)
     launcher.region_requirements[i].add_field(FID_X);
- 
-    
+
+
+  std::cout << "Total # of regions : "
+	    << launcher.region_requirements.size()
+	    << std::endl;
+
     
   Future ft = runtime->execute_task(ctx, launcher);
 			  
@@ -271,11 +277,26 @@ void launch_solve_tasks
 
 
 void add_subtree_regions 
-(LaunchNodeTask &launcher, FSTreeNode *unode, FSTreeNode *vnode) {
+(LaunchNodeTask &launcher, FSTreeNode *unode, FSTreeNode *vnode){
+
+  int n0 = launcher.region_requirements.size();
+  assert( n0 == 0 );
+  std::cout << "# of u, v, k regions : ";
 
   add_umat_regions( launcher, unode );
+
+  n0 = launcher.region_requirements.size();
+  std::cout << n0;
+
   add_vmat_regions( launcher, vnode );
+
+  int n1 = launcher.region_requirements.size();
+  std::cout << ", " << n1;
+  
   add_kmat_regions( launcher, vnode );
+
+  int n2 = launcher.region_requirements.size();
+  std::cout << ", " << n2 << std::endl;
 }
 
 
@@ -300,33 +321,11 @@ void add_umat_regions
 void add_vmat_regions 
 (LaunchNodeTask &launcher, FSTreeNode *vnode) {
     
-  if ( ! vnode->is_legion_leaf() ) {
-
-    add_hmat_regions(launcher, vnode->lchild->Hmat);
-    add_hmat_regions(launcher, vnode->rchild->Hmat);
-
-    // recursive call
-    add_vmat_regions(launcher, vnode->lchild);
-    add_vmat_regions(launcher, vnode->rchild);
+  if ( vnode->Hmat != NULL ) {
+    add_hmat_regions(launcher, vnode->Hmat);
   }
 
-  if (vnode->lowrank_matrix != NULL) {
-    launcher.add_region_requirement(
-	       RegionRequirement(vnode->lowrank_matrix->data,
-				 READ_ONLY,
-				 EXCLUSIVE,
-				 vnode->lowrank_matrix->data)
-				    );
-  }     
-}
-
-
-// Hmat has the same structure as umat, except
-//  the region privilege is READ_ONLY
-void add_hmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *vnode) {
-    
-  if (vnode->is_legion_leaf()) {
+  if ( vnode->is_legion_leaf() ) {
     launcher.add_region_requirement(
 	       RegionRequirement(vnode->lowrank_matrix->data,
 				 READ_ONLY,
@@ -335,8 +334,29 @@ void add_hmat_regions
 				    );
   }
   else {
-    add_hmat_regions(launcher, vnode->lchild);
-    add_hmat_regions(launcher, vnode->rchild);
+    // recursive call
+    add_vmat_regions(launcher, vnode->lchild);
+    add_vmat_regions(launcher, vnode->rchild);
+  }
+}
+
+
+// Hmat has the same structure as umat, except
+//  the region privilege is READ_ONLY
+void add_hmat_regions 
+(LaunchNodeTask &launcher, FSTreeNode *hnode) {
+    
+  if ( hnode->is_real_leaf() ) {
+    launcher.add_region_requirement(
+	       RegionRequirement(hnode->lowrank_matrix->data,
+				 READ_ONLY,
+				 EXCLUSIVE,
+				 hnode->lowrank_matrix->data)
+				    );
+  }
+  else {
+    add_hmat_regions(launcher, hnode->lchild);
+    add_hmat_regions(launcher, hnode->rchild);
   }
 }
 
@@ -344,7 +364,9 @@ void add_hmat_regions
 void add_kmat_regions 
 (LaunchNodeTask &launcher, FSTreeNode *vnode) {
     
-  if (vnode->lowrank_matrix != NULL) {
+  if ( vnode->is_legion_leaf() ) {
+    assert( vnode->dense_matrix != NULL );
+      
     launcher.add_region_requirement(
 	       RegionRequirement(vnode->dense_matrix->data,
 				 READ_ONLY,
@@ -352,9 +374,8 @@ void add_kmat_regions
 				 vnode->dense_matrix->data)
 				    );
   }
-
-  // recursive call
-  if ( ! vnode->is_legion_leaf() ) {
+  else {
+    // recursive call
     add_kmat_regions(launcher, vnode->lchild);
     add_kmat_regions(launcher, vnode->rchild);
   }
