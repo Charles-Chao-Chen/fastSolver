@@ -99,7 +99,7 @@ void solve_node_matrix
 
   Future f = runtime->execute_task(ctx, launcher);
 
-#ifdef DEBUG
+#ifdef SERIAL
   f.get_void_result();
   std::cout << "Waiting for node_solve task ..." << std::endl;
 #endif
@@ -601,7 +601,7 @@ void solve_legion_leaf
   launcher.region_requirements[2].add_field(FID_X);    
   Future ft = runtime->execute_task(ctx, launcher);
   
-#ifdef DEBUG
+#ifdef SERIAL
   ft.get_void_result();
   std::cout << "Waiting for leaf_solve task ..."
 	    << std::endl;

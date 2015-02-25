@@ -4,7 +4,7 @@ $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
 #Flags for directing the runtime makefile what to include
-DEBUG=0                   # Include debugging symbols
+DEBUG=1                   # Include debugging symbols
 OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 SHARED_LOWLEVEL=0	  # Use the shared low level
 USE_CUDA=0
@@ -15,25 +15,25 @@ OUTFILE	:= main
 # List all the application source files here
 GEN_SRC	:= main.cc              \
 	   test.cc		\
-	   fast_solver.cc       \
-	   solver_tasks.cc      \
-	   gemm.cc              \
-	   zero_matrix_task.cc 	\
-	   hodlr_matrix.cc 	\
-	   htree_helper.cc  	\
-	   legion_matrix.cc   	\
-	   init_matrix_tasks.cc \
-	   save_region_task.cc  \
-	   direct_solve.cc 	\
-	   range.cc		\
-	   timer.cc 	   	\
-	   custom_mapper.cc
+	   ../src/fast_solver.cc       \
+	   ../src/solver_tasks.cc      \
+	   ../src/gemm.cc              \
+	   ../src/zero_matrix_task.cc 	\
+	   ../src/hodlr_matrix.cc 	\
+	   ../src/htree_helper.cc  	\
+	   ../src/legion_matrix.cc   	\
+	   ../src/init_matrix_tasks.cc \
+	   ../src/save_region_task.cc  \
+	   ../src/direct_solve.cc 	\
+	   ../src/range.cc		\
+	   ../src/timer.cc 	   	\
+	   ../src/custom_mapper.cc
 
 GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
-CC_FLAGS	:= -g -I ./ 	  \
+CC_FLAGS	:= -g -I ./ -I ../include  \
 		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \

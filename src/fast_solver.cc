@@ -260,15 +260,15 @@ void launch_solve_tasks
   for (unsigned i=0; i<launcher.region_requirements.size(); i++)
     launcher.region_requirements[i].add_field(FID_X);
 
-
+#ifdef DEBUG
   std::cout << "Total # of regions : "
 	    << launcher.region_requirements.size()
 	    << std::endl;
-
+#endif
     
   Future ft = runtime->execute_task(ctx, launcher);
 			  
-#ifdef DEBUG
+#ifdef SERIAL
   ft.get_void_result();
   std::cout << "Waiting for node_launch task ..."
 	    << std::endl;
@@ -279,24 +279,32 @@ void launch_solve_tasks
 void add_subtree_regions 
 (LaunchNodeTask &launcher, FSTreeNode *unode, FSTreeNode *vnode){
 
+#ifdef DEBUG
   int n0 = launcher.region_requirements.size();
   assert( n0 == 0 );
-  std::cout << "# of u, v, k regions : ";
-
+#endif
+  
   add_umat_regions( launcher, unode );
 
+#ifdef DEBUG
   n0 = launcher.region_requirements.size();
-  std::cout << n0;
-
+#endif
+  
   add_vmat_regions( launcher, vnode );
 
-  int n1 = launcher.region_requirements.size();
-  std::cout << ", " << n1;
+#ifdef DEBUG
+  int n1 = launcher.region_requirements.size() - n0;
+#endif
   
   add_kmat_regions( launcher, vnode );
 
-  int n2 = launcher.region_requirements.size();
+#ifdef DEBUG
+  int n2 = launcher.region_requirements.size() - n1 - n0;
+  std::cout << "# of u, v, k regions : ";
+  std::cout << n0;
+  std::cout << ", " << n1;
   std::cout << ", " << n2 << std::endl;
+#endif
 }
 
 
@@ -489,9 +497,12 @@ void solve_bfs
     visit(*ruit, *rvit, *rrgit,
 	  tRed, tBroad, tCreate,
 	  ctx, runtime);
+
+#ifdef DEBUG
   std::cout << "launch reduction task: " << tRed   << std::endl
 	    << "launch create task: " << tCreate   << std::endl
 	    << "launch broadcast task: " << tBroad << std::endl;
+#endif
 }
 
 

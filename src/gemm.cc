@@ -194,7 +194,7 @@ static void gemm_recursive
 
     Future ft = runtime->execute_task(ctx, launcher);
     
-#ifdef DEBUG
+#ifdef SERIAL
     ft.get_void_result();
     std::cout << "Waiting for gemm_reduce ..."
 	      << std::endl;
@@ -275,7 +275,7 @@ void gemm_broadcast
     launcher.region_requirements[1].add_field(FID_X);
     Future ft = runtime->execute_task(ctx, launcher);
 
-#ifdef DEBUG
+#ifdef SERIAL
     ft.get_void_result();
     std::cout << "Waiting for gemm_broadcast ..."
 	      << std::endl;
