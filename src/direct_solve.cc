@@ -111,8 +111,9 @@ dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
 */
 
 static void
-dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
-			   int nregions, int rhs_cols, int r, double diag) {
+dirct_circulant_solve
+(std::string soln_file, int rand_seed, int rhs_rows,
+ int nregions, int rhs_cols, int r, double diag) {
 
   double *rhs = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
   int block_size = rhs_rows/nregions;
@@ -165,11 +166,19 @@ dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
   
   // read solver output from file
   double *soln = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
-  std::ifstream ifs(soln_file.c_str());
-  for (int i=0; i<rhs_rows; i++)
-    for (int j=0; j<rhs_cols; j++)
-    ifs >> soln[i + j*rhs_rows];
-  ifs.close();
+  std::ifstream ifs;
+  ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+  try {
+    ifs.open(soln_file.c_str());
+    for (int i=0; i<rhs_rows; i++)
+      for (int j=0; j<rhs_cols; j++)
+	ifs >> soln[i + j*rhs_rows];
+    ifs.close();
+  }
+  catch (std::ifstream::failure e) {
+    std::cerr << "Exception opening/reading/closing "
+	      << soln_file << std::endl;
+  }
   
   double diff  = 0;
   double denom = 0;
@@ -191,15 +200,12 @@ dirct_circulant_solve(std::string soln_file, int rand_seed, int rhs_rows,
 void compute_L2_error
 (HodlrMatrix &lr_mat, int rand_seed, int rhs_rows,
  int nregions, int rhs_cols, int rank,
- double diag, Context ctx, HighLevelRuntime *runtime) {
+ double diag,
+ Context ctx, HighLevelRuntime *runtime) {
     
   // write the solution from fast solver
-  const char *soln_file = "soln.txt";
-  if (remove(soln_file) == 0)
-    std::cout << "Remove old solution file." << std::endl;
-  std::cout << "Create " << soln_file << std::endl;
-  lr_mat.save_rhs(soln_file, ctx, runtime);
-  
+  lr_mat.save_solution(ctx, runtime);
+  std::string soln_file = lr_mat.get_file_soln();
   dirct_circulant_solve(soln_file, rand_seed, rhs_rows, nregions,
 			rhs_cols, rank, diag); 
 }

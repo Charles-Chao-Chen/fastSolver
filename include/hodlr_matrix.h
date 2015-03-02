@@ -64,49 +64,40 @@ class HodlrMatrix {
   
   void create_tree
     (int, int, int, int, int, int,
-     Context, HighLevelRuntime *);
+     const std::string&, Context, HighLevelRuntime *);
   void init_rhs
     (int, int, Context, HighLevelRuntime *);
   void init_circulant_matrix
     (double, Context, HighLevelRuntime *);
 
-  // rhs becomes solution after the solver
   void save_rhs
-    (std::string, Context, HighLevelRuntime *);
-
+    (Context, HighLevelRuntime *);
+  void save_solution
+    (Context, HighLevelRuntime *);
   
   int  get_num_rhs() {return rhs_cols;}
   int  get_num_leaf() {return nleaf;}
   void set_num_leaf(int nleaf) {this->nleaf = nleaf;}
   int  get_num_launch_node() {return nLaunchNode;}
   void set_num_launch_node(int n) {nLaunchNode = n;}
-  
+  std::string get_file_soln() const {return file_soln;}
   /* --- tree root --- */
   //int nleaf_per_node;
   FSTreeNode *uroot;
   FSTreeNode *vroot;
 
  private:
-
   /* --- create tree --- */
-
   void create_vnode_from_unode(FSTreeNode *, FSTreeNode *,
 			       Context, HighLevelRuntime *);
 
   /* --- populate data --- */
-
   void init_Umat(FSTreeNode *node, Range tag,
-		 Context, HighLevelRuntime *, int row_beg = 0);
-  
+		 Context, HighLevelRuntime *, int row_beg = 0);  
   void init_Vmat(FSTreeNode *node, double diag, Range tag,
 		 Context, HighLevelRuntime *, int row_beg = 0);
-
-    
-  /*--- helper functions ---*/
-
   
   /* --- private attributes --- */
-  
   int rank; // only if every block has the same rank
   int rhs_rows;
   int rhs_cols;
@@ -116,6 +107,8 @@ class HodlrMatrix {
   int nleaf;
   int nProc;
   int nLaunchNode;
+  std::string file_rhs;
+  std::string file_soln;
 };
 
 

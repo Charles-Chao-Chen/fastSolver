@@ -81,11 +81,14 @@ void FastSolver::bfs_solve
 {
   std::cout << "Launch tasks in breadth first order."
 	    << std::endl;
-
+#ifdef DEBUG
+  // write the initial rhs
+  lr_mat.save_rhs(ctx, runtime);
+#endif
   Range tag(nProc);
   double t0 = timer();
-  solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
-  //solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+  //solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+  solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
   double t1 = timer();
   this->time_launcher = t1 - t0;
 }
@@ -96,6 +99,7 @@ void FastSolver::bfs_solve
 //  when only leaf nodes are visited
 // rmk: bfs may be more expensive because of the
 //  push operations
+/*
 void solve_bfs_launch
 (FSTreeNode *uroot, FSTreeNode *vroot,
  Range mappingTag, Context ctx, HighLevelRuntime *runtime) {
@@ -149,15 +153,6 @@ void solve_bfs_launch
     else
       break;
   }
-  
-    //visit(*ruit, *rvit, *rrgit,
-    //	  tRed, tBroad, tCreate,
-    //	  ctx, runtime);
-  /*
-  std::cout << "launch reduction task: " << tRed   << std::endl
-	    << "launch create task: " << tCreate   << std::endl
-	    << "launch broadcast task: " << tBroad << std::endl;
-  */
 }
 
 
@@ -388,7 +383,7 @@ void add_kmat_regions
     add_kmat_regions(launcher, vnode->rchild);
   }
 }
-
+*/
 
 
 /* ---- NodeLaunchTask implementation ---- */

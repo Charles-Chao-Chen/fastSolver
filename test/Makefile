@@ -11,10 +11,9 @@ USE_CUDA=0
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 
 # Put the binary file name here
-OUTFILE	:= main
+OUTFILE	:= multi_launch
 # List all the application source files here
-GEN_SRC	:= main.cc              \
-	   test.cc		\
+GEN_SRC	:= parallel_launch.cc              \
 	   ../src/fast_solver.cc       \
 	   ../src/solver_tasks.cc      \
 	   ../src/gemm.cc              \
@@ -37,6 +36,10 @@ CC_FLAGS	:= -g -I ./ -I ../include  \
 		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
+		   -DSERIAL	  \
+		   -DDEBUG 	\
+		   -DSHOW_REGISTER_TASKS
+
 #		   -g		\
 #		   -DDEBUG	  \
 #		   -DNDEBUG	  \
@@ -150,7 +153,7 @@ $(GPU_RUNTIME_OBJS): %.o : %.cu
 	$(NVCC) -o $@ -c $< $(INC_FLAGS) $(NVCC_FLAGS)
 
 clean:
-	@$(RM) -rf $(OUTFILE) $(GEN_OBJS) *~
+	@$(RM) -rf $(OUTFILE) $(GEN_OBJS) *~ ../src/*~ ../include/*~
 
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
@@ -239,7 +242,7 @@ prof:
 	-env MV2_ENABLE_AFFINITY=0  \
 	-env GASNET_IB_SPAWNER=mpi  \
 	-env GASNET_BACKTRACE=1     \
-	./main			\
+	./multi_launch			\
 	-test $(test)		\
 	-np $(nproc) 		\
 	-leaf $(leaf)		\

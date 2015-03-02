@@ -1,6 +1,7 @@
 #ifndef __DIRECT_SOLVE
 #define __DIRECT_SOLVE
 
+#include <string>
 #include "hodlr_matrix.h"
 
 /*
@@ -19,7 +20,8 @@ dirct_circulant_solve(std::string soln_file, int rand_seed,
 void
 compute_L2_error(HodlrMatrix &lr_mat, int rand_seed, int rhs_rows,
 		 int nregions, int rhs_cols, int rank,
-		 double diag, Context ctx, HighLevelRuntime *runtime);
+		 double diag,
+		 Context ctx, HighLevelRuntime *runtime);
 
 
   

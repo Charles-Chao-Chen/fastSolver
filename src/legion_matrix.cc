@@ -26,7 +26,9 @@ void LMatrix::rand
 				  );
   Future ft = runtime->execute_task(ctx, launcher);
   ft.get_void_result();
-  //  std::cout << "Waiting for initializing rhs ..." << std::endl;
+#ifdef SERIAL
+  std::cout << "Waiting for init rhs ..." << std::endl;
+#endif
 }
 
 
@@ -44,7 +46,12 @@ void LMatrix::zero
 			       EXCLUSIVE,
 			       data));
   launcher.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, launcher);
+  Future f = runtime->execute_task(ctx, launcher);
+#ifdef SERIAL
+  f.get_void_result();
+  std::cout << "Waiting for zero ..." << std::endl;
+#endif
+
 }
 
 
@@ -66,7 +73,12 @@ void LMatrix::circulant
 				   data)
 				  );
   launcher.region_requirements[0].add_field(FID_X);
-  runtime->execute_task(ctx, launcher);
+  Future f = runtime->execute_task(ctx, launcher);
+#ifdef SERIAL
+  std::cout << "Waiting for init low rank block ..."
+	    << std::endl;
+#endif
+
 }
 
 
@@ -89,5 +101,9 @@ void LMatrix::save
 				  );
   Future fm = runtime->execute_task(ctx, launcher);
   fm.get_void_result(); // wait until finish
+#ifdef SERIAL
+  std::cout << "Waiting for writing into file ..." << std::endl;
+#endif
+
 }
 

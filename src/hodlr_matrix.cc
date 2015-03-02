@@ -59,13 +59,15 @@ static int create_legion_node
 void HodlrMatrix::create_tree
   (int N, int threshold, int rhs_cols,
    int rank, int nleaf_per_legion_node, int num_proc,
+   const std::string& name,
    Context ctx, HighLevelRuntime *runtime) {
 
   this->rank     = rank;
   this->rhs_rows = N;
   this->rhs_cols = rhs_cols;
-  
-  this->nProc = num_proc;
+  this->nProc    = num_proc;
+  this->file_rhs = name + "_rhs.txt";
+  this->file_soln = name + "_soln.txt";
   
   uroot = new FSTreeNode(N, rhs_cols);
 
@@ -293,7 +295,11 @@ void init_circulant_Kmat
 				   vLeaf->dense_matrix->data)
 				  .add_field(FID_X)
 				  );
-  runtime->execute_task(ctx, launcher);
+  Future f = runtime->execute_task(ctx, launcher);
+#ifdef SERIAL
+  f.get_void_result();
+  printf("Waiting for init dense block ...\n");
+#endif
 }
 
 
@@ -711,11 +717,24 @@ void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag
   fill_circulant_Kmat(vnode->rchild, row_beg_glo, r, diag, Kmat, LD);
 }
 
-
 void HodlrMatrix::save_rhs
-(std::string soln_file,
- Context ctx, HighLevelRuntime *runtime)
-{
+(Context ctx, HighLevelRuntime *runtime) {
+  std::string& filename = file_rhs;
+  if (remove(filename.c_str())==0)
+    std::cout << " create new " << filename << std::endl;
+  else
+    std::cout << " create " << filename << std::endl;
   Range rRhs(this->rhs_cols);
-  save_HodlrMatrix(this->uroot, soln_file, ctx, runtime, rRhs);
+  save_HodlrMatrix(this->uroot, filename, ctx, runtime, rRhs);
+}
+
+void HodlrMatrix::save_solution
+(Context ctx, HighLevelRuntime *runtime) {
+  std::string& filename = file_soln;
+  if (remove(filename.c_str())==0)
+    std::cout << " create new " << filename << std::endl;
+  else
+    std::cout << " create " << filename << std::endl;
+  Range rRhs(this->rhs_cols);
+  save_HodlrMatrix(this->uroot, filename, ctx, runtime, rRhs);
 }
