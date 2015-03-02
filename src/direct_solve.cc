@@ -110,6 +110,20 @@ dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
 }
 */
 
+static void writeToFile
+(double* rhs, int rhs_rows, int rhs_cols, std::string file) {
+
+  std::ofstream ofs(file.c_str());
+  for (int i=0; i<rhs_rows; i++) {
+    for (int j=0; j<rhs_cols; j++)
+      ofs << std::setprecision(20)
+	  << rhs[i + j*rhs_rows]
+	  << '\t';
+    ofs << std::endl;
+  }
+  ofs.close();
+}
+
 static void
 dirct_circulant_solve
 (std::string soln_file, int rand_seed, int rhs_rows,
@@ -126,6 +140,8 @@ dirct_circulant_solve
 	rhs[ row_idx + col_idx*rhs_rows] = frand(0, 1);
       }
   }
+
+  writeToFile(rhs, rhs_rows, rhs_cols, "rhs_ref.txt");
   
   double *U = (double *) malloc(rhs_rows*r*sizeof(double));
   for (int j=0; j<r; j++)
@@ -156,6 +172,9 @@ dirct_circulant_solve
 
 
   // write the direct output to file
+  writeToFile(rhs, rhs_rows, rhs_cols, "solun_ref.txt");
+
+  /*
   std::ofstream ofs("soln_ref.txt");
   for (int i=0; i<rhs_rows; i++) {
     for (int j=0; j<rhs_cols; j++)
@@ -163,7 +182,8 @@ dirct_circulant_solve
     ofs << std::endl;
   }
   ofs.close();
-  
+  */
+    
   // read solver output from file
   double *soln = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
   std::ifstream ifs;

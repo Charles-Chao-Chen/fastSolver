@@ -50,7 +50,7 @@ void SaveRegionTask::cpu_task
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
   const TaskArgs* task_args = (TaskArgs *)task->args;
-  std::string filename = task_args->filename;
+  const char* filename = task_args->filename;
   int col_beg          = task_args->col_range.begin;
   int ncol             = task_args->col_range.size;
   

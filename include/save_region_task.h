@@ -1,7 +1,6 @@
 #ifndef _SAVE_TASK_H
 #define _SAVE_TASK_H
 
-#include "string"
 #include "legion.h"
 #include "range.h"
 
@@ -17,7 +16,7 @@ class SaveRegionTask : public TaskLauncher {
  public:
   struct TaskArgs {
     Range col_range;
-    std::string filename;
+    char filename[50];
   };
 
   SaveRegionTask(TaskArgument arg,

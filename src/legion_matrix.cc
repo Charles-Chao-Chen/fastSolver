@@ -87,7 +87,7 @@ void LMatrix::save
  Context ctx, HighLevelRuntime *runtime, const Range rg) {
 
   SaveRegionTask::TaskArgs args;
-  args.filename  = filename;
+  strcpy(args.filename, filename.c_str());
   args.col_range = rg;
     
   SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));

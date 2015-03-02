@@ -17,7 +17,11 @@ public:
   rows(rows), cols(cols), 
   data(LogicalRegion::NO_REGION) {}
 
+  //TODO: deconstructor is not appropriate here, because
+  // it has to take runtime and ctx as parameters.
+  // So use destroy() instead.
   //~LMatrix();
+  // destroy();
 
   // generate random matrix
   void rand
