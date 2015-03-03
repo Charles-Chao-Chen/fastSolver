@@ -8,10 +8,11 @@
 /* ---- LMatrix class methods ---- */
 
 void LMatrix::rand
-  (const int randSeed, const Range &range, const Range &taskTag,
+  (long int seed, const Range &range, const Range &taskTag,
    Context ctx, HighLevelRuntime *runtime) {
 
-  RandomMatrixTask::TaskArgs args = {randSeed, range.size};
+  this->seed = seed;
+  RandomMatrixTask::TaskArgs args = {seed, range.size};
   RandomMatrixTask launcher(TaskArgument(&args, sizeof(args)),
 			    Predicate::TRUE_PRED,
 			    0,
@@ -83,12 +84,14 @@ void LMatrix::circulant
 
 
 void LMatrix::save
-(const std::string filename,
- Context ctx, HighLevelRuntime *runtime, const Range rg) {
+(const std::string filename, const Range rg, 
+ Context ctx, HighLevelRuntime *runtime, bool print_seed) {
 
   SaveRegionTask::TaskArgs args;
   strcpy(args.filename, filename.c_str());
   args.col_range = rg;
+  args.seed = seed;
+  args.print_seed = print_seed;
     
   SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));
 

@@ -3,7 +3,8 @@
 #include "lapack_blas.h"
 #include "macros.h"
 
-
+#include <stdlib.h> // for srand48_r() and drand48_r()
+#include <assert.h>
 
 void register_init_tasks() {
   RandomMatrixTask::register_tasks();
@@ -51,7 +52,7 @@ cpu_task(const Task *task,
   assert(task->regions.size() == 1);
 
   TaskArgs* args = (TaskArgs *)task->args;
-  int rand_seed = args->rand_seed;
+  long int seed = args->seed;
   int ncol      = args->ncol;
   
   IndexSpace is   = task->regions[0].region.get_index_space();
@@ -69,14 +70,14 @@ cpu_task(const Task *task,
   assert(ptr  != NULL);
 
   int nrow = rect.dim_size(0);
-  //printf("Start init_RHS task with %d rows.\n", nrow);
-  
-  srand( rand_seed );
-  for (int j=0; j<ncol; j++) {
-    for (int i=0; i<nrow; i++) {
+  struct drand48_data buffer;
+  assert( srand48_r( seed, &buffer ) == 0 );
+  for (int i=0; i<nrow; i++) {
+    for (int j=0; j<ncol; j++) {
       int row_idx = i;
       int col_idx = j;
-      ptr[ row_idx + col_idx*nrow ] = frand(0, 1);
+      int count = row_idx + col_idx*nrow;
+      assert( drand48_r( &buffer, &ptr[count]) == 0 );
     }
   }
 }

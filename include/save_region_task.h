@@ -15,6 +15,8 @@ class SaveRegionTask : public TaskLauncher {
     
  public:
   struct TaskArgs {
+    long int seed;
+    bool print_seed;
     Range col_range;
     char filename[50];
   };

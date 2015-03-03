@@ -30,7 +30,7 @@ void array_to_tree(FSTreeNode *, int, int);
 void save_HodlrMatrix
 (FSTreeNode * node, std::string filename,
  Context ctx, HighLevelRuntime *runtime,
- Range rg = Range(0,-1));
+ Range rg, bool print_seed=false);
 
 
 

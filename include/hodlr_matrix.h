@@ -66,7 +66,7 @@ class HodlrMatrix {
     (int, int, int, int, int, int,
      const std::string&, Context, HighLevelRuntime *);
   void init_rhs
-    (int, int, Context, HighLevelRuntime *);
+    (long int, int, Context, HighLevelRuntime *);
   void init_circulant_matrix
     (double, Context, HighLevelRuntime *);
 

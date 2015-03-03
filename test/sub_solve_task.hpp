@@ -27,7 +27,7 @@ void run_test(int rank, int N, int threshold,
      
   int rhs_cols = 2;
   int rhs_rows = N;
-  int rand_seed = 1123;
+  long int rand_seed = 1123;
   
   HodlrMatrix hMatrix;
 

@@ -163,12 +163,12 @@ create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
 
 
 void init_rhs_recursive
-(const FSTreeNode *node, const int randSeed, const int ncol,
+(const FSTreeNode *node, long int seed, const int ncol,
  const Range taskTag,
  Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::
-init_rhs(int rand_seed, int ncol,
+init_rhs(long int rand_seed, int ncol,
 	 Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "initializing " << rhs_cols
@@ -180,10 +180,10 @@ init_rhs(int rand_seed, int ncol,
 
 
 /*static*/void init_rhs_recursive
-  (const FSTreeNode *node, const int randSeed, const int ncol,
-   const Range taskTag,
-   Context ctx, HighLevelRuntime *runtime) {
-
+(const FSTreeNode *node, long int randSeed, const int ncol,
+ const Range taskTag,
+ Context ctx, HighLevelRuntime *runtime) {
+  
   if ( node->is_legion_leaf() ) {
     assert(node->lowrank_matrix       != NULL);
     assert(node->lowrank_matrix->cols >= ncol);
@@ -725,7 +725,8 @@ void HodlrMatrix::save_rhs
   else
     std::cout << " create " << filename << std::endl;
   Range rRhs(this->rhs_cols);
-  save_HodlrMatrix(this->uroot, filename, ctx, runtime, rRhs);
+  save_HodlrMatrix(this->uroot, filename, ctx, runtime,
+		   rRhs, true/*print seed*/);
 }
 
 void HodlrMatrix::save_solution

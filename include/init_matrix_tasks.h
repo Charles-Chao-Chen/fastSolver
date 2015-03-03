@@ -14,9 +14,8 @@ void register_init_tasks();
 class RandomMatrixTask : public TaskLauncher {
  public:
   struct TaskArgs {
-    int rand_seed;
+    long int seed;
     int ncol;
-    //char filename[25];
   };
   
   RandomMatrixTask(TaskArgument arg,

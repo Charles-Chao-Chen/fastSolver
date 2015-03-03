@@ -147,13 +147,17 @@ void create_matrix
 
 void save_HodlrMatrix
 (FSTreeNode * node, std::string filename,
- Context ctx, HighLevelRuntime *runtime, Range rg)
+ Context ctx, HighLevelRuntime *runtime,
+ Range rg, bool print_seed)
 {
   if ( node->is_legion_leaf() ) {
-    node->lowrank_matrix->save(filename, ctx, runtime, rg);
+    node->lowrank_matrix->save(filename, rg, ctx, runtime,
+			       print_seed);
   } else {
-    save_HodlrMatrix(node->lchild, filename, ctx, runtime, rg);
-    save_HodlrMatrix(node->rchild, filename, ctx, runtime, rg);
+    save_HodlrMatrix(node->lchild, filename,
+		     ctx, runtime, rg, print_seed);
+    save_HodlrMatrix(node->rchild, filename,
+		     ctx, runtime, rg, print_seed);
   }
 }
 

@@ -25,7 +25,7 @@ public:
 
   // generate random matrix
   void rand
-    (const int, const Range&, const Range&,
+    (long int, const Range&, const Range&,
      Context, HighLevelRuntime*);
 
   // initialize zero matrix
@@ -44,23 +44,19 @@ public:
     (int col_beg, int row_beg, int r, Range tag,
      Context ctx, HighLevelRuntime *runtime);
 
-
   // initialize dense block as: U * U^T + D 
   void dense
     (int col_beg, int row_beg, int r, Range tag,
      Context ctx, HighLevelRuntime *runtime);
 
-
   void save
-    (const std::string,
-    Context, HighLevelRuntime *, const Range);
+    (const std::string, const Range, 
+     Context, HighLevelRuntime *, bool print_seed=false);
 
-
-  /* --- class members --- */
-  
+  /* --- class members --- */  
   int rows;  
   int cols;
-
+  long int seed;
   IndexSpace iSpace;
   FieldSpace fSpace;
   LogicalRegion data; // storing the data

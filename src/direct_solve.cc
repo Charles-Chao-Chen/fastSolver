@@ -126,29 +126,38 @@ static void writeToFile
 
 static void
 dirct_circulant_solve
-(std::string soln_file, int rand_seed, int rhs_rows,
+(std::string soln_file, int seed, int rhs_rows,
  int nregions, int rhs_cols, int r, double diag) {
 
   double *rhs = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
   int block_size = rhs_rows/nregions;
+  std::ofstream ofs("rhs_ref.txt");
   for (int nr=0; nr<nregions; nr++) {
-    srand( rand_seed );
-    for (int j=0; j<rhs_cols; j++)
-      for (int i=0; i<block_size; i++) {
+    struct drand48_data buffer;
+    assert( srand48_r( seed, &buffer ) == 0 );
+    ofs << seed << std::endl;
+    for (int i=0; i<block_size; i++) {
+      for (int j=0; j<rhs_cols; j++) {
 	int row_idx = nr*block_size + i;
 	int col_idx = j;
-	rhs[ row_idx + col_idx*rhs_rows] = frand(0, 1);
+	int count = row_idx + col_idx*rhs_rows;
+	assert( drand48_r( &buffer, &rhs[count]) == 0 );
+	ofs << std::setprecision(20)
+	    << rhs[count]
+	    << '\t';
       }
+      ofs << std::endl;
+    }
   }
-
-  writeToFile(rhs, rhs_rows, rhs_cols, "rhs_ref.txt");
+  ofs.close();
   
   double *U = (double *) malloc(rhs_rows*r*sizeof(double));
   for (int j=0; j<r; j++)
     for (int i=0; i<rhs_rows; i++)
       U[i+j*rhs_rows] = (i+j)%r;
 
-  double *A = (double *) calloc(rhs_rows*rhs_rows, sizeof(double));
+  double *A = (double *) calloc(rhs_rows*rhs_rows,
+				sizeof(double));
   for (int i=0; i<rhs_rows; i++)
     A[i*(rhs_rows+1)] = diag;
 
@@ -172,17 +181,7 @@ dirct_circulant_solve
 
 
   // write the direct output to file
-  writeToFile(rhs, rhs_rows, rhs_cols, "solun_ref.txt");
-
-  /*
-  std::ofstream ofs("soln_ref.txt");
-  for (int i=0; i<rhs_rows; i++) {
-    for (int j=0; j<rhs_cols; j++)
-      ofs << std::setprecision(20) << rhs[i + j*rhs_rows] << '\t';
-    ofs << std::endl;
-  }
-  ofs.close();
-  */
+  writeToFile(rhs, rhs_rows, rhs_cols, "soln_ref.txt");
     
   // read solver output from file
   double *soln = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
@@ -204,7 +203,8 @@ dirct_circulant_solve
   double denom = 0;
   for (int j=0; j<rhs_cols; j++)
     for (int i=0; i<rhs_rows; i++) {
-      diff += (soln[i+j*rhs_rows] - rhs[i+j*rhs_rows]) *(soln[i+j*rhs_rows] - rhs[i+j*rhs_rows]);
+      diff += (soln[i+j*rhs_rows] - rhs[i+j*rhs_rows])
+	*(soln[i+j*rhs_rows] - rhs[i+j*rhs_rows]);
       denom += rhs[i+j*rhs_rows] * rhs[i+j*rhs_rows];
     }
 

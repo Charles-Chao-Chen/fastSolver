@@ -25,10 +25,13 @@ const int MAX_TREE_SIZE = 150;
 
 
 /* Uniform random number generator */
+// this is not thread safe and is replaced by :
+//  srand48_r() and drand48_r() in init_matrix_tasks.cc
+/*
 #define frand(xmin,xmax)			\
   ((double)xmin+(double)(xmax-xmin)*rand()/	\
    (double)RAND_MAX) 
-
+*/
 
 /* Macros to throw exceptions */
 
