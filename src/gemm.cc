@@ -5,20 +5,13 @@
 #include "timer.hpp"
 #include "macros.h"
 
-enum {
-  REDUCE_ID = 1,
-};
-
 using namespace LegionRuntime::Accessor;
-
-
 
 static void
 scale_matrix(double beta, LogicalRegion &matrix,
 	     Context ctx, HighLevelRuntime *runtime) {
   assert(false);
 }
-
 
 namespace {
 
@@ -79,7 +72,7 @@ namespace {
 namespace {
 
   // Reduction Op
-  class EntrySum {	
+  class Add {	
   public:
     typedef double LHS;
     typedef double RHS;
@@ -94,17 +87,18 @@ namespace {
 
   
   /* ---- reduction class implementation ---- */
+  static ReductionOpID REDOP_ADD = 4321;
 
-  const double EntrySum::identity = 0.0;
+  const double Add::identity = 0.0;
 
   template<>
-  void EntrySum::apply<true>(LHS &lhs, RHS rhs)
+  void Add::apply<true>(LHS &lhs, RHS rhs)
   {
     lhs += rhs;
   }
 
   template<>
-  void EntrySum::apply<false>(LHS &lhs, RHS rhs)
+  void Add::apply<false>(LHS &lhs, RHS rhs)
   {
     int64_t *target = (int64_t *)&lhs;
     union { int64_t as_int; double as_T; } oldval, newval;
@@ -118,13 +112,13 @@ namespace {
   }
 
   template<>
-  void EntrySum::fold<true>(RHS &rhs1, RHS rhs2)
+  void Add::fold<true>(RHS &rhs1, RHS rhs2)
   {
     rhs1 += rhs2;
   }
 
   template<>
-  void EntrySum::fold<false>(RHS &rhs1, RHS rhs2)
+  void Add::fold<false>(RHS &rhs1, RHS rhs2)
   {
     int64_t *target = (int64_t *)&rhs1;
     union { int64_t as_int; double as_T; } oldval, newval;
@@ -141,7 +135,7 @@ namespace {
 
 void register_gemm_tasks() {
 
-  HighLevelRuntime   ::register_reduction_op<EntrySum>(REDUCE_ID);
+  HighLevelRuntime   ::register_reduction_op<Add>(REDOP_ADD);
   GEMM_Reduce_Task   ::register_tasks();
   GEMM_Broadcast_Task::register_tasks();
 }
@@ -185,7 +179,7 @@ static void gemm_recursive
 			u->lowrank_matrix->data)); // u
     launcher.add_region_requirement(
       RegionRequirement(result->data,
-			REDUCE_ID,
+			REDOP_ADD,
 			SIMULTANEOUS,
 			result->data));            // result
     launcher.region_requirements[0].add_field(FID_X);

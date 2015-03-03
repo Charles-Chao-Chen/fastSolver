@@ -32,13 +32,14 @@ GEN_GPU_SRC	:=				# .cu files
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	:=
 CC_FLAGS	:= -g -I ./ -I ../include  \
-		   -DSERIAL	  \
-		   -DDEBUG 	\
-		   -DSHOW_REGISTER_TASKS
-#		   -DLEGION_PROF  \
+		   -DLEGION_BACKTRACE  	\
+		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
 
+#		   -DSERIAL	  \
+		   -DDEBUG 	\
+		   -DSHOW_REGISTER_TASKS \
 #		   -g		\
 #		   -DDEBUG	  \
 #		   -DNDEBUG	  \
@@ -250,8 +251,8 @@ prof:
 	-ll:csize  20000 	\
 	-hl:sched  8192  	\
 	-hl:window 8192		\
-	-level 5 		\
-#	-cat legion_prof	\
+	-level 2 		\
+	-cat legion_prof	\
 
 
 #	-hl:prof   1		\

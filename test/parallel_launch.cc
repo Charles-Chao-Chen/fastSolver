@@ -11,7 +11,7 @@ enum {
   TOP_LEVEL_TASK_ID = 0,
 };
 
-std::string operator+(const std::string& str, int x) {
+std::string AddSuffix(const std::string str, int x) {
   std::stringstream ss;
   ss << x;
   return str + ss.str();
@@ -33,21 +33,23 @@ void top_level_task(const Task *task,
   int numMachineNodes = 32;
   int nodesPerTask = numMachineNodes / numTasks;
   
-  // -------------------------------------------------
-  // the first step is to launch two solvers seperately
-  // -------------------------------------------------
+  // ---------------------------------------------------------
+  // the first step is to launch two solvers seperately: check
+  // the second step is to have two local partial solves
+  // ---------------------------------------------------------
 
-  numTasks = 2; // two sub-tasks now
+  numTasks = 1; // two sub-tasks now
   nodesPerTask = 1; // run each sub-task on one node
   localTreeLevel = 6; // rank, threshold and other parameters
                       //  are set inside the sub-tasks
   
   // TODO: use IndexLaunch instead for efficiency
   int nodeIdx = 0;
-  std::string name("sub");
+  //std::string name("sub");
   for (int i=0; i<numTasks; i++, nodeIdx+=nodesPerTask) {
     Range rg(nodeIdx, nodesPerTask);
-    SubSolveTask::TaskArgs args(localTreeLevel, rg, name+i);
+    std::string taskName = AddSuffix( "sub", i );
+    SubSolveTask::TaskArgs args(localTreeLevel, rg, taskName);
     SubSolveTask launcher(TaskArgument(&args, sizeof(args)));     
     // no region requirement needed
     Future f = runtime -> execute_task(ctx, launcher);
