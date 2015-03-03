@@ -10,7 +10,7 @@
 #include "save_region_task.h"
 #include "htree_helper.h"
 #include "lapack_blas.h"
-#include "timer.h"
+#include "timer.hpp"
 #include "macros.h"
 #include "unistd.h"
 
@@ -86,11 +86,10 @@ void FastSolver::bfs_solve
   lr_mat.save_rhs(ctx, runtime);
 #endif
   Range tag(nProc);
-  double t0 = timer();
+  Timer t; t.start();
   //solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
-  double t1 = timer();
-  this->time_launcher = t1 - t0;
+  t.stop(); this->time_launcher = t.get_elapsed_time();
 }
 
 

@@ -11,6 +11,11 @@ enum {
   TOP_LEVEL_TASK_ID = 0,
 };
 
+std::string operator+(const std::string& str, int x) {
+  std::stringstream ss;
+  ss << x;
+  return str + ss.str();
+}
 
 void top_level_task(const Task *task,
 		    const std::vector<PhysicalRegion> &regions,
@@ -39,20 +44,14 @@ void top_level_task(const Task *task,
   
   // TODO: use IndexLaunch instead for efficiency
   int nodeIdx = 0;
-  std::string str("sub");
+  std::string name("sub");
   for (int i=0; i<numTasks; i++, nodeIdx+=nodesPerTask) {
     Range rg(nodeIdx, nodesPerTask);
-    std::stringstream ss;
-    ss << i;
-    SubSolveTask::TaskArgs args(localTreeLevel, rg, str+ss.str());
-
-    // TODO: specify as "inner tasks"
-    SubSolveTask launcher(TaskArgument(&args, sizeof(args))); 
-    
+    SubSolveTask::TaskArgs args(localTreeLevel, rg, name+i);
+    SubSolveTask launcher(TaskArgument(&args, sizeof(args)));     
     // no region requirement needed
     Future f = runtime -> execute_task(ctx, launcher);
-    //f.get_void_result();
-    
+    //f.get_void_result();    
     // TODO: return region array
   }
   
@@ -65,9 +64,7 @@ void top_level_task(const Task *task,
   */
 }
 
-
 int main(int argc, char *argv[]) {
-
   // register top level task
   HighLevelRuntime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
   HighLevelRuntime::register_legion_task<top_level_task>(
@@ -80,14 +77,11 @@ int main(int argc, char *argv[]) {
     "master-task"
   );
 
-  SubSolveTask::register_tasks();
-  
+  SubSolveTask::register_tasks();  
   // register fast solver tasks 
   register_solver_tasks();
-    
   // register customized mapper
   register_custom_mapper();
-
   // start legion master task
   return HighLevelRuntime::start(argc, argv);
 }

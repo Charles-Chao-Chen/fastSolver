@@ -4,7 +4,7 @@
 #include "range.h"
 #include "fast_solver.h"
 #include "direct_solve.h"
-#include "timer.h"
+#include "timer.hpp"
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
@@ -46,7 +46,7 @@ void run_test(int rank, int N, int threshold,
 	    << hMatrix.get_num_launch_node()
 	    << std::endl;
   
-  double t0 = timer();
+  Timer t; t.start();
   
   // random right hand size
   hMatrix.init_rhs(rand_seed, rhs_cols, ctx, runtime);
@@ -54,10 +54,12 @@ void run_test(int rank, int N, int threshold,
   // A = U U^T + diag and U is a circulant matrix
   hMatrix.init_circulant_matrix(diag, ctx, runtime);
 
-  double t1 = timer();
+  t.stop(); t.get_elapsed_time("init launch");
+
+  /*
   std::cout << "Init launching time: " << t1 - t0
 	    << std::endl;
-  
+  */
  
   FastSolver fs;
   fs.bfs_solve(hMatrix, num_proc, ctx, runtime);

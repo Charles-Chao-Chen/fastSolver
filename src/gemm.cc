@@ -2,7 +2,7 @@
 #include "zero_matrix_task.h"
 #include "htree_helper.h"
 #include "lapack_blas.h"
-#include "timer.h"
+#include "timer.hpp"
 #include "macros.h"
 
 enum {
@@ -219,18 +219,17 @@ void gemm_reduce
    double& tCreate,
    Context ctx, HighLevelRuntime *runtime) {
 
-  double t0 = timer();
-    
+  Timer t; t.start();
   if (result == 0) { // create and initialize the result
     int nrow = v->ncol;
     int ncol = ru.size;
     assert(v->nrow == u->nrow);
     create_matrix(result, nrow, ncol, ctx, runtime); 
     result->zero(taskTag, ctx, runtime);
-  } else
+  } else {
     scale_matrix(beta, result->data, ctx, runtime);
-
-  tCreate += timer() - t0;
+  }
+  t.stop(); tCreate += t.get_elapsed_time();
     
   gemm_recursive(alpha, v, u, ru, result, taskTag,
 		 ctx, runtime);

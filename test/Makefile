@@ -25,7 +25,6 @@ GEN_SRC	:= parallel_launch.cc              \
 	   ../src/save_region_task.cc  \
 	   ../src/direct_solve.cc 	\
 	   ../src/range.cc		\
-	   ../src/timer.cc 	   	\
 	   ../src/custom_mapper.cc
 
 GEN_GPU_SRC	:=				# .cu files
@@ -188,7 +187,7 @@ tar:
 		save_region_task.cc	save_region_task.h	\
 		range.cc		range.h 		\
 		direct_solve.cc		direct_solve.h		\
-		timer.cc		timer.h			\
+		timer.hpp			\
 		lapack_blas.h		macros.h		\
 		custom_mapper.cc	custom_mapper.h 	\
 
