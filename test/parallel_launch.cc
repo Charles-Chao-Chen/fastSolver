@@ -33,7 +33,8 @@ void top_level_task(const Task *task,
     
   // ---------------------------------------------------------
   // the first step is to launch two solvers seperately: check
-  // the second step is to have two local partial solves
+  // the second step is to have two local partial solves: check
+  // the last step is to solve the global problem
   // ---------------------------------------------------------
 
   // target at 32 nodes

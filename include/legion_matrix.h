@@ -56,7 +56,7 @@ public:
   /* --- class members --- */  
   int rows;  
   int cols;
-  long int seed;
+  long seed;
   IndexSpace iSpace;
   FieldSpace fSpace;
   LogicalRegion data; // storing the data

@@ -4,6 +4,7 @@
 #include "range.h"
 #include "fast_solver.h"
 #include "direct_solve.h"
+#include "matrix_array.hpp"
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
@@ -36,9 +37,10 @@ class SubSolveTask : public TaskLauncher {
   static int TASKID;
   static void register_tasks(void);
  public:
-  static void cpu_task(const Task *task,
-		       const std::vector<PhysicalRegion> &regions,
-		       Context ctx, HighLevelRuntime *runtime);
+  static LMatrixArray
+  cpu_task (const Task *task,
+	    const std::vector<PhysicalRegion> &regions,
+	    Context ctx, HighLevelRuntime *runtime);
 };
 
 /* ---- SubSolveTask implementation ---- */
@@ -58,7 +60,7 @@ SubSolveTask(TaskArgument arg,
 void SubSolveTask::register_tasks(void)
 {
   TASKID = HighLevelRuntime::register_legion_task
-    <SubSolveTask::cpu_task>(AUTO_GENERATE_ID,
+    <LMatrixArray, SubSolveTask::cpu_task>(AUTO_GENERATE_ID,
 			     Processor::LOC_PROC, 
 			     true,
 			     true,
@@ -71,7 +73,7 @@ void SubSolveTask::register_tasks(void)
 #endif
 }
 
-void SubSolveTask::cpu_task
+LMatrixArray SubSolveTask::cpu_task
 (const Task *task,
  const std::vector<PhysicalRegion> &regions,
  Context ctx, HighLevelRuntime *runtime)
@@ -93,7 +95,7 @@ void SubSolveTask::cpu_task
   double diagonal = 1.0e4;
   int nRow = threshold*(1<<subLevel);
 
-  HodlrMatrix hMatrix(nRHS, nRow, gloLevel-1, subLevel, rank,
+  HodlrMatrix hMatrix(nRHS, nRow, gloLevel, subLevel, rank,
 		      threshold, leafSize, name);
   hMatrix.create_tree(ctx, runtime);
   int nleaf = hMatrix.get_num_leaf();
@@ -110,27 +112,17 @@ void SubSolveTask::cpu_task
   fs.bfs_solve(hMatrix, procs, ctx, runtime);
   fs.display_launch_time();  
 
-  if (true) {
+  if (false) {
     assert( nRow%threshold == 0 );
     int nregion = nleaf;
     compute_L2_error(hMatrix, seed, nRow, nregion, nRHS,
 		     rank, diagonal, ctx, runtime);
   }
-    
-  /*
-  HTree tree( level );
-  tree.init_matrices();
-
-  // solve the local problem
-  FastSolver solver;
-  solver.solve( tree );
-
+  
   // return all regions to the parent task
-  int numRegions = pow(2, level);
-  LogicalRegion regions[ numRegions ];
-  tree.get_regions( regions );
-  return regions;
-  */
+  LMatrixArray matArr;
+  matArr.get_regions( hMatrix );
+  return matArr;
 }
 
 /*
