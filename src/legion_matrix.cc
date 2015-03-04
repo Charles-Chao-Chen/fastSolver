@@ -25,10 +25,10 @@ void LMatrix::rand
 				   data).
 				  add_field(FID_X)
 				  );
-  Future ft = runtime->execute_task(ctx, launcher);
-  ft.get_void_result();
 #ifdef SERIAL
+  Future ft = runtime->execute_task(ctx, launcher);
   std::cout << "Waiting for init rhs ..." << std::endl;
+  ft.get_void_result();
 #endif
 }
 
@@ -49,10 +49,9 @@ void LMatrix::zero
   launcher.region_requirements[0].add_field(FID_X);
   Future f = runtime->execute_task(ctx, launcher);
 #ifdef SERIAL
-  f.get_void_result();
   std::cout << "Waiting for zero ..." << std::endl;
+  f.get_void_result();
 #endif
-
 }
 
 

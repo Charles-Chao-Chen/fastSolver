@@ -12,7 +12,6 @@ void register_init_tasks() {
   InitCirculantMatrixTask::register_tasks();
 }
 
-
 /* ---- RandomMatrixTask implementation ---- */
 
 /*static*/

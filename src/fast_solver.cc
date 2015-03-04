@@ -76,7 +76,7 @@ FastSolver::FastSolver():
 
 //void FastSolver::solve_bfs
 void FastSolver::bfs_solve
-(HodlrMatrix &lr_mat, int nProc,
+(HodlrMatrix &lr_mat, const Range& procs,
  Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "Launch tasks in breadth first order."
@@ -85,7 +85,7 @@ void FastSolver::bfs_solve
   // write the initial rhs
   lr_mat.save_rhs(ctx, runtime);
 #endif
-  Range tag(nProc);
+  Range tag = procs;
   Timer t; t.start();
   //solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
@@ -482,10 +482,7 @@ void solve_bfs
   RTiter rvit  = vlist.rbegin();
   RRiter rrgit = rglist.rbegin();
 
-  std::cout << "ulist size: " << ulist.size() << std::endl;
-
-
-    
+  //std::cout << "ulist size: " << ulist.size() << std::endl;    
   double tRed = 0, tCreate = 0, tBroad = 0;
   for (; ruit != ulist.rend(); ruit++, rvit++, rrgit++)
     visit(*ruit, *rvit, *rrgit,
@@ -493,9 +490,9 @@ void solve_bfs
 	  ctx, runtime);
 
 #ifdef DEBUG
-  std::cout << "launch reduction task: " << tRed   << std::endl
-	    << "launch create task: " << tCreate   << std::endl
-	    << "launch broadcast task: " << tBroad << std::endl;
+  std::cout << "launch reduction task: " << tRed    << std::endl
+	    << "launch create task: "    << tCreate << std::endl
+	    << "launch broadcast task: " << tBroad  << std::endl;
 #endif
 }
 

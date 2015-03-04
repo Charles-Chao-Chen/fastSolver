@@ -189,9 +189,8 @@ static void gemm_recursive
     Future ft = runtime->execute_task(ctx, launcher);
     
 #ifdef SERIAL
+    std::cout << "Waiting for gemm_reduce ..." << std::endl;
     ft.get_void_result();
-    std::cout << "Waiting for gemm_reduce ..."
-	      << std::endl;
 #endif
       
   } else {
@@ -269,9 +268,8 @@ void gemm_broadcast
     Future ft = runtime->execute_task(ctx, launcher);
 
 #ifdef SERIAL
+    std::cout << "Waiting for gemm_broadcast ..." << std::endl;
     ft.get_void_result();
-    std::cout << "Waiting for gemm_broadcast ..."
-	      << std::endl;
 #endif
     
   } else {
@@ -285,23 +283,6 @@ void gemm_broadcast
 		   tag1,  ctx, runtime);
   }  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /* ---- gemm_reduce implementation ---- */
@@ -389,7 +370,6 @@ void GEMM_Reduce_Task::cpu_task
   assert(k == rect_u.dim_size(0));
   assert(m == rect_w.dim_size(0));
   assert(n == rect_w.dim_size(1));
-
   
   double beta = 1.0;
   int u_nrow = rect_u.dim_size(0);
@@ -399,6 +379,9 @@ void GEMM_Reduce_Task::cpu_task
 	       v_ptr,   &k,
 	       u,       &k,     &beta,
 	       w_ptr,   &m);
+#ifdef SERIAL
+  std::cout << " end of gemm task." << std::endl;
+#endif
 }
 
 

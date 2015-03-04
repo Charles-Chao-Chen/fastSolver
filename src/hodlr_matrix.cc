@@ -41,6 +41,18 @@ bool FSTreeNode::is_real_leaf() const {
     &&   (rchild == NULL);
 }
 
+HodlrMatrix::HodlrMatrix
+(int col, int row, int gl, int sl,
+ int r, int t, int leaf, const std::string& name)
+  : rhs_cols(col), rhs_rows(row),
+    gloLevel(gl),  subLevel(sl),
+    rank(r),       threshold(t),
+    nleaf(leaf),   timeInit(0)
+{
+  this->file_rhs  = name + "_rhs.txt";
+  this->file_soln = name + "_soln.txt";
+}
+
 static void create_balanced_tree
   (FSTreeNode *, int, int);
 static int mark_legion_leaf
@@ -50,32 +62,17 @@ static int mark_launch_node
 static int create_legion_node
   (FSTreeNode *node, Context ctx, HighLevelRuntime *runtime);
 
-/* Input:
- *   N - problem size
- *   r - every off-diagonal block has the same rank
- *   rhs_cols  - column size of the right hand side
- *   threshold - size of dense blocks at the leaf level
- */
 void HodlrMatrix::create_tree
-  (int N, int threshold, int rhs_cols,
-   int rank, int nleaf_per_legion_node, int num_proc,
-   const std::string& name,
-   Context ctx, HighLevelRuntime *runtime) {
+(Context ctx, HighLevelRuntime *runtime) {
 
-  this->rank     = rank;
-  this->rhs_rows = N;
-  this->rhs_cols = rhs_cols;
-  this->nProc    = num_proc;
-  this->file_rhs = name + "_rhs.txt";
-  this->file_soln = name + "_soln.txt";
-  
-  uroot = new FSTreeNode(N, rhs_cols);
+  int nRHS = rhs_cols + rank*(gloLevel-subLevel);
+  uroot = new FSTreeNode(rhs_rows, nRHS);
 
   // create the H-tree for U matrices
   create_balanced_tree(uroot, rank, threshold);
 
   // set legion leaf for granularity control
-  mark_legion_leaf(uroot, nleaf_per_legion_node);
+  mark_legion_leaf(uroot, nleaf);
   
   // create region at legion leaf
   set_num_leaf( create_legion_node(uroot, ctx, runtime) );
@@ -83,23 +80,17 @@ void HodlrMatrix::create_tree
   // launch tasks in parallel
   // 16*8=128 is a heuristic number,
   // so every launch node will launch about 3000 tasks
-  mark_launch_node(uroot, 4);
-  set_num_launch_node( count_launch_node(uroot) );
+  //mark_launch_node(uroot, 4);
+  //set_num_launch_node( count_launch_node(uroot) );
 
   // create V tree
   int v_rhs = 0; // no rhs
   vroot = new FSTreeNode(uroot->nrow, v_rhs);
-
-  //create_vnode_from_unode(uroot, vroot, ctx, runtime);
-
-
   create_Vtree(uroot, vroot);
-
   create_Vregions(uroot, vroot, ctx, runtime);
-
   create_Kregions(uroot, vroot, ctx, runtime);
 
-    
+  //create_vnode_from_unode(uroot, vroot, ctx, runtime);
   // print_legion_tree(uroot);
   // print_legion_tree(vroot);
 }
@@ -115,13 +106,16 @@ void HodlrMatrix::create_tree
  *   RHS  - right hand side of the problem
  */
 void HodlrMatrix::init_circulant_matrix
-(double diag, Context ctx,
+(double diag, const Range& taskTag, Context ctx,
  HighLevelRuntime *runtime) {
 
-  Range taskTag(this->nProc);
+  Timer t; t.start();
   init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
   init_Vmat(vroot, diag, taskTag, ctx, runtime); // row_beg = 0
+  t.stop();
+  timeInit += t.get_elapsed_time();
 
+  //Range taskTag = this->procs;
   //print_legion_tree(uroot);
   //print_legion_tree(vroot);
 }
@@ -151,38 +145,33 @@ create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
     create_balanced_tree(node->rchild, rank, threshold);
     
   }
-
-  /*
   else {
-    std::cout << "Error: " << std::endl;
     assert(N > rank); // assume the size of dense blocks is larger
                       // than the rank
   }
-  */
 }
 
-
 void init_rhs_recursive
-(const FSTreeNode *node, long int seed, const int ncol,
- const Range taskTag,
- Context ctx, HighLevelRuntime *runtime);
+(const FSTreeNode *node, long seed, int ncol,
+ const Range taskTag, Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::
-init_rhs(long int rand_seed, int ncol,
+init_rhs(long seed, const Range& procs,
 	 Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "initializing " << rhs_cols
 	    << " columns of right hand side ..."
 	    << std::endl;
-  Range tag(this->nProc);
-  init_rhs_recursive(uroot, rand_seed, ncol, tag, ctx, runtime); 
+  Timer t;
+  t.start();
+  init_rhs_recursive(uroot, seed, rhs_cols, procs, ctx, runtime);
+  t.stop();
+  timeInit += t.get_elapsed_time();
 }
 
-
 /*static*/void init_rhs_recursive
-(const FSTreeNode *node, long int randSeed, const int ncol,
- const Range taskTag,
- Context ctx, HighLevelRuntime *runtime) {
+(const FSTreeNode *node, long randSeed, int ncol,
+ const Range taskTag, Context ctx, HighLevelRuntime *runtime) {
   
   if ( node->is_legion_leaf() ) {
     assert(node->lowrank_matrix       != NULL);
@@ -190,9 +179,7 @@ init_rhs(long int rand_seed, int ncol,
     Range range(0, ncol);
     node->lowrank_matrix->rand(randSeed, range, taskTag,
 			       ctx, runtime);
-
-  } else { // recursively split RHS
-    
+  } else {
     Range ltag = taskTag.lchild();
     Range rtag = taskTag.rchild();
     init_rhs_recursive(node->lchild, randSeed, ncol, ltag,
@@ -202,14 +189,14 @@ init_rhs(long int rand_seed, int ncol,
   }  
 }
 
-
 void HodlrMatrix::init_Umat
 (FSTreeNode *node, Range tag, Context ctx,
  HighLevelRuntime *runtime, int row_beg) {
 
   if ( node->is_legion_leaf() ) {
 
-    assert(node->lowrank_matrix != NULL); // initialize region
+    // initialize the whole region with one call
+    assert(node->lowrank_matrix != NULL);
     node->lowrank_matrix->circulant(rhs_cols, row_beg,
 				    rank, tag, ctx, runtime);
   } else {
@@ -237,13 +224,12 @@ init_Vmat(FSTreeNode *node, double diag, Range tag,
 			       ctx, runtime, row_beg);
 
   if ( node->is_legion_leaf() ) {
-
     // init V. when the legion leaf is the real leaf,
     //  there is no data here.
-    if (node->lowrank_matrix->cols > 0)
+    if (node->lowrank_matrix->cols > 0) {
       node->lowrank_matrix->circulant(0, row_beg, rank,
-					  tag, ctx, runtime);
-
+				      tag, ctx, runtime);
+    }
     // init K
     init_circulant_Kmat(node, row_beg, rank, diag,
 			tag, ctx, runtime);
@@ -270,7 +256,6 @@ void init_circulant_Kmat
   
   typedef InitCirculantKmatTask ICKT; 
   ICKT::TaskArgs<MAX_TREE_SIZE> args;
-  //FSTreeNode arg[max_tree_size];
 
   args.treeArray[0] = *vLeaf;
   int size = tree_to_array(vLeaf, args.treeArray, 0);

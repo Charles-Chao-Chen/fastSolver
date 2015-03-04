@@ -100,8 +100,8 @@ void solve_node_matrix
   Future f = runtime->execute_task(ctx, launcher);
 
 #ifdef SERIAL
-  f.get_void_result();
   std::cout << "Waiting for node_solve task ..." << std::endl;
+  f.get_void_result();
 #endif
 }
 
@@ -602,9 +602,8 @@ void solve_legion_leaf
   Future ft = runtime->execute_task(ctx, launcher);
   
 #ifdef SERIAL
+  std::cout << "Waiting for leaf_solve task ..." << std::endl;
   ft.get_void_result();
-  std::cout << "Waiting for leaf_solve task ..."
-	    << std::endl;
 #endif
 }
 

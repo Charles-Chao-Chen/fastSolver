@@ -22,34 +22,34 @@ void top_level_task(const Task *task,
 		    Context ctx, HighLevelRuntime *runtime) {  
  
   // assume the tree is balanced
-  int treeLevel = 9;
-  int launchAtLevel = 2;
-  int localTreeLevel = treeLevel - launchAtLevel + 1;  
-  int numTasks = pow(2, launchAtLevel);
-  int numLocalLeaf = pow(2, localTreeLevel);
-  LogicalRegion regionsGlobal[ numTasks ][ numLocalLeaf ];
+  int gloTreeLevel = 4;
+  int launchAtLevel = 2; // two sub-tasks
+  int locTreeLevel = gloTreeLevel - launchAtLevel + 1;
+  int numTasks = pow(2, launchAtLevel-1);
+  //int numLocalLeaf = pow(2, locTreeLevel);
 
-  // target at 32 nodes as the first step
-  int numMachineNodes = 32;
-  int nodesPerTask = numMachineNodes / numTasks;
-  
+  // TODO: class for array of regions
+  // LogicalRegion regionsGlobal[ numTasks ][ numLocalLeaf ];
+    
   // ---------------------------------------------------------
   // the first step is to launch two solvers seperately: check
   // the second step is to have two local partial solves
   // ---------------------------------------------------------
 
-  numTasks = 1; // two sub-tasks now
-  nodesPerTask = 1; // run each sub-task on one node
-  localTreeLevel = 6; // rank, threshold and other parameters
-                      //  are set inside the sub-tasks
+  // target at 32 nodes
+  int numMachineNodes = 2;
+  int nodesPerTask = numMachineNodes / numTasks;
+
+  // random seed
+  long seed = 1245667;
   
+  // launch sub-tasks using loop
   // TODO: use IndexLaunch instead for efficiency
-  int nodeIdx = 0;
-  //std::string name("sub");
-  for (int i=0; i<numTasks; i++, nodeIdx+=nodesPerTask) {
+  for (int i=0, nodeIdx=0; i<numTasks; i++, nodeIdx+=nodesPerTask) {
     Range rg(nodeIdx, nodesPerTask);
     std::string taskName = AddSuffix( "sub", i );
-    SubSolveTask::TaskArgs args(localTreeLevel, rg, taskName);
+    SubSolveTask::TaskArgs args(locTreeLevel, gloTreeLevel,
+				seed, taskName, rg);
     SubSolveTask launcher(TaskArgument(&args, sizeof(args)));     
     // no region requirement needed
     Future f = runtime -> execute_task(ctx, launcher);

@@ -195,7 +195,7 @@ dirct_circulant_solve
     ifs.close();
   }
   catch (std::ifstream::failure e) {
-    std::cerr << "Exception opening/reading/closing "
+    std::cerr << "Exception opening "
 	      << soln_file << std::endl;
   }
   

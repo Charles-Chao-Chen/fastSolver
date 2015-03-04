@@ -3,20 +3,11 @@
 
 #include <string>
 #include <fstream>
-
 #include "legion_matrix.h"
-
+#include "timer.hpp"
 #include "legion.h"
 
-
 using namespace LegionRuntime::HighLevel;
-
-
-enum MatrixType {
-  UMatrix,
-  VMatrix,
-};
-
 
 // U and V have the same row structure
 struct FSTreeNode {
@@ -59,16 +50,18 @@ private:
 class HodlrMatrix {
 
  public:
-  // HodlrMatrix() {}
+  HodlrMatrix() {}
+  HodlrMatrix
+    (int col, int row, int gl, int sl,
+     int r, int t, int leaf, const std::string&);
   //~HodlrMatrix();
   
   void create_tree
-    (int, int, int, int, int, int,
-     const std::string&, Context, HighLevelRuntime *);
+    (Context, HighLevelRuntime *);
   void init_rhs
-    (long int, int, Context, HighLevelRuntime *);
+    (long, const Range&, Context, HighLevelRuntime *);
   void init_circulant_matrix
-    (double, Context, HighLevelRuntime *);
+    (double, const Range&, Context, HighLevelRuntime *);
 
   void save_rhs
     (Context, HighLevelRuntime *);
@@ -81,8 +74,13 @@ class HodlrMatrix {
   int  get_num_launch_node() {return nLaunchNode;}
   void set_num_launch_node(int n) {nLaunchNode = n;}
   std::string get_file_soln() const {return file_soln;}
+
+  void display_launch_time() const {
+    std::cout << "Time cost for launching init-tasks :"
+	      << timeInit << " s" << std::endl;
+  }
+  
   /* --- tree root --- */
-  //int nleaf_per_node;
   FSTreeNode *uroot;
   FSTreeNode *vroot;
 
@@ -98,15 +96,18 @@ class HodlrMatrix {
 		 Context, HighLevelRuntime *, int row_beg = 0);
   
   /* --- private attributes --- */
-  int rank; // only if every block has the same rank
-  int rhs_rows;
   int rhs_cols;
-
-  // controlling corse and fine granularity
+  int rhs_rows;
+  int gloLevel;  // level of the global tree
+  int subLevel;  // level of the sub problem
+  int rank;      // same rank for all blocks
+  int threshold; // threshold of dense blocks
+  int nleaf;     // legion leaf size for controlling fine granularity
+  
  private:
-  int nleaf;
-  int nProc;
   int nLaunchNode;
+  //Range procs;
+  double timeInit;
   std::string file_rhs;
   std::string file_soln;
 };

@@ -24,7 +24,6 @@ GEN_SRC	:= parallel_launch.cc              \
 	   ../src/init_matrix_tasks.cc \
 	   ../src/save_region_task.cc  \
 	   ../src/direct_solve.cc 	\
-	   ../src/range.cc		\
 	   ../src/custom_mapper.cc
 
 GEN_GPU_SRC	:=				# .cu files
@@ -33,15 +32,17 @@ GEN_GPU_SRC	:=				# .cu files
 INC_FLAGS	:=
 CC_FLAGS	:= -g -I ./ -I ../include  \
 		   -DLEGION_BACKTRACE  	\
-		   -DLEGION_PROF  \
+		   -DSERIAL	  \
+#		   -DDEBUG	  \
+#		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
 		   -DNODE_LOGGING \
 
-#		   -DSERIAL	  \
+#		   -DDEBUG 	\
 		   -DDEBUG 	\
 		   -DSHOW_REGISTER_TASKS \
 #		   -g		\
-#		   -DDEBUG	  \
+
 #		   -DNDEBUG	  \
 #		   -DDEBUG_GEMM
 #		   -DDEBUG_NODE_SOLVE
@@ -50,10 +51,10 @@ NVCC_FLAGS	:=
 GASNET_FLAGS	:=
 
 # gnu blas and lapack
-#LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
+LD_FLAGS	:= -L /usr/lib/	-llapack -lblas -lm
 
 # mkl linking flags
-LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
+#LD_FLAGS := -L/share/apps/intel/intel-14/mkl/lib/intel64/ \
 	-L/share/apps/intel/intel-14/lib/intel64/ \
 	-lmkl_intel_lp64 	\
 	-lmkl_core		\
@@ -126,7 +127,7 @@ all:
 
 # If we're using the general low-level runtime we have to link with nvcc
 $(OUTFILE) : $(ALL_OBJS)
-	@echo "*********** Linking MKL ***********"
+	@echo "*********** Linking GNU ***********"
 	@echo "---> Linking objects into one binary: $(OUTFILE)"
 ifdef SHARED_LOWLEVEL
 	$(GCC) -o $(OUTFILE) $(ALL_OBJS) $(LD_FLAGS) $(GASNET_FLAGS)
@@ -158,14 +159,6 @@ clean:
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
 
-
-newfile:
-	mv debug_v0td0_bf.txt debug_v0td0_bf_ref.txt
-	mv debug_v1td1_bf.txt debug_v1td1_bf_ref.txt
-	mv debug_v0tu0_bf.txt debug_v0tu0_bf_ref.txt
-	mv debug_v1tu1_bf.txt debug_v1tu1_bf_ref.txt
-	mv debug_umat.txt     debug_umat_ref.txt
-
 test:
 	make clean
 	make -j 12
@@ -186,9 +179,9 @@ tar:
 		legion_matrix.cc	legion_matrix.h		\
 		init_matrix_tasks.cc	init_matrix_tasks.h 	\
 		save_region_task.cc	save_region_task.h	\
-		range.cc		range.h 		\
+					range.h 		\
 		direct_solve.cc		direct_solve.h		\
-		timer.hpp			\
+					timer.hpp		\
 		lapack_blas.h		macros.h		\
 		custom_mapper.cc	custom_mapper.h 	\
 
@@ -254,7 +247,6 @@ prof:
 	-level 2 		\
 	-cat legion_prof	\
 
-
 #	-hl:prof   1		\
 #	numactl			\
 	-m 0 -N 0		\
@@ -295,12 +287,13 @@ spy2:
 
 prof2:
 	mpirun -H n0001,n0002 \
-	-bind-to none \
+	-bind-to none -report-bindings \
 	-x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 \
-	./main \
-	-np 2 -leaf 1 \
-	-cat legion_prof -level 2 \
+	./multi_launch \
+	-leaf 1 \
 	-ll:cpu 11 -ll:util 1 \
 	-ll:csize 30000 \
-	-hl:sched 8192
+	-hl:sched 8192 \
+	-level 5
+#	-cat legion_prof -level 2 \
 

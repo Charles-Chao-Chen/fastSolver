@@ -16,10 +16,12 @@ class FastSolver {
   // wrapper for solve functions
   void solve_dfs(HodlrMatrix &, int, Context, HighLevelRuntime *);
   //void solve_bfs(HodlrMatrix &, int, Context, HighLevelRuntime *);
-  void bfs_solve(HodlrMatrix &, int, Context, HighLevelRuntime *);
+  void bfs_solve(HodlrMatrix &, const Range&,
+		 Context, HighLevelRuntime *);
  
-  // get err and time
-  double get_elapsed_time() const {return time_launcher;}
+  void display_launch_time() const {
+    std::cout << "Time for launching solve-tasks : " << time_launcher
+	      << std::endl;}
   
  private:
   void solve_dfs(FSTreeNode *, FSTreeNode *, Range,
