@@ -4,15 +4,17 @@
 #include "legion.h"
 #include "hodlr_matrix.h"
 
-
 void register_solver_tasks();
 
-
 class FastSolver {
-
  public:
   FastSolver();
 
+  //enum {TOP};
+  
+  void solve_top(const HodlrMatrix&, const Range& mappingTag,
+		 Context ctx, HighLevelRuntime *runtime);
+  
   // wrapper for solve functions
   void solve_dfs(HodlrMatrix &, int, Context, HighLevelRuntime *);
   //void solve_bfs(HodlrMatrix &, int, Context, HighLevelRuntime *);

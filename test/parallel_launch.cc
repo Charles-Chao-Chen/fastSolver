@@ -23,9 +23,9 @@ void top_level_task(const Task *task,
  
   // assume the tree is balanced
   int gloTreeLevel = 4;
-  int launchAtLevel = 2; // two sub-tasks
-  int locTreeLevel = gloTreeLevel - launchAtLevel + 1;
-  int numTasks = pow(2, launchAtLevel-1);
+  int launchAtLevel = 1; // two sub-tasks
+  int locTreeLevel = gloTreeLevel - launchAtLevel;
+  int numTasks = pow(2, launchAtLevel);
   //int numLocalLeaf = pow(2, locTreeLevel);
 
   // TODO: class for array of regions
@@ -63,35 +63,34 @@ void top_level_task(const Task *task,
 
   int gloLevel = gloTreeLevel;
   int subLevel = gloLevel;
-  
+
+  // TODO: pass them into sub-tasks.
+  //   make sure these parameters are consitent throughout the solve
   int nRHS = 2;             // # of rhs
   int rank = 90;
   int threshold = 150;
   int leafSize = 1;         // legion leaf size
-  //double diagonal = 1.0e4;
+  double diagonal = 1.0e4;
   int nRow = threshold*(1<<subLevel);
   const char* name = "global";
+  Range procs(numMachineNodes);
   
   HodlrMatrix hMat(nRHS, nRow, gloLevel, subLevel, rank,
                    threshold, leafSize, name);
-  hMat.init_from_regions( matArr ); // init_U
-
-
-  /*
-  hMat.init_VMat();
-  hMat.init_KMat();
-
-  FastSolver solver;
-  solver.solve( hMat );
+  hMat.create_tree( ctx, runtime, &matArr );
+  hMat.init_circulant_matrix(diagonal, procs, ctx, runtime,
+			     true/*skip UMat*/);
   
-  if (false) {
+  FastSolver solver;
+  solver.solve_top( hMat, procs, ctx, runtime );
+
+  if (true) {
     assert( nRow%threshold == 0 );
-    int nregion = hMatrix.get_num_leaf();
-    compute_L2_error(hMatrix, seed, nRow, nregion, nRHS,
+    int nregion = hMat.get_num_leaf();
+    compute_L2_error(hMat, seed, nRow, nregion, nRHS,
 		     rank, diagonal, ctx, runtime);
   }
 
-  */
 }
 
 int main(int argc, char *argv[]) {

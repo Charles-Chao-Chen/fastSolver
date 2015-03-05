@@ -8,6 +8,9 @@
 void create_Vtree
 (FSTreeNode *unode, FSTreeNode *vnode);
 
+void init_UMat
+(FSTreeNode* node, const LMatrixArray& matQ, size_t& first);
+
 void create_Vregions
 (FSTreeNode *vnode, Context ctx, HighLevelRuntime *runtime);
 
@@ -62,7 +65,8 @@ static int create_legion_node
   (FSTreeNode *node, Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::create_tree
-(Context ctx, HighLevelRuntime *runtime) {
+(Context ctx, HighLevelRuntime *runtime,
+ const LMatrixArray* matArr) {
 
   int nRHS = rhs_cols + rank*(gloLevel-subLevel);
   uroot = new FSTreeNode(rhs_rows, nRHS);
@@ -74,7 +78,13 @@ void HodlrMatrix::create_tree
   mark_legion_leaf(uroot, nleaf);
   
   // create region at legion leaf
-  set_num_leaf( create_legion_node(uroot, ctx, runtime) );
+  if (matArr == NULL) {
+    set_num_leaf( create_legion_node(uroot, ctx, runtime) );
+  }
+  else {
+    size_t first=0;
+    init_UMat(uroot, *matArr, first);
+  }
 
   // launch tasks in parallel
   // 16*8=128 is a heuristic number,
@@ -104,11 +114,13 @@ void HodlrMatrix::create_tree
  *   RHS  - right hand side of the problem
  */
 void HodlrMatrix::init_circulant_matrix
-(double diag, const Range& taskTag, Context ctx,
- HighLevelRuntime *runtime) {
+(const double diag, const Range& taskTag,
+ Context ctx, HighLevelRuntime *runtime, bool skipU) {
 
   Timer t; t.start();
-  init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
+  if (skipU) {
+    init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
+  }
   init_Vmat(vroot, diag, taskTag, ctx, runtime); // row_beg = 0
   t.stop();
   timeInit += t.get_elapsed_time();
@@ -118,18 +130,19 @@ void HodlrMatrix::init_circulant_matrix
   //print_legion_tree(vroot);
 }
 
-static void init_UMat
+/*
+// TODO: implement change array to queue
+*lowrank_matrix = matQ.front(); // the first one
+matQ.pop(); // delete the first one
+*/
+void init_UMat
 (FSTreeNode* node, const LMatrixArray& matQ, size_t& first) {
   if (node->is_legion_leaf()) {
     assert( node->lowrank_matrix == NULL );
     node->lowrank_matrix = new LMatrix;
-    *node->lowrank_matrix = matQ[first++];
 
-    /*
-      // TODO: implement change array to queue
-    *lowrank_matrix = matQ.front(); // the first one
-    matQ.pop(); // delete the first one
-    */
+    printf("size: %zu, idx: %zu\n", matQ.size(), first);
+    *node->lowrank_matrix = matQ[first++];
   }
   else {
     init_UMat(node->lchild, matQ, first);
@@ -137,10 +150,12 @@ static void init_UMat
   }
 }
 
+/*
 void HodlrMatrix::init_from_regions(const LMatrixArray& matArr) {
   size_t first = 0;
   init_UMat(uroot, matArr, first); // extra index pointing to the front
 }
+*/
 
 /*static*/ void
 create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
@@ -177,7 +192,7 @@ void init_rhs_recursive
  const Range taskTag, Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::
-init_rhs(long seed, const Range& procs,
+init_rhs(const long seed, const Range& procs,
 	 Context ctx, HighLevelRuntime *runtime)
 {
   std::cout << "initializing " << rhs_cols
@@ -378,7 +393,7 @@ mark_launch_node(FSTreeNode *node, int threshold) {
   }
 }
 
-
+/*
 void HodlrMatrix::create_vnode_from_unode
 (FSTreeNode *unode, FSTreeNode *vnode,
  Context ctx, HighLevelRuntime *runtime)
@@ -462,7 +477,7 @@ void HodlrMatrix::create_vnode_from_unode
 		  ctx, runtime);
   }
 }
-
+*/
 
 void create_Vtree(FSTreeNode *unode, FSTreeNode *vnode) {
   

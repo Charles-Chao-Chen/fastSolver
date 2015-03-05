@@ -10,7 +10,7 @@ int count_matrix_column(FSTreeNode *node, int col_size=0);
 
 int max_row_size(FSTreeNode *);
 
-int count_leaf(FSTreeNode *node);
+int count_leaf(const FSTreeNode *node);
 
 int count_launch_node(FSTreeNode *node);
 
@@ -21,8 +21,8 @@ void create_matrix
    Context ctx, HighLevelRuntime *runtime);
 
 
-int  tree_to_array(FSTreeNode *, FSTreeNode *, int);
-void tree_to_array(FSTreeNode *, FSTreeNode *, int, int);
+int  tree_to_array(const FSTreeNode *, FSTreeNode *, int);
+void tree_to_array(const FSTreeNode *, FSTreeNode *, int, int);
 void array_to_tree(FSTreeNode *, int);
 void array_to_tree(FSTreeNode *, int, int);
 

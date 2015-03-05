@@ -15,6 +15,7 @@ OUTFILE	:= multi_launch
 # List all the application source files here
 GEN_SRC	:= 	parallel_launch.cc \
 		./matrix_array.cc  \
+		./sub_solve_task.cc  \
 		../src/legion_matrix/zero_matrix_task.cc 	\
 		../src/legion_matrix/init_matrix_tasks.cc 	\
 		../src/legion_matrix/save_region_task.cc  	\
@@ -39,8 +40,8 @@ INC_FLAGS	:= 	-I ./ \
 
 CC_FLAGS	:= 	-g  \
 			$(INC_FLAGS)  \
-			-DLEGION_BACKTRACE  \
 			-DSERIAL  \
+#			-DLEGION_BACKTRACE  \
 #		   -DDEBUG	  \
 #		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \
@@ -172,6 +173,7 @@ test:
 	make -j 12
 	make r2n
 
+#TODO: to be updated 
 tar:	
 	tar cvfz fastSolver.tgz 	\
 		Makefile Readme TODO 	\

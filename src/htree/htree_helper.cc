@@ -46,7 +46,7 @@ int max_row_size(FSTreeNode * vnode) {
 
 
 int
-tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx) {
+tree_to_array(const FSTreeNode * leaf, FSTreeNode * arg, int idx) {
 
   if (leaf->lchild != NULL && leaf->rchild != NULL) {
 
@@ -62,7 +62,7 @@ tree_to_array(FSTreeNode * leaf, FSTreeNode * arg, int idx) {
 
 
 void
-tree_to_array(FSTreeNode *tree, FSTreeNode *array, int idx,
+tree_to_array(const FSTreeNode *tree, FSTreeNode *array, int idx,
 	      int shift) {
 
   if (tree->lchild != NULL && tree->rchild != NULL) {
@@ -111,7 +111,7 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
 }
 
 
-int count_leaf(FSTreeNode *node) {
+int count_leaf(const FSTreeNode *node) {
   if (node->is_real_leaf())
     return 1;
   else {

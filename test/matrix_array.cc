@@ -16,13 +16,17 @@ void LMatrixArray::destroy(HighLevelRuntime *runtime, Context ctx) {
 }
 */
 
+void LMatrixArray::append(const LMatrix& mat) {
+  array.push_back(mat);
+}
+
 LMatrix LMatrixArray::operator[](size_t i) const {
   assert(i>=0 && i<array.size());
   return array[i];
 }
 
 void LMatrixArray::operator+=(const LMatrixArray& rhs) {
-  for (size_t i=0; i<rhs.arraySize(); i++)
+  for (size_t i=0; i<rhs.size(); i++)
     array.push_back(rhs[i]);
 }
 

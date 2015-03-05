@@ -552,8 +552,9 @@ static void serial_leaf_solve
 
 // this function wrapper launches leaf tasks
 void solve_legion_leaf
-  (FSTreeNode * uleaf, FSTreeNode * vleaf, Range task_tag,
-   Context ctx, HighLevelRuntime *runtime) {
+(const FSTreeNode * uleaf, const FSTreeNode * vleaf,
+ const Range task_tag,
+ Context ctx, HighLevelRuntime *runtime) {
   
   int nleaf = count_leaf(uleaf);
   //assert(nleaf == nleaf_per_node);

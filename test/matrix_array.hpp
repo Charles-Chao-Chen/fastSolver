@@ -19,7 +19,8 @@ public:
   
   /* void show(HighLevelRuntime *runtime, Context ctx);
   void destroy(HighLevelRuntime *runtime, Context ctx); */
-  size_t arraySize() const {return array.size();}
+  void append(const LMatrix&);
+  size_t size() const {return array.size();}
   LMatrix operator[](size_t i) const;
   void operator+=(const LMatrixArray&);
 public:

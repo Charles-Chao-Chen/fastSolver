@@ -18,8 +18,8 @@ void solve_node_matrix
 
 
 void
-solve_legion_leaf(FSTreeNode * uleaf, FSTreeNode * vleaf,
-		  Range task_tag,
+solve_legion_leaf(const FSTreeNode * uleaf, const FSTreeNode * vleaf,
+		  const Range task_tag,
 		  Context ctx, HighLevelRuntime *runtime);
 
   

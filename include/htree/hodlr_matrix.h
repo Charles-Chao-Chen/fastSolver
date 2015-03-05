@@ -48,7 +48,6 @@ private:
 };
 
 class HodlrMatrix {
-
  public:
   HodlrMatrix() {}
   HodlrMatrix
@@ -57,23 +56,25 @@ class HodlrMatrix {
   //~HodlrMatrix();
   
   void create_tree
-    (Context, HighLevelRuntime *);
+    (Context, HighLevelRuntime *, const LMatrixArray* array=NULL);
   void init_rhs
-    (long, const Range&, Context, HighLevelRuntime *);
+    (const long, const Range&, Context, HighLevelRuntime *);
   void init_circulant_matrix
-    (double, const Range&, Context, HighLevelRuntime *);
-  void init_from_regions(const LMatrixArray &);
+    (const double, const Range&, Context, HighLevelRuntime *,
+     bool skipU=false);
+  //  void init_from_regions(const LMatrixArray &);
   
   void save_rhs
     (Context, HighLevelRuntime *);
   void save_solution
     (Context, HighLevelRuntime *);
-  
+
+  int  launch_level() const {return gloLevel-subLevel;}
   int  get_num_rhs() {return rhs_cols;}
   int  get_num_leaf() {return nleaf;}
   void set_num_leaf(int nleaf) {this->nleaf = nleaf;}
-  int  get_num_launch_node() {return nLaunchNode;}
-  void set_num_launch_node(int n) {nLaunchNode = n;}
+  //int  get_num_launch_node() {return nLaunchNode;}
+  //void set_num_launch_node(int n) {nLaunchNode = n;}
   std::string get_file_soln() const {return file_soln;}
 
   void display_launch_time() const {
@@ -87,8 +88,8 @@ class HodlrMatrix {
 
  private:
   /* --- create tree --- */
-  void create_vnode_from_unode(FSTreeNode *, FSTreeNode *,
-			       Context, HighLevelRuntime *);
+  //void create_vnode_from_unode(FSTreeNode *, FSTreeNode *,
+  //			       Context, HighLevelRuntime *);
 
   /* --- populate data --- */
   void init_Umat(FSTreeNode *node, Range tag,
@@ -106,7 +107,7 @@ class HodlrMatrix {
   int nleaf;     // legion leaf size for controlling fine granularity
   
  private:
-  int nLaunchNode;
+  //int nLaunchNode;
   //Range procs;
   double timeInit;
   std::string file_rhs;
