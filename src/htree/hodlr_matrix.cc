@@ -89,7 +89,6 @@ void HodlrMatrix::create_tree
   create_Vregions(vroot, ctx, runtime);
   create_Kregions(uroot, vroot, ctx, runtime);
 
-  //create_vnode_from_unode(uroot, vroot, ctx, runtime);
   // print_legion_tree(uroot);
   // print_legion_tree(vroot);
 }
@@ -313,7 +312,7 @@ void init_circulant_Kmat
 // this function picks legion leaf nodes as those having the
 //  number of threshold real matrix leaves.
 // when threshold = 1, the legion leaf and real matrix leaf
-//  coinside.
+//  coincide.
 // nLegionLeaf records the number of legion leaves as an
 //  indicator of the number of leaf tasks.
 /* static */ int
@@ -331,7 +330,9 @@ mark_legion_leaf(FSTreeNode *node, int threshold) {
   // mark "Legion Leaf" on all leaves from the legion leaf level
   // (or lower levels)
   node->set_legion_leaf( (nRealLeaf > threshold) ? false : true );
-
+  if (node->is_legion_leaf()) {
+    build_subtree(node);
+  }
   return nRealLeaf;
 }
 
@@ -372,7 +373,7 @@ mark_launch_node(FSTreeNode *node, int threshold) {
     int ncol = node->col_beg + count_matrix_column(node);
     int nrow = node->nrow;
     create_matrix(node->lowrank_matrix, nrow, ncol, ctx, runtime);
-    build_subtree(node);
+    //build_subtree(node);
     return 1;
   }
 }
