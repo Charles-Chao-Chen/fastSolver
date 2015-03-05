@@ -9,8 +9,7 @@ void create_Vtree
 (FSTreeNode *unode, FSTreeNode *vnode);
 
 void create_Vregions
-(FSTreeNode *unode, FSTreeNode *vnode,
- Context ctx, HighLevelRuntime *runtime);
+(FSTreeNode *vnode, Context ctx, HighLevelRuntime *runtime);
 
 void create_Kregions
 (FSTreeNode *unode, FSTreeNode *vnode,
@@ -87,7 +86,7 @@ void HodlrMatrix::create_tree
   int v_rhs = 0; // no rhs
   vroot = new FSTreeNode(uroot->nrow, v_rhs);
   create_Vtree(uroot, vroot);
-  create_Vregions(uroot, vroot, ctx, runtime);
+  create_Vregions(vroot, ctx, runtime);
   create_Kregions(uroot, vroot, ctx, runtime);
 
   //create_vnode_from_unode(uroot, vroot, ctx, runtime);
@@ -368,14 +367,11 @@ mark_launch_node(FSTreeNode *node, int threshold) {
     int nl = create_legion_node(node->lchild, ctx, runtime);
     int nr = create_legion_node(node->rchild, ctx, runtime);
     return nl + nr;
-  } else {
-    
+  } else {    
     // adding column number above and below legion node
     int ncol = node->col_beg + count_matrix_column(node);
     int nrow = node->nrow;
-    create_matrix(node->lowrank_matrix, nrow, ncol,
-		  ctx, runtime);
-
+    create_matrix(node->lowrank_matrix, nrow, ncol, ctx, runtime);
     build_subtree(node);
     return 1;
   }
@@ -402,7 +398,6 @@ void HodlrMatrix::create_vnode_from_unode
     // set column begin index for Legion leaf,
     // to be used in the big V matrix at Legion leaf
     if (unode->is_legion_leaf()) {
-
       vnode->set_legion_leaf(true);
 
       if (unode->lowrank_matrix == NULL) { // skip Legion leaf
@@ -410,11 +405,8 @@ void HodlrMatrix::create_vnode_from_unode
 	vnode -> rchild -> col_beg = vnode -> col_beg + vnode -> ncol;
       }
     }
-      
-    create_vnode_from_unode(unode->lchild, vnode->lchild,
-			    ctx, runtime);
-    create_vnode_from_unode(unode->rchild, vnode->rchild,
-			    ctx, runtime);
+    create_vnode_from_unode(unode->lchild, vnode->lchild, ctx, runtime);
+    create_vnode_from_unode(unode->rchild, vnode->rchild, ctx, runtime);
     
   } else {
     vnode -> lchild = NULL;
@@ -425,11 +417,9 @@ void HodlrMatrix::create_vnode_from_unode
     }
   }
 
-
   // create H-tiled matrices for two children
   // including Legion leaf
   if ( ! unode->is_legion_leaf() ) {
-
     int lnrow = vnode -> lchild -> nrow;
     int rnrow = vnode -> rchild -> nrow;
     int lncol = vnode -> lchild -> ncol;
@@ -473,27 +463,23 @@ void HodlrMatrix::create_vnode_from_unode
 }
 
 
-void create_Vtree
-(FSTreeNode *unode, FSTreeNode *vnode) {
+void create_Vtree(FSTreeNode *unode, FSTreeNode *vnode) {
   
   if ( ! unode->is_real_leaf() ) {
-
     int lnrow = unode->lchild->nrow;
     int rnrow = unode->rchild->nrow;
     int lncol = unode->rchild->ncol; // notice the order here
     int rncol = unode->lchild->ncol; // it is reversed in v
     int lrow_beg = unode->lchild->row_beg; // u and v have the
-    int rrow_beg = unode->rchild->row_beg; // same row structure
-    
+    int rrow_beg = unode->rchild->row_beg; // same row structure    
     vnode -> lchild = new FSTreeNode(lnrow, lncol, lrow_beg);
     vnode -> rchild = new FSTreeNode(rnrow, rncol, rrow_beg);
 
     // set column begin index for Legion leaf,
     // to be used in the big V matrix at Legion leaf
     if (unode->is_legion_leaf()) {
-
       vnode->set_legion_leaf(true);
-
+      
       if (unode->lowrank_matrix == NULL) { // skip Legion leaf
 	vnode -> lchild -> col_beg = vnode -> col_beg + vnode -> ncol;
 	vnode -> rchild -> col_beg = vnode -> col_beg + vnode -> ncol;
@@ -506,15 +492,57 @@ void create_Vtree
   } else {
     vnode -> lchild = NULL;
     vnode -> rchild = NULL;
-
     if ( unode->is_legion_leaf() ) {
       vnode->set_legion_leaf(true);
     }
   }
 }
 
-
 void create_Vregions
+(FSTreeNode *vnode, Context ctx, HighLevelRuntime *runtime)
+{
+  // create H-tiled matrices for two children
+  // including Legion leaf
+  if ( ! vnode->is_legion_leaf() ) {
+
+    int lnrow = vnode -> lchild -> nrow;
+    int rnrow = vnode -> rchild -> nrow;
+    int lncol = vnode -> lchild -> ncol;
+    int rncol = vnode -> rchild -> ncol;
+
+    vnode -> lchild -> Hmat =  new FSTreeNode(lnrow, lncol);
+    vnode -> rchild -> Hmat =  new FSTreeNode(rnrow, rncol);
+
+    create_Hmatrix(vnode->lchild, vnode->lchild->Hmat,
+		   vnode->lchild->ncol, ctx, runtime);
+    create_Hmatrix(vnode->rchild, vnode->rchild->Hmat,
+		   vnode->rchild->ncol, ctx, runtime);
+
+    // recursive call
+    create_Vregions(vnode->lchild, ctx, runtime);
+    create_Vregions(vnode->rchild, ctx, runtime);
+  }
+    
+  // create a big rectangle at Legion leaf for lower levels
+  // not including Legion leaf. So when the legion leaf and
+  // the real leaf conincide, there is such big rectangle
+  // region there.
+  // please refer to Eric's slides of ver 2
+  //if (unode->lowrank_matrix != NULL) { // Legion leaf level
+  else {
+    
+    // u and v have the same size under Legion leaf
+    int vrow = vnode->nrow;
+    int vcol = count_matrix_column(vnode) - vnode->ncol;
+    
+    // when the legion leaf is the real leaf, there is
+    // no data here.
+    create_matrix(vnode->lowrank_matrix, vrow, vcol, ctx, runtime);
+  }
+}
+
+/*
+  void create_Vregions
 (FSTreeNode *unode, FSTreeNode *vnode,
  Context ctx, HighLevelRuntime *runtime)
 {
@@ -566,7 +594,7 @@ void create_Vregions
 		  vrow, vcol, ctx, runtime);
   }
 }
-
+ */
 
 void create_Kregions
 (FSTreeNode *unode, FSTreeNode *vnode,
@@ -593,18 +621,15 @@ void create_Hmatrix
  Context ctx, HighLevelRuntime *runtime) {
 
   if ( node->is_legion_leaf() ) {
-
     Hmat->nrow = node->nrow;
     Hmat->ncol = node->ncol;
-
     Hmat->set_legion_leaf(true);
     create_matrix(Hmat -> lowrank_matrix,
 		  node -> nrow,
 		  ncol,
 		  ctx, runtime);
  
-  } else {
-    
+  } else {    
     Hmat->lchild = new FSTreeNode;
     Hmat->rchild = new FSTreeNode;
 
@@ -612,10 +637,8 @@ void create_Hmatrix
     Hmat->lchild->row_beg = Hmat->row_beg;
     Hmat->rchild->row_beg = Hmat->row_beg + node->lchild->nrow;
     
-    create_Hmatrix(node->lchild, Hmat->lchild, ncol,
-		   ctx, runtime);
-    create_Hmatrix(node->rchild, Hmat->rchild, ncol,
-		   ctx, runtime);
+    create_Hmatrix(node->lchild, Hmat->lchild, ncol, ctx, runtime);
+    create_Hmatrix(node->rchild, Hmat->rchild, ncol, ctx, runtime);
   }
 }
 
