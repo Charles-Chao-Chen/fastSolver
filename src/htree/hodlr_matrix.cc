@@ -12,7 +12,7 @@ void create_Vregions
 (FSTreeNode *vnode, Context ctx, HighLevelRuntime *runtime);
 
 void create_Kregions
-(FSTreeNode *unode, FSTreeNode *vnode,
+(FSTreeNode *vnode,
  Context ctx, HighLevelRuntime *runtime);
   
 
@@ -87,7 +87,7 @@ void HodlrMatrix::create_tree
   vroot = new FSTreeNode(uroot->nrow, v_rhs);
   create_Vtree(uroot, vroot);
   create_Vregions(vroot, ctx, runtime);
-  create_Kregions(uroot, vroot, ctx, runtime);
+  create_Kregions(vroot, ctx, runtime);
 
   // print_legion_tree(uroot);
   // print_legion_tree(vroot);
@@ -485,8 +485,7 @@ void create_Vtree(FSTreeNode *unode, FSTreeNode *vnode) {
 	vnode -> lchild -> col_beg = vnode -> col_beg + vnode -> ncol;
 	vnode -> rchild -> col_beg = vnode -> col_beg + vnode -> ncol;
       }
-    }
-      
+    }      
     create_Vtree(unode->lchild, vnode->lchild);
     create_Vtree(unode->rchild, vnode->rchild);
     
@@ -543,6 +542,7 @@ void create_Vregions
 }
 
 /*
+  // old routine that still needs information from uroot
   void create_Vregions
 (FSTreeNode *unode, FSTreeNode *vnode,
  Context ctx, HighLevelRuntime *runtime)
@@ -598,21 +598,18 @@ void create_Vregions
  */
 
 void create_Kregions
-(FSTreeNode *unode, FSTreeNode *vnode,
+(FSTreeNode *vnode,
  Context ctx, HighLevelRuntime *runtime)
 {
-  if (unode->lowrank_matrix != NULL) {
-    assert(unode->nrow == vnode->nrow);
-    
+  if (vnode->is_legion_leaf()) {
     // create K matrix
     int ncol = max_row_size(vnode);
     create_matrix(vnode->dense_matrix, vnode->nrow,
 		  ncol, ctx, runtime);
   }
-
-  if ( ! unode->is_legion_leaf() ) {
-    create_Kregions(unode->lchild, vnode->lchild, ctx, runtime);
-    create_Kregions(unode->rchild, vnode->rchild, ctx, runtime);
+  else {
+    create_Kregions(vnode->lchild, ctx, runtime);
+    create_Kregions(vnode->rchild, ctx, runtime);
   }
 }
 
