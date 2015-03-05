@@ -13,26 +13,34 @@ USE_CUDA=0
 # Put the binary file name here
 OUTFILE	:= multi_launch
 # List all the application source files here
-GEN_SRC	:= parallel_launch.cc              \
-	   ../src/fast_solver.cc       \
-	   ../src/solver_tasks.cc      \
-	   ../src/gemm.cc              \
-	   ../src/zero_matrix_task.cc 	\
-	   ../src/hodlr_matrix.cc 	\
-	   ../src/htree_helper.cc  	\
-	   ../src/legion_matrix.cc   	\
-	   ../src/init_matrix_tasks.cc \
-	   ../src/save_region_task.cc  \
-	   ../src/direct_solve.cc 	\
-	   ../src/custom_mapper.cc
+GEN_SRC	:= 	parallel_launch.cc \
+		./matrix_array.cc  \
+		../src/legion_matrix/zero_matrix_task.cc 	\
+		../src/legion_matrix/init_matrix_tasks.cc 	\
+		../src/legion_matrix/save_region_task.cc  	\
+		../src/legion_matrix/legion_matrix.cc   	\
+		../src/htree/hodlr_matrix.cc 	\
+		../src/htree/htree_helper.cc  	\
+		../src/solver/solver_tasks.cc      \
+		../src/solver/gemm.cc              \
+		../src/solver/fast_solver.cc       \
+		../src/solver/direct_solve.cc 	\
+		../src/custom_mapper.cc
 
 GEN_GPU_SRC	:=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
-INC_FLAGS	:=
-CC_FLAGS	:= -g -I ./ -I ../include  \
-		   -DLEGION_BACKTRACE  	\
-		   -DSERIAL	  \
+INC_FLAGS	:= 	-I ./ \
+			-I ../include  \
+			-I ../include/core   \
+			-I ../include/legion_matrix \
+			-I ../include/htree  \
+			-I ../include/solver \
+
+CC_FLAGS	:= 	-g  \
+			$(INC_FLAGS)  \
+			-DLEGION_BACKTRACE  \
+			-DSERIAL  \
 #		   -DDEBUG	  \
 #		   -DLEGION_PROF  \
 		   -DLEGION_SPY   \

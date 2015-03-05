@@ -7,6 +7,12 @@
 #include "matrix_array.hpp"
 #include "legion.h"
 
+
+void ExtractRegions
+( const HodlrMatrix& hMatrix, const LMatrixArray& matArr ) {}
+
+
+
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
@@ -121,7 +127,7 @@ LMatrixArray SubSolveTask::cpu_task
   
   // return all regions to the parent task
   LMatrixArray matArr;
-  matArr.get_regions( hMatrix );
+  ExtractRegions( hMatrix, matArr );
   return matArr;
 }
 

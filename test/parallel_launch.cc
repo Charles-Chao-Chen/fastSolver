@@ -43,6 +43,7 @@ void top_level_task(const Task *task,
 
   // random seed
   long seed = 1245667;
+  LMatrixArray matArr;
   
   // launch sub-tasks using loop
   // TODO: use IndexLaunch instead for efficiency
@@ -51,19 +52,45 @@ void top_level_task(const Task *task,
     std::string taskName = AddSuffix( "sub", i );
     SubSolveTask::TaskArgs args(locTreeLevel, gloTreeLevel,
 				seed, taskName, rg);
-    SubSolveTask launcher(TaskArgument(&args, sizeof(args)));     
-    // no region requirement needed
+    SubSolveTask launcher(TaskArgument(&args, sizeof(args)));
     Future f = runtime -> execute_task(ctx, launcher);
-    //f.get_void_result();    
-    // TODO: return region array
+    matArr  += f.get_result<LMatrixArray>();
   }
   
   // TODO: solve the global problem
+  // TODO: use a different container for LMatrixArray
+  //  probably a queue
+
+  int gloLevel = gloTreeLevel;
+  int subLevel = gloLevel;
+  
+  int nRHS = 2;             // # of rhs
+  int rank = 90;
+  int threshold = 150;
+  int leafSize = 1;         // legion leaf size
+  //double diagonal = 1.0e4;
+  int nRow = threshold*(1<<subLevel);
+  const char* name = "global";
+  
+  HodlrMatrix hMat(nRHS, nRow, gloLevel, subLevel, rank,
+                   threshold, leafSize, name);
+  hMat.init_from_regions( matArr ); // init_U
+
+
   /*
-  HTree treeGlobal;
-  build_global_tree( treeGlobal, regionsGlobal );
+  hMat.init_VMat();
+  hMat.init_KMat();
+
   FastSolver solver;
-  solver.solve( treeGlobal );
+  solver.solve( hMat );
+  
+  if (false) {
+    assert( nRow%threshold == 0 );
+    int nregion = hMatrix.get_num_leaf();
+    compute_L2_error(hMatrix, seed, nRow, nregion, nRHS,
+		     rank, diagonal, ctx, runtime);
+  }
+
   */
 }
 

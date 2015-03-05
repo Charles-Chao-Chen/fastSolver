@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include "legion_matrix.h"
+#include "matrix_array.hpp"
 #include "timer.hpp"
 #include "legion.h"
 
@@ -46,7 +47,6 @@ private:
   bool isLaunchNode;
 };
 
-
 class HodlrMatrix {
 
  public:
@@ -62,7 +62,8 @@ class HodlrMatrix {
     (long, const Range&, Context, HighLevelRuntime *);
   void init_circulant_matrix
     (double, const Range&, Context, HighLevelRuntime *);
-
+  void init_from_regions(const LMatrixArray &);
+  
   void save_rhs
     (Context, HighLevelRuntime *);
   void save_solution

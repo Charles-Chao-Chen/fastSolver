@@ -1,3 +1,5 @@
+- gemm tasks should be as HodlrMatrix method.
+
 TODO: Automake, use CMake perhaps.
 
 TODO: create matrix inside fill_circulant_Kmat

@@ -120,6 +120,29 @@ void HodlrMatrix::init_circulant_matrix
   //print_legion_tree(vroot);
 }
 
+static void init_UMat
+(FSTreeNode* node, const LMatrixArray& matQ, size_t& first) {
+  if (node->is_legion_leaf()) {
+    assert( node->lowrank_matrix == NULL );
+    node->lowrank_matrix = new LMatrix;
+    *node->lowrank_matrix = matQ[first++];
+
+    /*
+      // TODO: implement change array to queue
+    *lowrank_matrix = matQ.front(); // the first one
+    matQ.pop(); // delete the first one
+    */
+  }
+  else {
+    init_UMat(node->lchild, matQ, first);
+    init_UMat(node->rchild, matQ, first);
+  }
+}
+
+void HodlrMatrix::init_from_regions(const LMatrixArray& matArr) {
+  size_t first = 0;
+  init_UMat(uroot, matArr, first); // extra index pointing to the front
+}
 
 /*static*/ void
 create_balanced_tree(FSTreeNode *node, int rank, int threshold) {
