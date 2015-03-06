@@ -121,7 +121,7 @@ void HodlrMatrix::init_circulant_matrix
  Context ctx, HighLevelRuntime *runtime, bool skipU) {
 
   Timer t; t.start();
-  if (skipU) {
+  if (!skipU) {
     init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
   }
   init_Vmat(vroot, diag, taskTag, ctx, runtime); // row_beg = 0

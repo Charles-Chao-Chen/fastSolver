@@ -164,7 +164,12 @@ $(GPU_RUNTIME_OBJS): %.o : %.cu
 	$(NVCC) -o $@ -c $< $(INC_FLAGS) $(NVCC_FLAGS)
 
 clean:
-	@$(RM) -rf $(OUTFILE) $(GEN_OBJS) *~ ../src/*~ ../include/*~
+	@$(RM) -rf $(OUTFILE) $(GEN_OBJS)  \
+	*~  \
+	../src/*~ ../src/solver/*~  \
+	../src/htree/*~ ../src/legion_matrix/*~  \
+	../include/*~ ../include/solver/*~  \
+	../include/htree/*~ ../include/legion_matrix/*~  \
 
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~

@@ -54,13 +54,13 @@ void top_level_task(const Task *task,
 				seed, taskName, rg);
     SubSolveTask launcher(TaskArgument(&args, sizeof(args)));
     Future f = runtime -> execute_task(ctx, launcher);
-    matArr  += f.get_result<LMatrixArray>();
+    //matArr  += f.get_result<LMatrixArray>();
   }
   
   // TODO: solve the global problem
   // TODO: use a different container for LMatrixArray
   //  probably a queue
-
+  /*
   int gloLevel = gloTreeLevel;
   int subLevel = gloLevel;
 
@@ -79,7 +79,7 @@ void top_level_task(const Task *task,
                    threshold, leafSize, name);
   hMat.create_tree( ctx, runtime, &matArr );
   hMat.init_circulant_matrix(diagonal, procs, ctx, runtime,
-			     true/*skip UMat*/);
+			     true); //skip UMat
   
   FastSolver solver;
   solver.solve_top( hMat, procs, ctx, runtime );
@@ -90,6 +90,7 @@ void top_level_task(const Task *task,
     compute_L2_error(hMat, seed, nRow, nregion, nRHS,
 		     rank, diagonal, ctx, runtime);
   }
+  */
 }
 
 int main(int argc, char *argv[]) {
