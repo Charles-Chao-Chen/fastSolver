@@ -62,26 +62,11 @@ LMatrixArray SubSolveTask::cpu_task
   // rank, threshold and other parameters
   //  are set inside the sub-tasks
   int nRHS = 2;             // # of rhs
-  int rank = 90;
+  int rank = 50;
   int threshold = 150;
   int leafSize = 1;         // legion leaf size
   double diagonal = 1.0e4;
   int nRow = threshold*(1<<subLevel);
-
-
-  
-  /*
-  int nRHS = 2;             // # of rhs
-  int rank = 6;
-  int threshold = 15;
-  int leafSize = 1;         // legion leaf size
-  double diagonal = 1.0e1;
-  int nRow = threshold*(1<<subLevel);
-
-  
-  HodlrMatrix hMatrix(nRHS, nRow, 3, 3, rank,
-		      threshold, leafSize, name);
-  */
     
   HodlrMatrix hMatrix(nRHS, nRow, gloLevel, subLevel, rank,
   		      threshold, leafSize, name);

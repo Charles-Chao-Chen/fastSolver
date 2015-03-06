@@ -501,7 +501,7 @@ void solve_top_bfs
   RTiter rvit  = vlist.rbegin();
   RRiter rrgit = rglist.rbegin();
 
-  //std::cout << "ulist size: " << ulist.size() << std::endl;    
+  std::cout << "ulist size: " << ulist.size() << std::endl;    
   double tRed = 0, tCreate = 0, tBroad = 0;
   for (; ruit != ulist.rend(); ruit++, rvit++, rrgit++)
     visit_const(*ruit, *rvit, *rrgit, tRed, tBroad, tCreate, ctx, runtime);

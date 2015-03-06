@@ -54,20 +54,20 @@ void top_level_task(const Task *task,
 				seed, taskName, rg);
     SubSolveTask launcher(TaskArgument(&args, sizeof(args)));
     Future f = runtime -> execute_task(ctx, launcher);
-    //matArr  += f.get_result<LMatrixArray>();
+    matArr  += f.get_result<LMatrixArray>();
   }
   
   // TODO: solve the global problem
   // TODO: use a different container for LMatrixArray
   //  probably a queue
-  /*
+  
   int gloLevel = gloTreeLevel;
   int subLevel = gloLevel;
 
   // TODO: pass them into sub-tasks.
   //   make sure these parameters are consitent throughout the solve
   int nRHS = 2;             // # of rhs
-  int rank = 90;
+  int rank = 50;
   int threshold = 150;
   int leafSize = 1;         // legion leaf size
   double diagonal = 1.0e4;
@@ -84,13 +84,12 @@ void top_level_task(const Task *task,
   FastSolver solver;
   solver.solve_top( hMat, procs, ctx, runtime );
 
-  if (false) {
+  if (true) {
     assert( nRow%threshold == 0 );
     int nregion = hMat.get_num_leaf();
     compute_L2_error(hMat, seed, nRow, nregion, nRHS,
 		     rank, diagonal, ctx, runtime);
   }
-  */
 }
 
 int main(int argc, char *argv[]) {
