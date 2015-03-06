@@ -17,7 +17,7 @@ void build_subtree(FSTreeNode *node, int row_beg) {
 }
 
 
-int count_matrix_column(FSTreeNode *node, int col_size) {
+int count_matrix_column(const FSTreeNode *node, int col_size) {
 
   col_size += node->ncol;
   
@@ -31,7 +31,7 @@ int count_matrix_column(FSTreeNode *node, int col_size) {
 }
 
 
-int max_row_size(FSTreeNode * vnode) {
+int max_row_size(const FSTreeNode * vnode) {
 
   if (vnode->is_real_leaf()) {
     return vnode->nrow;

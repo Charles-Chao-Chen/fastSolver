@@ -6,9 +6,9 @@
 
 void build_subtree(FSTreeNode *node, int row_beg = 0);
 
-int count_matrix_column(FSTreeNode *node, int col_size=0);
+int count_matrix_column(const FSTreeNode *node, int col_size=0);
 
-int max_row_size(FSTreeNode *);
+int max_row_size(const FSTreeNode *);
 
 int count_leaf(const FSTreeNode *node);
 

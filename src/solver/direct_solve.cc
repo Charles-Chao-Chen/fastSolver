@@ -111,7 +111,8 @@ dirct_circulant_solve(double *soln, int rand_seed, int rhs_rows,
 */
 
 static void writeToFile
-(double* rhs, int rhs_rows, int rhs_cols, std::string file) {
+(const double* rhs, const int rhs_rows, const int rhs_cols,
+ const std::string& file) {
 
   std::ofstream ofs(file.c_str());
   for (int i=0; i<rhs_rows; i++) {
@@ -126,8 +127,9 @@ static void writeToFile
 
 static void
 dirct_circulant_solve
-(std::string soln_file, int seed, int rhs_rows,
- int nregions, int rhs_cols, int r, double diag) {
+(const std::string& soln_file, const long seed, const int rhs_rows,
+ const int nregions, const int rhs_cols, const int r,
+ const double diag) {
 
   double *rhs = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
   int block_size = rhs_rows/nregions;
@@ -156,8 +158,7 @@ dirct_circulant_solve
     for (int i=0; i<rhs_rows; i++)
       U[i+j*rhs_rows] = (i+j)%r;
 
-  double *A = (double *) calloc(rhs_rows*rhs_rows,
-				sizeof(double));
+  double *A = (double *) calloc(rhs_rows*rhs_rows,sizeof(double));
   for (int i=0; i<rhs_rows; i++)
     A[i*(rhs_rows+1)] = diag;
 
@@ -172,13 +173,14 @@ dirct_circulant_solve
   double alpha = 1.0;
   double beta  = 1.0;
   
-  blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, U, &lda, U, &ldb, &beta, A, &ldc);
+  blas::dgemm_(&transa, &transb, &m, &n, &k,
+	       &alpha, U, &lda, U, &ldb, &beta, A, &ldc);
 
   int INFO;
   int IPIV[m];
-  lapack::dgesv_(&m, &rhs_cols, A, &lda, IPIV, rhs, &lda, &INFO);
+  int nRHS = rhs_cols;
+  lapack::dgesv_(&m, &nRHS, A, &lda, IPIV, rhs, &lda, &INFO);
   assert(INFO == 0);
-
 
   // write the direct output to file
   writeToFile(rhs, rhs_rows, rhs_cols, "soln_ref.txt");
@@ -201,13 +203,13 @@ dirct_circulant_solve
   
   double diff  = 0;
   double denom = 0;
-  for (int j=0; j<rhs_cols; j++)
+  for (int j=0; j<rhs_cols; j++) {
     for (int i=0; i<rhs_rows; i++) {
       diff += (soln[i+j*rhs_rows] - rhs[i+j*rhs_rows])
 	*(soln[i+j*rhs_rows] - rhs[i+j*rhs_rows]);
       denom += rhs[i+j*rhs_rows] * rhs[i+j*rhs_rows];
     }
-
+  }
   std::cout << "Err: " << sqrt(diff/denom) << std::endl;
 
   free(rhs);
@@ -218,9 +220,9 @@ dirct_circulant_solve
 
 
 void compute_L2_error
-(HodlrMatrix &lr_mat, int rand_seed, int rhs_rows,
- int nregions, int rhs_cols, int rank,
- double diag,
+(const HodlrMatrix &lr_mat, const long rand_seed, const int rhs_rows,
+ const int nregions, const int rhs_cols, const int rank,
+ const double diag,
  Context ctx, HighLevelRuntime *runtime) {
     
   // write the solution from fast solver

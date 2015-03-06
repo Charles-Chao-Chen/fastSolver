@@ -41,6 +41,7 @@ INC_FLAGS	:= 	-I ./ \
 CC_FLAGS	:= 	-g  \
 			$(INC_FLAGS)  \
 			-DSERIAL  \
+			-DDEBUG
 #			-DLEGION_BACKTRACE  \
 #		   -DDEBUG	  \
 #		   -DLEGION_PROF  \

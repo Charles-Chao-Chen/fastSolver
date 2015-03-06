@@ -479,7 +479,7 @@ void solve_top_bfs
   Titer uit = ulist.begin();
   Titer vit = vlist.begin();
   Riter rit = rglist.begin();
-  int level = 0;
+  int level = 1;
   for (; uit != ulist.end(); uit++, vit++, rit++) {
     Range rglchild = rit->lchild();
     Range rgrchild = rit->rchild();

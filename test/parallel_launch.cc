@@ -84,13 +84,12 @@ void top_level_task(const Task *task,
   FastSolver solver;
   solver.solve_top( hMat, procs, ctx, runtime );
 
-  if (true) {
+  if (false) {
     assert( nRow%threshold == 0 );
     int nregion = hMat.get_num_leaf();
     compute_L2_error(hMat, seed, nRow, nregion, nRHS,
 		     rank, diagonal, ctx, runtime);
   }
-
 }
 
 int main(int argc, char *argv[]) {

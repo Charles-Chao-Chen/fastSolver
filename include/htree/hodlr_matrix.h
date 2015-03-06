@@ -65,14 +65,14 @@ class HodlrMatrix {
   //  void init_from_regions(const LMatrixArray &);
   
   void save_rhs
-    (Context, HighLevelRuntime *);
+    (Context, HighLevelRuntime *) const;
   void save_solution
-    (Context, HighLevelRuntime *);
+    (Context, HighLevelRuntime *) const;
 
   int  launch_level() const {return gloLevel-subLevel;}
   int  get_num_rhs() {return rhs_cols;}
-  int  get_num_leaf() {return nleaf;}
-  void set_num_leaf(int nleaf) {this->nleaf = nleaf;}
+  int  get_num_leaf() {return nLegionLeaf;}
+  //void set_num_leaf(int nleaf) {this->nLegionLeaf = nleaf;}
   //int  get_num_launch_node() {return nLaunchNode;}
   //void set_num_launch_node(int n) {nLaunchNode = n;}
   std::string get_file_soln() const {return file_soln;}
@@ -104,7 +104,8 @@ class HodlrMatrix {
   int subLevel;  // level of the sub problem
   int rank;      // same rank for all blocks
   int threshold; // threshold of dense blocks
-  int nleaf;     // legion leaf size for controlling fine granularity
+  int leafSize;  // legion leaf size for controlling fine granularity
+  int nLegionLeaf;
   
  private:
   //int nLaunchNode;

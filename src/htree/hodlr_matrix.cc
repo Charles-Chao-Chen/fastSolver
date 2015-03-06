@@ -45,11 +45,12 @@ bool FSTreeNode::is_real_leaf() const {
 
 HodlrMatrix::HodlrMatrix
 (int col, int row, int gl, int sl,
- int r, int t, int leaf, const std::string& name)
+ int r, int t, int ls, const std::string& name)
   : rhs_cols(col), rhs_rows(row),
     gloLevel(gl),  subLevel(sl),
     rank(r),       threshold(t),
-    nleaf(leaf),   timeInit(0)
+    leafSize(ls),  nLegionLeaf(0),
+    timeInit(0)
 {
   this->file_rhs  = name + "_rhs.txt";
   this->file_soln = name + "_soln.txt";
@@ -58,10 +59,10 @@ HodlrMatrix::HodlrMatrix
 static void create_balanced_tree
   (FSTreeNode *, int, int);
 static int mark_legion_leaf
-  (FSTreeNode *node, int threshold);
+(FSTreeNode *node, const int threshold, int&);
 static int mark_launch_node
   (FSTreeNode *node, int threshold);
-static int create_legion_node
+static void create_legion_node
   (FSTreeNode *node, Context ctx, HighLevelRuntime *runtime);
 
 void HodlrMatrix::create_tree
@@ -75,11 +76,13 @@ void HodlrMatrix::create_tree
   create_balanced_tree(uroot, rank, threshold);
 
   // set legion leaf for granularity control
-  mark_legion_leaf(uroot, nleaf);
+  // nleaf is initialized to 0 in the constructor
+  mark_legion_leaf(uroot, leafSize, nLegionLeaf);
   
   // create region at legion leaf
   if (matArr == NULL) {
-    set_num_leaf( create_legion_node(uroot, ctx, runtime) );
+    //set_num_leaf(  );
+    create_legion_node(uroot, ctx, runtime);
   }
   else {
     size_t first=0;
@@ -141,7 +144,7 @@ void init_UMat
     assert( node->lowrank_matrix == NULL );
     node->lowrank_matrix = new LMatrix;
 
-    printf("size: %zu, idx: %zu\n", matQ.size(), first);
+    //printf("size: %zu, idx: %zu\n", matQ.size(), first);
     *node->lowrank_matrix = matQ[first++];
   }
   else {
@@ -331,22 +334,23 @@ void init_circulant_Kmat
 // nLegionLeaf records the number of legion leaves as an
 //  indicator of the number of leaf tasks.
 /* static */ int
-mark_legion_leaf(FSTreeNode *node, int threshold) {
+mark_legion_leaf(FSTreeNode *node, const int leafSize, int& nleaf) {
 
-  int nRealLeaf;  
+  int nRealLeaf;
   if (node->is_real_leaf()) { // real matrix leaf
     nRealLeaf = 1;
   } else {
-    int nl = mark_legion_leaf(node->lchild, threshold);
-    int nr = mark_legion_leaf(node->rchild, threshold);
+    int nl = mark_legion_leaf(node->lchild, leafSize, nleaf);
+    int nr = mark_legion_leaf(node->rchild, leafSize, nleaf);
     nRealLeaf = nl + nr;
   }
 
   // mark "Legion Leaf" on all leaves from the legion leaf level
-  // (or lower levels)
-  node->set_legion_leaf( (nRealLeaf > threshold) ? false : true );
+  // (and lower levels)
+  node->set_legion_leaf( (nRealLeaf > leafSize) ? false : true );
   if (node->is_legion_leaf()) {
     build_subtree(node);
+    nleaf++;
   }
   return nRealLeaf;
 }
@@ -376,20 +380,17 @@ mark_launch_node(FSTreeNode *node, int threshold) {
 
 
 // return the number of legion leaf
-/* static */ int create_legion_node
+/* static */ void create_legion_node
 (FSTreeNode *node, Context ctx, HighLevelRuntime *runtime) {
   
-  if ( ! node->is_legion_leaf() ) {
-    int nl = create_legion_node(node->lchild, ctx, runtime);
-    int nr = create_legion_node(node->rchild, ctx, runtime);
-    return nl + nr;
-  } else {    
+  if ( node->is_legion_leaf() ) {
     // adding column number above and below legion node
     int ncol = node->col_beg + count_matrix_column(node);
     int nrow = node->nrow;
     create_matrix(node->lowrank_matrix, nrow, ncol, ctx, runtime);
-    //build_subtree(node);
-    return 1;
+  } else {    
+    create_legion_node(node->lchild, ctx, runtime);
+    create_legion_node(node->rchild, ctx, runtime);
   }
 }
 
@@ -762,8 +763,8 @@ void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag
 }
 
 void HodlrMatrix::save_rhs
-(Context ctx, HighLevelRuntime *runtime) {
-  std::string& filename = file_rhs;
+(Context ctx, HighLevelRuntime *runtime) const {
+  const std::string& filename = file_rhs;
   if (remove(filename.c_str())==0)
     std::cout << " create new " << filename << std::endl;
   else
@@ -774,8 +775,8 @@ void HodlrMatrix::save_rhs
 }
 
 void HodlrMatrix::save_solution
-(Context ctx, HighLevelRuntime *runtime) {
-  std::string& filename = file_soln;
+(Context ctx, HighLevelRuntime *runtime) const {
+  const std::string& filename = file_soln;
   if (remove(filename.c_str())==0)
     std::cout << " create new " << filename << std::endl;
   else

@@ -17,11 +17,11 @@ dirct_circulant_solve(std::string soln_file, int rand_seed,
 		      int r, double diag);
 */
 
-void
-compute_L2_error(HodlrMatrix &lr_mat, int rand_seed, int rhs_rows,
-		 int nregions, int rhs_cols, int rank,
-		 double diag,
-		 Context ctx, HighLevelRuntime *runtime);
+void compute_L2_error
+(const HodlrMatrix &lr_mat, const long rand_seed, const int rhs_rows,
+ const int nregions, const int rhs_cols, const int rank,
+ const double diag,
+ Context ctx, HighLevelRuntime *runtime);
 
 
   
