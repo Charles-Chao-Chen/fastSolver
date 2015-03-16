@@ -133,17 +133,28 @@ dirct_circulant_solve
 
   double *rhs = (double *) malloc(rhs_rows*rhs_cols*sizeof(double));
   int block_size = rhs_rows/nregions;
-  std::ofstream ofs("rhs_ref.txt");
   for (int nr=0; nr<nregions; nr++) {
     struct drand48_data buffer;
     assert( srand48_r( seed, &buffer ) == 0 );
-    ofs << seed << std::endl;
     for (int i=0; i<block_size; i++) {
       for (int j=0; j<rhs_cols; j++) {
 	int row_idx = nr*block_size + i;
 	int col_idx = j;
 	int count = row_idx + col_idx*rhs_rows;
 	assert( drand48_r( &buffer, &rhs[count]) == 0 );
+      }
+    }
+  }
+
+#ifdef DEBUG
+  std::ofstream ofs("rhs_ref.txt");
+  for (int nr=0; nr<nregions; nr++) {
+    ofs << seed << std::endl;
+    for (int i=0; i<block_size; i++) {
+      for (int j=0; j<rhs_cols; j++) {
+	int row_idx = nr*block_size + i;
+	int col_idx = j;
+	int count = row_idx + col_idx*rhs_rows;
 	ofs << std::setprecision(20)
 	    << rhs[count]
 	    << '\t';
@@ -152,6 +163,7 @@ dirct_circulant_solve
     }
   }
   ofs.close();
+#endif
   
   double *U = (double *) malloc(rhs_rows*r*sizeof(double));
   for (int j=0; j<r; j++)
