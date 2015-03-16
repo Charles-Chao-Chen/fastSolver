@@ -13,20 +13,23 @@ using namespace LegionRuntime::Accessor;
 class SubSolveTask : public TaskLauncher {
  public:
   struct TaskArgs {
-    TaskArgs(int sl, int gl, long s,
-	     const std::string& str,
-	     const Range& p) :
-      subLvl(sl), gloLvl(gl),
-      seed(s), procs(p)
-    { strcpy(name, str.c_str()); }
+    TaskArgs
+    (int sl, int gl, long s, const std::string& str, const Range& p,
+     int rhs, int r, int t, int ls, double d);
 
+    // sub-problem configuration
     int subLvl;
     int gloLvl;
-    int nRHS;
-    int nRow;
     long seed;
     char name[50];
     Range procs;
+
+    // h-matrix configuration
+    int nRHS;
+    int rank;
+    int threshold;
+    int leafSize;
+    double diagonal;
   };
   
   SubSolveTask(TaskArgument arg,

@@ -1,6 +1,5 @@
 #include "sub_solve_task.hpp"
 
-
 void ExtractRegions
 (const FSTreeNode* node, LMatrixArray& matArr) {
   if (node->is_legion_leaf()) {
@@ -18,6 +17,16 @@ void ExtractRegions
 }
 
 /* ---- SubSolveTask implementation ---- */
+
+SubSolveTask::TaskArgs::TaskArgs
+(int sl, int gl, long s, const std::string& str, const Range& p,
+ int rhs, int r, int t, int ls, double d)
+  : subLvl(sl), gloLvl(gl), seed(s), procs(p),
+    nRHS(rhs), rank(r), threshold(t), leafSize(ls), diagonal(d) {
+
+  strcpy(name, str.c_str());
+}
+
 /*static*/
 int SubSolveTask::TASKID;
 
@@ -59,14 +68,13 @@ LMatrixArray SubSolveTask::cpu_task
   const char* name = args->name;
   const Range procs = args->procs;
 
-  // rank, threshold and other parameters
-  //  are set inside the sub-tasks
-  int nRHS = 2;             // # of rhs
-  int rank = 50;
-  int threshold = 150;
-  int leafSize = 1;         // legion leaf size
-  double diagonal = 1.0e4;
-  int nRow = threshold*(1<<subLevel);
+  // receive h-matrix configuration from paraent task
+  const int nRHS = args->nRHS;
+  const int rank = args->rank;
+  const int threshold = args->threshold;
+  const int leafSize = args->leafSize;
+  const double diagonal = args->diagonal;
+  const int nRow = threshold*(1<<subLevel);
     
   HodlrMatrix hMatrix(nRHS, nRow, gloLevel, subLevel, rank,
   		      threshold, leafSize, name);
@@ -76,7 +84,7 @@ LMatrixArray SubSolveTask::cpu_task
 	    << "Legion leaf / node: " << nleaf / procs.size
 	    << std::endl;
   
-  // random right hand size
+  // random right hand side
   hMatrix.init_rhs(seed, procs, ctx, runtime);
   hMatrix.init_circulant_matrix(diagonal, procs, ctx, runtime);
   hMatrix.display_launch_time();
