@@ -22,7 +22,7 @@ void top_level_task(const Task *task,
 		    Context ctx, HighLevelRuntime *runtime) {  
  
   // assume the tree is balanced
-  int gloTreeLevel = 4;
+  int gloTreeLevel = 3;
   int launchAtLevel = 1; // two sub-tasks
   int locTreeLevel = gloTreeLevel - launchAtLevel;
   int numTasks = pow(2, launchAtLevel);
@@ -39,6 +39,8 @@ void top_level_task(const Task *task,
   // (1) run on 2 nodes with concurrently
   //  (1.1) Done: pass h-matrix parameters to sub-tasks
   //  (1.2) get rid of SERIAL execution
+  //         bug: no accuracy
+  //         exectution graph (legion spy)
   // (3) final goal is to run on 32 nodes, with 2 sub-launches
   // ---------------------------------------------------------
   
@@ -49,8 +51,6 @@ void top_level_task(const Task *task,
   long seed = 1245667;
   LMatrixArray matArr;
 
-  // TODO: pass them into sub-tasks.
-  //   make sure these parameters are consitent throughout the solve
   // ---------------------------------------------------------
   // Problem configuration
   int nRHS = 2;             // # of rhs

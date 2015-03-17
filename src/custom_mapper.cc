@@ -88,6 +88,7 @@ void AdversarialMapper::select_task_options(Task *task)
   assert(mem != Memory::NO_MEMORY);
   
   // select valid processors
+  // TODO: put this into the constructor using std::map
   typedef std::set<Processor>::const_iterator SPCI;
   std::vector<Processor> valid_options;
   std::set<Processor> options;

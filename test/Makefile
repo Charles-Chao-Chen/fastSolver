@@ -4,7 +4,7 @@ $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
 #Flags for directing the runtime makefile what to include
-DEBUG=1                   # Include debugging symbols
+DEBUG=0                   # Include debugging symbols
 OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 SHARED_LOWLEVEL=0	  # Use the shared low level
 USE_CUDA=0
@@ -40,17 +40,14 @@ INC_FLAGS	:= 	-I ./ \
 
 CC_FLAGS	:= 	-g  \
 			$(INC_FLAGS)  \
-			-DSERIAL  \
-			-DDEBUG
+			-DLEGION_PROF  \
+			-DLEGION_SPY   \
+			-DNODE_LOGGING \
+#			-DSERIAL  \
+#			-DDEBUG
 #			-DLEGION_BACKTRACE  \
-#		   -DDEBUG	  \
-#		   -DLEGION_PROF  \
-		   -DLEGION_SPY   \
-		   -DNODE_LOGGING \
 
-#		   -DDEBUG 	\
-		   -DDEBUG 	\
-		   -DSHOW_REGISTER_TASKS \
+#		   -DSHOW_REGISTER_TASKS \
 #		   -g		\
 
 #		   -DNDEBUG	  \
@@ -310,6 +307,7 @@ prof2:
 	-ll:cpu 11 -ll:util 1 \
 	-ll:csize 30000 \
 	-hl:sched 8192 \
-	-level 5
+	-cat legion_spy -level 2
+#	-level 5
 #	-cat legion_prof -level 2 \
 

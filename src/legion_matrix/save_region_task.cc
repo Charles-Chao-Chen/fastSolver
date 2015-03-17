@@ -8,9 +8,6 @@ void register_save_region_task() {
   SaveRegionTask::register_tasks();
 }
 
-
-/* ---- SaveRegionTask implementation ---- */
-
 /*static*/
 int SaveRegionTask::TASKID;
 

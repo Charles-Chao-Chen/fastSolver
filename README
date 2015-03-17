@@ -3,8 +3,9 @@
    from normal tasks. So use abs(task->tag) to select memroy and 
    set virtual_map field in map_task().
 
-- Define DEBUG in makefile to serialize task execution for debuging
-purpose.
+- Define SERIAL in makefile to serialize task execution (for debuging)
+
+- Define DEBUG in makefile to output the initial rhs and debuging information
 
 - The number of tasks: Consider the balanced binary tree. 
 When the number of legion leaf is N, there are log_2(N) levels.

@@ -198,9 +198,11 @@ void HodlrMatrix::
 init_rhs(const long seed, const Range& procs,
 	 Context ctx, HighLevelRuntime *runtime)
 {
+#ifdef DEBUG
   std::cout << "initializing " << rhs_cols
 	    << " columns of right hand side ..."
 	    << std::endl;
+#endif
   Timer t;
   t.start();
   init_rhs_recursive(uroot, seed, rhs_cols, procs, ctx, runtime);
@@ -765,10 +767,10 @@ void fill_circulant_Kmat(FSTreeNode * vnode, int row_beg_glo, int r, double diag
 void HodlrMatrix::save_rhs
 (Context ctx, HighLevelRuntime *runtime) const {
   const std::string& filename = file_rhs;
-  if (remove(filename.c_str())==0)
-    std::cout << " create new " << filename << std::endl;
-  else
-    std::cout << " create " << filename << std::endl;
+  remove(filename.c_str()); // remove the existing old file
+#ifdef DEBUG
+  std::cout << "Create " << filename << std::endl;
+#endif
   Range rRhs(this->rhs_cols);
   save_HodlrMatrix(this->uroot, filename, ctx, runtime,
 		   rRhs, true/*print seed*/);
@@ -777,10 +779,10 @@ void HodlrMatrix::save_rhs
 void HodlrMatrix::save_solution
 (Context ctx, HighLevelRuntime *runtime) const {
   const std::string& filename = file_soln;
-  if (remove(filename.c_str())==0)
-    std::cout << " create new " << filename << std::endl;
-  else
-    std::cout << " create " << filename << std::endl;
+  remove(filename.c_str()); // remove the existing old file
+#ifdef DEBUG
+  std::cout << "Create " << filename << std::endl;
+#endif
   Range rRhs(this->rhs_cols);
   save_HodlrMatrix(this->uroot, filename, ctx, runtime, rRhs);
 }

@@ -79,29 +79,27 @@ void register_solver_tasks() {
   std::cout << std::endl;
 }
 
-
 FastSolver::FastSolver():
   time_launcher(-1) {}
-
 
 //void FastSolver::solve_bfs
 void FastSolver::bfs_solve
 (HodlrMatrix &lr_mat, const Range& procs,
  Context ctx, HighLevelRuntime *runtime)
 {
+#ifdef DEBUG
   std::cout << "Launch tasks in breadth first order."
 	    << std::endl;
-#ifdef DEBUG
-  // write the initial rhs
-  lr_mat.save_rhs(ctx, runtime);
+  lr_mat.save_rhs(ctx, runtime); // write the initial rhs
 #endif
   Range tag = procs;
   Timer t; t.start();
-  //solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
   solve_bfs(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
-  t.stop(); this->time_launcher = t.get_elapsed_time();
-}
+  t.stop();
+  this->time_launcher = t.get_elapsed_time();
 
+  //solve_bfs_launch(lr_mat.uroot, lr_mat.vroot, tag, ctx, runtime);
+}
 
 // TODO: this can also be implemented using dfs
 //  and there is no difference in traversal order
@@ -501,12 +499,12 @@ void solve_top_bfs
   RTiter rvit  = vlist.rbegin();
   RRiter rrgit = rglist.rbegin();
 
-  std::cout << "ulist size: " << ulist.size() << std::endl;    
   double tRed = 0, tCreate = 0, tBroad = 0;
   for (; ruit != ulist.rend(); ruit++, rvit++, rrgit++)
     visit_const(*ruit, *rvit, *rrgit, tRed, tBroad, tCreate, ctx, runtime);
 
 #ifdef DEBUG
+  std::cout << "ulist size: " << ulist.size() << std::endl;    
   std::cout << "launch reduction task: " << tRed    << std::endl
 	    << "launch create task: "    << tCreate << std::endl
 	    << "launch broadcast task: " << tBroad  << std::endl;

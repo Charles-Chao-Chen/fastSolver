@@ -79,27 +79,33 @@ LMatrixArray SubSolveTask::cpu_task
   HodlrMatrix hMatrix(nRHS, nRow, gloLevel, subLevel, rank,
   		      threshold, leafSize, name);
   hMatrix.create_tree(ctx, runtime);
-  int nleaf = hMatrix.get_num_leaf();
-  std::cout << "Legion leaf : "	      << nleaf << std::endl
-	    << "Legion leaf / node: " << nleaf / procs.size
-	    << std::endl;
   
   // random right hand side
   hMatrix.init_rhs(seed, procs, ctx, runtime);
   hMatrix.init_circulant_matrix(diagonal, procs, ctx, runtime);
-  hMatrix.display_launch_time();
  
   FastSolver fs;
   fs.bfs_solve(hMatrix, procs, ctx, runtime);
-  fs.display_launch_time();  
-
-  if (true) {
-    assert( nRow%threshold == 0 );
-    int nregion = nleaf;
-    compute_L2_error(hMatrix, seed, nRow, nregion, nRHS,
-		     rank, diagonal, ctx, runtime);
-  }
   
+  //#ifdef DEBUG
+  #if true
+  std::cout << "\n================================" << std::endl;
+  std::cout << "sub-problem information:" << std::endl;
+  int nleaf = hMatrix.get_num_leaf();
+  std::cout << "  Legion leaf : "       << nleaf << std::endl
+	    << "  Legion leaf / node: " << nleaf / procs.size
+	    << std::endl;
+  hMatrix.display_launch_time();
+  fs.display_launch_time();
+
+  assert( nRow%threshold == 0 );
+  int nregion = nleaf;
+  compute_L2_error(hMatrix, seed, nRow, nregion, nRHS,
+		   rank, diagonal, ctx, runtime);
+
+  std::cout << "================================\n" << std::endl;
+#endif
+    
   // return all regions to the parent task
   LMatrixArray matArr;
   ExtractRegions( hMatrix, matArr );
