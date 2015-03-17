@@ -87,8 +87,7 @@ LMatrixArray SubSolveTask::cpu_task
   FastSolver fs;
   fs.bfs_solve(hMatrix, procs, ctx, runtime);
   
-  //#ifdef DEBUG
-  #if true
+#ifdef DEBUG
   std::cout << "\n================================" << std::endl;
   std::cout << "sub-problem information:" << std::endl;
   int nleaf = hMatrix.get_num_leaf();

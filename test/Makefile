@@ -265,11 +265,6 @@ prof:
 	-m 0 -N 0		\
 	$(numa) 		\
 
-# idx : node index
-node:
-	python ~/legion/tools/legion_prof.py -p node_$(idx).log
-#	python ~/legion/tools/legion_prof.py -p node_$(idx).log \
-	> legion_node.txt
 
 # --- legion spy ---
 #spy2:\
@@ -307,7 +302,15 @@ prof2:
 	-ll:cpu 11 -ll:util 1 \
 	-ll:csize 30000 \
 	-hl:sched 8192 \
-	-cat legion_spy -level 2
+	-cat legion_prof -level 2 \
+#	-cat legion_spy -level 2
 #	-level 5
-#	-cat legion_prof -level 2 \
 
+
+# --- legion profiler ---
+
+# idx : node index
+node:
+	python ~/legion/tools/legion_prof.py -p node_$(idx).log
+#	python ~/legion/tools/legion_prof.py -p node_$(idx).log \
+	> legion_node.txt

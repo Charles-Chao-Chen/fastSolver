@@ -22,7 +22,7 @@ void top_level_task(const Task *task,
 		    Context ctx, HighLevelRuntime *runtime) {  
  
   // assume the tree is balanced
-  int gloTreeLevel = 3;
+  int gloTreeLevel = 7;
   int launchAtLevel = 1; // two sub-tasks
   int locTreeLevel = gloTreeLevel - launchAtLevel;
   int numTasks = pow(2, launchAtLevel);
@@ -54,14 +54,15 @@ void top_level_task(const Task *task,
   // ---------------------------------------------------------
   // Problem configuration
   int nRHS = 2;             // # of rhs
-  int rank = 50;
-  int threshold = 150;
+  int rank = 300;
+  int threshold = 600;
   int leafSize = 1;         // legion leaf size
   double diagonal = 1.0e4;
   // ---------------------------------------------------------
   
   // launch sub-tasks using loop
   // TODO: use IndexLaunch instead for efficiency
+  std::vector<Future> fvec;
   for (int i=0; i<numTasks; i++) {
     int nodeIdx = i*nodesPerTask;
     Range taskTag(nodeIdx, nodesPerTask);
@@ -74,16 +75,16 @@ void top_level_task(const Task *task,
 			  0,
 			  nodeIdx);
     Future f = runtime->execute_task(ctx, launcher);
-    matArr  += f.get_result<LMatrixArray>(); // blocking call
+    fvec.push_back(f);
   }
   
   // TODO: use a different container for LMatrixArray
   //  probably a queue
-  
+  for (size_t i=0; i<fvec.size(); i++)
+    matArr += fvec[i].get_result<LMatrixArray>(); // blocking call
+    
   int gloLevel = gloTreeLevel;
-  int subLevel = gloLevel;
-  
-
+  int subLevel = gloLevel;  
   int nRow = threshold*(1<<subLevel);
   const char* name = "global";
   Range procs(numMachineNodes);
@@ -97,7 +98,7 @@ void top_level_task(const Task *task,
   FastSolver solver;
   solver.solve_top( hMat, procs, ctx, runtime );
 
-  if (true) {
+  if (false) {
     assert( nRow%threshold == 0 );
     int nregion = hMat.get_num_leaf();
     compute_L2_error(hMat, seed, nRow, nregion, nRHS,
