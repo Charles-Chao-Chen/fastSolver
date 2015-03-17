@@ -4,9 +4,6 @@
 #include "save_region_task.h"
 #include "macros.h"
 
-
-/* ---- LMatrix class methods ---- */
-
 void LMatrix::rand
   (long int seed, const Range &range, const Range &taskTag,
    Context ctx, HighLevelRuntime *runtime) {
@@ -25,13 +22,12 @@ void LMatrix::rand
 				   data).
 				  add_field(FID_X)
 				  );
+  Future f = runtime->execute_task(ctx, launcher);
 #ifdef SERIAL
-  Future ft = runtime->execute_task(ctx, launcher);
   std::cout << "Waiting for init rhs ..." << std::endl;
-  ft.get_void_result();
+  f.get_void_result();
 #endif
 }
-
 
 void LMatrix::zero
 (const Range &taskTag, Context ctx, HighLevelRuntime *runtime) {
@@ -54,7 +50,6 @@ void LMatrix::zero
 #endif
 }
 
-
 void LMatrix::circulant
   (int col_beg, int row_beg, int rank, Range taskTag,
    Context ctx, HighLevelRuntime *runtime) {    
@@ -75,12 +70,10 @@ void LMatrix::circulant
   launcher.region_requirements[0].add_field(FID_X);
   Future f = runtime->execute_task(ctx, launcher);
 #ifdef SERIAL
-  std::cout << "Waiting for init low rank block ..."
-	    << std::endl;
+  std::cout << "Waiting for init low rank block ..." << std::endl;
+  f.get_void_result();
 #endif
-
 }
-
 
 void LMatrix::save
 (const std::string filename, const Range rg, 
@@ -101,11 +94,14 @@ void LMatrix::save
 				   this->data).
 				  add_field(FID_X)
 				  );
-  Future fm = runtime->execute_task(ctx, launcher);
-  fm.get_void_result(); // wait until finish
+  Future f = runtime->execute_task(ctx, launcher);
+
+  // save matrix task has to wait, because multiple tasks may try
+  //  to write into the same file.
+  // note: some matrices are stored in seperate regions
+  f.get_void_result(); 
 #ifdef SERIAL
   std::cout << "Waiting for writing into file ..." << std::endl;
 #endif
-
 }
 
