@@ -12,8 +12,7 @@ int max_row_size(const FSTreeNode *);
 
 int count_leaf(const FSTreeNode *node);
 
-int count_launch_node(FSTreeNode *node);
-
+//int count_launch_node(FSTreeNode *node);
 
 // TODO: move into LMatrix class
 void create_matrix

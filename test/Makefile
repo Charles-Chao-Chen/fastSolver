@@ -11,9 +11,10 @@ USE_CUDA=0
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 
 # Put the binary file name here
-OUTFILE	:= multi_launch
+#OUTFILE	:= multi_launch
+OUTFILE	:= single_launch
 # List all the application source files here
-GEN_SRC	:= 	parallel_launch.cc \
+GEN_SRC	:= 	single_launch.cc \
 		./matrix_array.cc  \
 		./sub_solve_task.cc  \
 		../src/legion_matrix/zero_matrix_task.cc 	\
@@ -298,6 +299,19 @@ prof2:
 	-bind-to none -report-bindings \
 	-x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 \
 	./multi_launch \
+	-leaf 1 \
+	-ll:cpu 11 -ll:util 1 \
+	-ll:csize 30000 \
+	-hl:sched 8192 \
+	-cat legion_prof -level 2 \
+#	-cat legion_spy -level 2
+#	-level 5
+
+prof1:
+	mpirun -H n0001,n0002 \
+	-bind-to none -report-bindings \
+	-x GASNET_IB_SPAWNER -x GASNET_BACKTRACE=1 \
+	./single_launch \
 	-leaf 1 \
 	-ll:cpu 11 -ll:util 1 \
 	-ll:csize 30000 \

@@ -161,7 +161,7 @@ void save_HodlrMatrix
   }
 }
 
-
+/*
 int count_launch_node(FSTreeNode *node) {
   if ( ! node->is_launch_node() ) {
     int nl = count_launch_node(node->lchild);
@@ -171,7 +171,7 @@ int count_launch_node(FSTreeNode *node) {
     return 1;
   }
 }
-
+*/
 
 /*
   void HodlrMatrix::print_Vmat(FSTreeNode *node, std::string filename) {

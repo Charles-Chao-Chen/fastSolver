@@ -41,6 +41,9 @@ void top_level_task(const Task *task,
   //  (1.2) get rid of SERIAL execution
   //         bug: no accuracy
   //         exectution graph (legion spy)
+  //  (1.3) launch init tasks only when necessary
+  //         benefits: i)  bredth first launch automatically;
+  //                   ii) compatible with solve_top()
   // (3) final goal is to run on 32 nodes, with 2 sub-launches
   // ---------------------------------------------------------
   

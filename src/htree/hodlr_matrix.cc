@@ -19,10 +19,8 @@ void create_Kregions
  Context ctx, HighLevelRuntime *runtime);
   
 
-/*--- for debugging purpose ---*/
-
+// for debugging purpose
 void print_legion_tree(FSTreeNode *);
-
 
 FSTreeNode::FSTreeNode(int nrow_, int ncol_,
 		       int row_beg_, int col_beg_,
@@ -60,8 +58,8 @@ static void create_balanced_tree
   (FSTreeNode *, int, int);
 static int mark_legion_leaf
 (FSTreeNode *node, const int threshold, int&);
-static int mark_launch_node
-  (FSTreeNode *node, int threshold);
+//static int mark_launch_node
+//(FSTreeNode *node, int threshold);
 static void create_legion_node
   (FSTreeNode *node, Context ctx, HighLevelRuntime *runtime);
 
@@ -81,7 +79,6 @@ void HodlrMatrix::create_tree
   
   // create region at legion leaf
   if (matArr == NULL) {
-    //set_num_leaf(  );
     create_legion_node(uroot, ctx, runtime);
   }
   else {
@@ -89,18 +86,18 @@ void HodlrMatrix::create_tree
     init_UMat(uroot, *matArr, first);
   }
 
-  // launch tasks in parallel
-  // 16*8=128 is a heuristic number,
-  // so every launch node will launch about 3000 tasks
-  //mark_launch_node(uroot, 4);
-  //set_num_launch_node( count_launch_node(uroot) );
-
   // create V tree
   int v_rhs = 0; // no rhs
   vroot = new FSTreeNode(uroot->nrow, v_rhs);
   create_Vtree(uroot, vroot);
   create_Vregions(vroot, ctx, runtime);
   create_Kregions(vroot, ctx, runtime);
+  
+  // launch tasks in parallel
+  // 16*8=128 is a heuristic number,
+  // so every launch node will launch about 3000 tasks
+  //mark_launch_node(uroot, 4);
+  //set_num_launch_node( count_launch_node(uroot) );
 
   // print_legion_tree(uroot);
   // print_legion_tree(vroot);
@@ -238,7 +235,8 @@ void HodlrMatrix::init_Umat
 
     // initialize the whole region with one call
     assert(node->lowrank_matrix != NULL);
-    node->lowrank_matrix->circulant(rhs_cols, row_beg,
+    int col_beg = rhs_cols;
+    node->lowrank_matrix->circulant(col_beg, row_beg,
 				    rank, tag, ctx, runtime);
   } else {
     Range ltag = tag.lchild();
@@ -361,7 +359,8 @@ mark_legion_leaf(FSTreeNode *node, const int leafSize, int& nleaf) {
 // this function picks launch nodes as those having the
 //  number of threshold legion leaves.
 // nlaunch records the number of launch nodes
-/* static */ int
+/* static */
+/*int
 mark_launch_node(FSTreeNode *node, int threshold) {
 
   int nLeaf;
@@ -376,10 +375,9 @@ mark_launch_node(FSTreeNode *node, int threshold) {
   // mark "launch node" on all nodes from the launch level
   // (or lower levels)
   node->set_launch_node( (nLeaf > threshold) ? false : true );
-
   return nLeaf;
 }
-
+*/
 
 // return the number of legion leaf
 /* static */ void create_legion_node

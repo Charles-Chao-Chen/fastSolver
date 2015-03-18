@@ -27,8 +27,8 @@ struct FSTreeNode {
   bool is_real_leaf()   const;
   bool is_legion_leaf() const {return isLegionLeaf;}
   void set_legion_leaf(bool is) {isLegionLeaf = is;}
-  bool is_launch_node() const {return isLaunchNode;}
-  void set_launch_node(bool is) {isLaunchNode = is;}
+  //bool is_launch_node() const {return isLaunchNode;}
+  //void set_launch_node(bool is) {isLaunchNode = is;}
 
   int nrow;    
   int ncol;
@@ -44,7 +44,7 @@ struct FSTreeNode {
 
 private:
   bool isLegionLeaf;
-  bool isLaunchNode;
+  //bool isLaunchNode;
 };
 
 class HodlrMatrix {
