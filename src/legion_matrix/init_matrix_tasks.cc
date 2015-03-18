@@ -1,5 +1,5 @@
 #include "init_matrix_tasks.h"
-#include "htree_helper.h"
+#include "node.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
@@ -8,8 +8,8 @@
 
 void register_init_tasks() {
   RandomMatrixTask::register_tasks();
-  InitCirculantKmatTask::register_tasks();
-  InitCirculantMatrixTask::register_tasks();
+  DenseMatrixTask::register_tasks();
+  CirculantMatrixTask::register_tasks();
 }
 
 /* ---- RandomMatrixTask implementation ---- */
@@ -19,12 +19,10 @@ int RandomMatrixTask::TASKID;
 
 RandomMatrixTask::
 RandomMatrixTask(TaskArgument arg,
-	    Predicate pred /*= Predicate::TRUE_PRED*/,
-	    MapperID id /*= 0*/,
-	    MappingTagID tag /*= 0*/)
-  : TaskLauncher(TASKID, arg, pred, id, tag)
-{
-}
+		 Predicate pred /*= Predicate::TRUE_PRED*/,
+		 MapperID id /*= 0*/,
+		 MappingTagID tag /*= 0*/)
+  : TaskLauncher(TASKID, arg, pred, id, tag) {}
 
 /*static*/
 void RandomMatrixTask::register_tasks(void)
@@ -51,55 +49,52 @@ cpu_task(const Task *task,
   assert(task->regions.size() == 1);
 
   TaskArgs* args = (TaskArgs *)task->args;
-  long int seed = args->seed;
-  int ncol      = args->ncol;
-  
+  long seed      = args->seed;
+  Range columns  = args->columns;
+
+  Rect<2> subrect;
+  ByteOffset offsets[2];  
   IndexSpace is   = task->regions[0].region.get_index_space();
   Domain     dom  = runtime->get_index_space_domain(ctx, is);
   Rect<2>    rect = dom.get_rect<2>();
+  double    *ptr  = regions[0].get_field_accessor(FID_X).
+    typeify<double>().raw_rect_ptr<2>(rect, subrect, offsets);
 
-  RegionAccessor<AccessorType::Generic, double> acc =
-    regions[0].get_field_accessor(FID_X).typeify<double>();
-  
-  Rect<2> subrect;
-  ByteOffset offsets[2];  
-
-  double *ptr =  acc.raw_rect_ptr<2>(rect, subrect, offsets);
   assert(rect == subrect);
   assert(ptr  != NULL);
-
+    
   int nrow = rect.dim_size(0);
   struct drand48_data buffer;
   assert( srand48_r( seed, &buffer ) == 0 );
   for (int i=0; i<nrow; i++) {
-    for (int j=0; j<ncol; j++) {
-      int row_idx = i;
-      int col_idx = j;
-      int count = row_idx + col_idx*nrow;
+    for (int j=0; j<columns.size(); j++) {
+      int row = i;
+      int col = j + columns.begin();
+      int count = row + col*nrow;
       assert( drand48_r( &buffer, &ptr[count]) == 0 );
     }
   }
 }
 
 
-/* ---- InitCirculantKmatTask implementation ---- */
+/* ---- CirculantKmatTask implementation ---- */
 
 /*static*/
-int InitCirculantKmatTask::TASKID;
+int DenseMatrixTask::TASKID;
 
-InitCirculantKmatTask::
-InitCirculantKmatTask(TaskArgument arg,
+DenseMatrixTask::
+DenseMatrixTask(TaskArgument arg,
 		      Predicate pred /*= Predicate::TRUE_PRED*/,
 		      MapperID id /*= 0*/,
 		      MappingTagID tag /*= 0*/)
   : TaskLauncher(TASKID, arg, pred, id, tag) {}
 
 /*static*/
-void InitCirculantKmatTask::register_tasks(void)
+void DenseMatrixTask::register_tasks(void)
 {
   TASKID =
     HighLevelRuntime::register_legion_task
-    <InitCirculantKmatTask::cpu_task>(AUTO_GENERATE_ID,
+    <DenseMatrixTask::cpu_task>(AUTO_GENERATE_ID,
 				      Processor::LOC_PROC, 
 				      true,
 				      true,
@@ -107,20 +102,19 @@ void InitCirculantKmatTask::register_tasks(void)
 				      TaskConfigOptions(true),
 				      "init_Kmat");
 #ifdef SHOW_REGISTER_TASKS
-  printf("Register task %d : Init_Dense_Block\n", TASKID);
+  printf("Register task %d : init_Dense_Block\n", TASKID);
 #endif
 }
 
-void InitCirculantKmatTask::
-cpu_task(const Task *task,
-	 const std::vector<PhysicalRegion> &regions,
-	 Context ctx, HighLevelRuntime *runtime)
+void DenseMatrixTask::cpu_task
+(const Task *task, const std::vector<PhysicalRegion> &regions,
+ Context ctx, HighLevelRuntime *runtime)
 {
   assert(regions.size() == 1);
   assert(task->regions.size() == 1);
 
   TaskArgs<MAX_TREE_SIZE> *args = (TaskArgs<MAX_TREE_SIZE> *)task->args;
-  int row_beg_global = args->row_beg_global;
+  int row_beg_global = args->row;
   int rank = args->rank;
   double diag = args->diag;
   Node *treeArray = args->treeArray;
@@ -142,32 +136,32 @@ cpu_task(const Task *task,
   assert(k_ptr != NULL);
   assert(rect_k == subrect);
 
-  int leading_dimension  = offsets[1].offset / sizeof(double);
-  int k_nrow = rect_k.dim_size(0);
-  assert( leading_dimension == k_nrow );
+  int LD  = offsets[1].offset / sizeof(double);
+  int krow = rect_k.dim_size(0);
+  assert( LD == krow );
+
   // initialize Kmat
   memset(k_ptr, 0, rect_k.dim_size(0)*rect_k.dim_size(1)*sizeof(double));
-  fill_circulant_Kmat(vroot, row_beg_global, rank, diag, k_ptr, leading_dimension);
+  fill_circulant_Kmat(vroot, row_beg_global, rank, diag, k_ptr, LD);
 }
 
-
-/* ---- InitCirculantMatrixTask implementation ---- */
+/* ---- CirculantMatrixTask implementation ---- */
 
 /*static*/
-int InitCirculantMatrixTask::TASKID;
+int CirculantMatrixTask::TASKID;
 
-InitCirculantMatrixTask::
-InitCirculantMatrixTask(TaskArgument arg,
+CirculantMatrixTask::
+CirculantMatrixTask(TaskArgument arg,
 			Predicate pred /*= Predicate::TRUE_PRED*/,
 			MapperID id /*= 0*/,
 			MappingTagID tag /*= 0*/)
   : TaskLauncher(TASKID, arg, pred, id, tag) {}
 
 /*static*/
-void InitCirculantMatrixTask::register_tasks(void)
+void CirculantMatrixTask::register_tasks(void)
 {
   TASKID = HighLevelRuntime::register_legion_task
-    <InitCirculantMatrixTask::cpu_task>(AUTO_GENERATE_ID,
+    <CirculantMatrixTask::cpu_task>(AUTO_GENERATE_ID,
 					Processor::LOC_PROC, 
 					true,
 					true,
@@ -179,7 +173,7 @@ void InitCirculantMatrixTask::register_tasks(void)
 #endif
 }
 
-void InitCirculantMatrixTask::
+void CirculantMatrixTask::
 cpu_task(const Task *task,
 	 const std::vector<PhysicalRegion> &regions,
 	 Context ctx, HighLevelRuntime *runtime)
@@ -224,3 +218,46 @@ cpu_task(const Task *task,
   }
 }
 
+/*
+void fill_circulant_Kmat
+(Node * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {
+
+  if (vnode->is_real_leaf()) {
+
+    int ksize = vnode->nrow;
+    
+    // init U as a circulant matrix
+    double *U = (double *) malloc(ksize*r * sizeof(double));
+    for (int j=0; j<r; j++) {
+      for (int i=0; i<ksize; i++) {
+	U[i+j*ksize] = (vnode->row_beg+row_beg_glo+i+j) % r;
+      }
+    }
+
+    // init the diagonal entries
+    for (int i=0; i<ksize; i++)
+      Kmat[vnode->row_beg + i + LD*i] = diag;
+    
+    char transa = 'n';
+    char transb = 't';
+    int  m = ksize;
+    int  n = ksize;
+    int  k = r;
+    int  lda = ksize;
+    int  ldb = ksize;
+    int  ldc = LD;
+    double alpha = 1.0;
+    double beta  = 1.0;
+    double *A = U;
+    double *B = U;
+    double *C = Kmat + vnode->row_beg;
+    blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+    
+    free(U);
+    return;
+  }
+
+  fill_circulant_Kmat(vnode->lchild, row_beg_glo, r, diag, Kmat, LD);
+  fill_circulant_Kmat(vnode->rchild, row_beg_glo, r, diag, Kmat, LD);
+}
+*/

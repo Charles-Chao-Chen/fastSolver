@@ -1,6 +1,6 @@
 #include "gemm.h"
 #include "zero_matrix_task.h"
-#include "htree_helper.h"
+#include "node.h"
 #include "lapack_blas.h"
 #include "timer.hpp"
 #include "macros.h"
@@ -158,14 +158,14 @@ static void gemm_recursive
     assert(result->data            != LogicalRegion::NO_REGION);
 
     typedef GEMM_Reduce_Task GRT;
-    GRT::TaskArgs args = {alpha, range.begin, range.size};
+    GRT::TaskArgs args = {alpha, range.begin(), range.size()};
     GRT launcher(TaskArgument(
 			      &args,
 			      sizeof(args)
 			      ),
 		 Predicate::TRUE_PRED,
 		 0,
-		 task_tag.begin);
+		 task_tag.begin());
     
     launcher.add_region_requirement(
       RegionRequirement(v->lowrank_matrix->data,
@@ -215,10 +215,10 @@ void gemm_reduce
   Timer t; t.start();
   if (result == 0) { // create and initialize the result
     int nrow = v->ncol;
-    int ncol = ru.size;
+    int ncol = ru.size();
     assert(v->nrow == u->nrow);
     create_matrix(result, nrow, ncol, ctx, runtime); 
-    result->zero(taskTag, ctx, runtime);
+    result->zero(taskTag.begin(), ctx, runtime);
   } else {
     scale_matrix(beta, result->data, ctx, runtime);
   }
@@ -227,7 +227,6 @@ void gemm_reduce
   gemm_recursive(alpha, v, u, ru, result, taskTag,
 		 ctx, runtime);
 }
-
 
 // d = beta * d + alpha* u * eta 
 void gemm_broadcast
@@ -242,16 +241,16 @@ void gemm_broadcast
     assert(u->lowrank_matrix->data == v->lowrank_matrix->data);
 
     typedef GEMM_Broadcast_Task GBT;
-    GBT::TaskArgs args = {alpha,    beta,
-			  ru.begin, ru.size,
-			  rv.begin, rv.size};
+    GBT::TaskArgs args = {alpha,      beta,
+			  ru.begin(), ru.size(),
+			  rv.begin(), rv.size()};
     GBT launcher(TaskArgument(
 			      &args,
 			      sizeof(args)
 			      ),
 		 Predicate::TRUE_PRED,
 		 0,
-		 tag.begin);
+		 tag.begin());
 
     launcher.add_region_requirement(
                RegionRequirement(u->lowrank_matrix->data,

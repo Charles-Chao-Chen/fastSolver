@@ -22,7 +22,7 @@ GEN_SRC	:= 	single_launch.cc \
 		../src/legion_matrix/save_region_task.cc  	\
 		../src/legion_matrix/legion_matrix.cc   	\
 		../src/htree/hodlr_matrix.cc 	\
-		../src/htree/htree_helper.cc  	\
+		../src/htree/node.cc  	\
 		../src/solver/solver_tasks.cc      \
 		../src/solver/gemm.cc              \
 		../src/solver/fast_solver.cc       \
@@ -168,6 +168,7 @@ clean:
 	../src/htree/*~ ../src/legion_matrix/*~  \
 	../include/*~ ../include/solver/*~  \
 	../include/htree/*~ ../include/legion_matrix/*~  \
+	../include/core/*~
 
 cleanall:
 	@$(RM) -rf $(ALL_OBJS) *~
@@ -189,7 +190,7 @@ tar:
 					launch_node_task.h	\
 		zero_matrix_task.cc	zero_matrix_task.h 	\
 		hodlr_matrix.cc 	hodlr_matrix.h 		\
-		htree_helper.cc		htree_helper.h		\
+		node.cc			node.h			\
 		legion_matrix.cc	legion_matrix.h		\
 		init_matrix_tasks.cc	init_matrix_tasks.h 	\
 		save_region_task.cc	save_region_task.h	\

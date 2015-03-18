@@ -1,14 +1,14 @@
 #include <algorithm>
 #include <assert.h>
 #include <list>
+
 #include "fast_solver.h"
 #include "solver_tasks.h"
 #include "gemm.h"
-#include "launch_node_task.h"
 #include "zero_matrix_task.h"
 #include "init_matrix_tasks.h"
 #include "save_region_task.h"
-#include "htree_helper.h"
+#include "node.h"
 #include "lapack_blas.h"
 #include "timer.hpp"
 #include "macros.h"

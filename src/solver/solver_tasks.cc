@@ -1,5 +1,5 @@
 #include "solver_tasks.h"
-#include "htree_helper.h"
+#include "node.h"
 #include "lapack_blas.h"
 #include "macros.h"
 
@@ -65,7 +65,7 @@ void solve_node_matrix
   LUSolveTask launcher(TaskArgument(NULL, 0),
 		       Predicate::TRUE_PRED,
 		       0,
-		       task_tag.begin);
+		       task_tag.begin());
     
   launcher.add_region_requirement(RegionRequirement
 				  (V0Tu0->data,
@@ -579,7 +579,7 @@ void solve_legion_leaf
 			   sizeof(Node)*(max_tree_size*2)),
 			 Predicate::TRUE_PRED,
 			 0,
-			 task_tag.begin
+			 task_tag.begin()
 			 );
 
   launcher.add_region_requirement(

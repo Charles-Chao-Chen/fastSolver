@@ -1,4 +1,4 @@
-#include "htree_helper.h"
+#include "node.h"
 #include "macros.h"
 
 // this function computes the begining row index in region of
@@ -16,7 +16,6 @@ void build_subtree(Node *node, int row_beg) {
   }
 }
 
-
 int count_matrix_column(const Node *node, int col_size) {
 
   col_size += node->ncol;
@@ -30,7 +29,6 @@ int count_matrix_column(const Node *node, int col_size) {
   }
 }
 
-
 int max_row_size(const Node * vnode) {
 
   if (vnode->is_real_leaf()) {
@@ -43,10 +41,7 @@ int max_row_size(const Node * vnode) {
   return std::max(m1, m2);
 }
 
-
-
-int
-tree_to_array(const Node * leaf, Node * arg, int idx) {
+int tree_to_array(const Node * leaf, Node * arg, int idx) {
 
   if (leaf->lchild != NULL && leaf->rchild != NULL) {
 
@@ -60,9 +55,7 @@ tree_to_array(const Node * leaf, Node * arg, int idx) {
   } else return 1;
 }
 
-
-void
-tree_to_array(const Node *tree, Node *array, int idx,
+void tree_to_array(const Node *tree, Node *array, int idx,
 	      int shift) {
 
   if (tree->lchild != NULL && tree->rchild != NULL) {
@@ -92,7 +85,6 @@ void array_to_tree(Node *arg, int idx) {
   array_to_tree(arg, 2*idx+2);
 }
 
-
 void array_to_tree(Node *arg, int idx, int shift) {
 
   if (arg[ idx+shift ].lchild != NULL) {
@@ -110,7 +102,6 @@ void array_to_tree(Node *arg, int idx, int shift) {
   array_to_tree(arg, 2*idx+2, shift);
 }
 
-
 int count_leaf(const Node *node) {
   if (node->is_real_leaf())
     return 1;
@@ -120,7 +111,6 @@ int count_leaf(const Node *node) {
     return n1+n2;
   }
 }
-
 
 void create_matrix
 (LMatrix *(&matrix), int nrow, int ncol,
@@ -143,7 +133,6 @@ void create_matrix
   matrix->data = runtime->create_logical_region(ctx, is, fs);
   assert(matrix->data != LogicalRegion::NO_REGION);
 }
-
 
 void save_HodlrMatrix
 (Node * node, std::string filename,

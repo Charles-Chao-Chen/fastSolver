@@ -7,15 +7,12 @@
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
-
 // Data at leaf nodes is stored in column major fashion.
 // This allows extracting a given column range.
 class LMatrix {
-
 public:
- LMatrix(int rows=0, int cols=0):
-  rows(rows), cols(cols), 
-  data(LogicalRegion::NO_REGION) {}
+ LMatrix(const int rows=0, const int cols=0,
+	 const LogicalRegion lr=LogicalRegion::NO_REGION);
 
   //TODO: deconstructor is not appropriate here, because
   // it has to take runtime and ctx as parameters.
@@ -23,16 +20,12 @@ public:
   //~LMatrix();
   // destroy();
 
-  // generate random matrix
-  void rand
-    (long int, const Range&, const Range&,
-     Context, HighLevelRuntime*);
+  // random matrix
+  void rand(const long, const Range&, const int,
+	     Context, HighLevelRuntime*);
 
-  // initialize zero matrix
-  // TODO: add (probably default)
-  // const Range& colRange parameter
-  void zero
-    (const Range&, Context, HighLevelRuntime*);
+  // zero matrix
+  void zero(const int, Context, HighLevelRuntime*);
 
   // initialize the a skinny circulant matrix 
   // e.g. [ 0 1 2
@@ -41,28 +34,27 @@ public:
   //        0 1 2
   //        1 2 0 ]
   void circulant
-    (int col_beg, int row_beg, int r, Range tag,
+    (const int col, const int row, const int r, const int tag,
      Context ctx, HighLevelRuntime *runtime);
 
-  // initialize dense block as: U * U^T + D 
+  // dense block as: U * U^T + D 
   void dense
-    (int col_beg, int row_beg, int r, Range tag,
+    (const int col, const int row, const int r, const int tag,
      Context ctx, HighLevelRuntime *runtime);
 
+  // output data to file
   void save
-    (const std::string, const Range, 
+    (const std::string&, const Range&,
      Context, HighLevelRuntime *, bool print_seed=false);
 
-  /* --- class members --- */  
+ public:
+  /* --- class members --- */
   int rows;  
   int cols;
   long seed;
   IndexSpace iSpace;
   FieldSpace fSpace;
-  LogicalRegion data; // storing the data
+  LogicalRegion data;
 };
-
-
-
 
 #endif // LEGION_MATRIX_H

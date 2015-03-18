@@ -18,7 +18,7 @@ void top_level_task(const Task *task,
 		    Context ctx, HighLevelRuntime *runtime) {  
  
   // assume the tree is balanced
-  int gloTreeLevel = 7;
+  int gloTreeLevel = 3;
   int numMachineNodes = 2;
 
   // random seed
@@ -27,8 +27,8 @@ void top_level_task(const Task *task,
   // ---------------------------------------------------------
   // Problem configuration
   int nRHS = 2;             // # of rhs
-  int rank = 300;
-  int threshold = 600;
+  int rank = 30; //300;
+  int threshold = 60; //600;
   int leafSize = 1;         // legion leaf size
   double diagonal = 1.0e4;
   // ---------------------------------------------------------  
@@ -62,14 +62,14 @@ void top_level_task(const Task *task,
   std::cout << "problem information:" << std::endl;
   int nleaf = hMatrix.get_num_leaf();
   std::cout << "  Legion leaf : "       << nleaf << std::endl
-	    << "  Legion leaf / node: " << nleaf / procs.size
+	    << "  Legion leaf / node: " << nleaf / procs.size()
 	    << std::endl;
   hMatrix.display_launch_time();
   fs.display_launch_time();
 
   assert( nRow%threshold == 0 );
   int nregion = nleaf;
-  if (false) {
+  if (true) {
     compute_L2_error(hMatrix, seed, nRow, nregion, nRHS,
          		   rank, diagonal, ctx, runtime);
   }

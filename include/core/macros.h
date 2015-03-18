@@ -4,34 +4,16 @@
 #include <sstream>
 #include <stdexcept>
 
-#include <stdlib.h>
-
-
 // there is only one single field id
 enum {
   FID_X,
 };
 
-
-// used in SaveRegionTask::TaskArgs
-// for the length of the file name
-//const int MAX_FILE_NAME_LENGTH = 50;
-
 // used in InitCirculantKmatTask::TaskArgs
 //  and NodeLaunchTask::TaskArgs
 // for the subtree stored in array
-const int MAX_TREE_SIZE = 150;
+const int MAX_TREE_SIZE = 50;
 
-
-
-/* Uniform random number generator */
-// this is not thread safe and is replaced by :
-//  srand48_r() and drand48_r() in init_matrix_tasks.cc
-/*
-#define frand(xmin,xmax)			\
-  ((double)xmin+(double)(xmax-xmin)*rand()/	\
-   (double)RAND_MAX) 
-*/
 
 /* Macros to throw exceptions */
 

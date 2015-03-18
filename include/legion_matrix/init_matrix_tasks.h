@@ -7,15 +7,13 @@
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
-
 void register_init_tasks();
-
 
 class RandomMatrixTask : public TaskLauncher {
  public:
   struct TaskArgs {
-    long int seed;
-    int ncol;
+    long  seed;
+    Range columns;
   };
   
   RandomMatrixTask(TaskArgument arg,
@@ -32,22 +30,20 @@ class RandomMatrixTask : public TaskLauncher {
 		       Context ctx, HighLevelRuntime *runtime);
 };
 
-class InitCirculantKmatTask : public TaskLauncher {
+class DenseMatrixTask : public TaskLauncher {
  public:
   template <int N>
     struct TaskArgs {
-      //int treeSize;
-      int row_beg_global;
+      int row;
       int rank;
-      //int LD; // leading dimension
       double diag;
       Node treeArray[N];
     };
   
-  InitCirculantKmatTask(TaskArgument arg,
-			Predicate pred = Predicate::TRUE_PRED,
-			MapperID id = 0,
-			MappingTagID tag = 0);
+  DenseMatrixTask(TaskArgument arg,
+		  Predicate pred = Predicate::TRUE_PRED,
+		  MapperID id = 0,
+		  MappingTagID tag = 0);
   
   static int TASKID;
   static void register_tasks(void);
@@ -58,7 +54,7 @@ class InitCirculantKmatTask : public TaskLauncher {
 		       Context ctx, HighLevelRuntime *runtime);
 };
 
-class InitCirculantMatrixTask : public TaskLauncher {
+class CirculantMatrixTask : public TaskLauncher {
  public:
   struct TaskArgs {
     int col_beg;
@@ -66,10 +62,10 @@ class InitCirculantMatrixTask : public TaskLauncher {
     int rank;
   };
     
-  InitCirculantMatrixTask(TaskArgument arg,
-			  Predicate pred = Predicate::TRUE_PRED,
-			  MapperID id = 0,
-			  MappingTagID tag = 0);
+  CirculantMatrixTask(TaskArgument arg,
+		      Predicate pred = Predicate::TRUE_PRED,
+		      MapperID id = 0,
+		      MappingTagID tag = 0);
   
   static int TASKID;
   static void register_tasks(void);
@@ -79,9 +75,5 @@ class InitCirculantMatrixTask : public TaskLauncher {
 		       const std::vector<PhysicalRegion> &regions,
 		       Context ctx, HighLevelRuntime *runtime);
 };
-
-
-
-
 
 #endif // INIT_MATRIX_TASKS_H

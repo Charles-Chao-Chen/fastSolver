@@ -34,7 +34,7 @@ void SaveRegionTask::register_tasks(void)
 #endif
 }
 
-void save_data
+static void save_data
 (double *ptr, int nrow, int col_beg, int ncol,
  std::string filename, long int seed, bool print_seed) {
 
@@ -75,8 +75,8 @@ void SaveRegionTask::cpu_task
   assert(task->regions.size() == 1);
   const TaskArgs* task_args = (TaskArgs *)task->args;
   const char* filename = task_args->filename;
-  int col_beg          = task_args->col_range.begin;
-  int ncol             = task_args->col_range.size;
+  int col_beg          = task_args->columns.begin();
+  int ncol             = task_args->columns.size();
   long int seed        = task_args->seed;
   bool print_seed      = task_args->print_seed;
   

@@ -4,16 +4,20 @@
 #include "save_region_task.h"
 #include "macros.h"
 
+LMatrix::LMatrix(const int rows_, const int cols_,
+		 const LogicalRegion lr)
+  : rows(rows_), cols(cols_), data(lr) {}
+
 void LMatrix::rand
-  (long int seed, const Range &range, const Range &taskTag,
-   Context ctx, HighLevelRuntime *runtime) {
+(const long seed, const Range &columns, const int taskTag,
+ Context ctx, HighLevelRuntime *runtime) {
 
   this->seed = seed;
-  RandomMatrixTask::TaskArgs args = {seed, range.size};
+  RandomMatrixTask::TaskArgs args = {seed, columns};
   RandomMatrixTask launcher(TaskArgument(&args, sizeof(args)),
 			    Predicate::TRUE_PRED,
 			    0,
-			    taskTag.begin);
+			    taskTag);
     
   launcher.add_region_requirement(RegionRequirement
 				  (data,
@@ -30,13 +34,13 @@ void LMatrix::rand
 }
 
 void LMatrix::zero
-(const Range &taskTag, Context ctx, HighLevelRuntime *runtime) {
+(const int taskTag, Context ctx, HighLevelRuntime *runtime) {
   
   assert(data != LogicalRegion::NO_REGION);
   ZeroMatrixTask launcher(TaskArgument(NULL, 0),
 			  Predicate::TRUE_PRED,
 			  0,
-			  taskTag.begin);
+			  taskTag);
   launcher.add_region_requirement(
 	     RegionRequirement(data,
 			       WRITE_DISCARD,
@@ -51,16 +55,16 @@ void LMatrix::zero
 }
 
 void LMatrix::circulant
-  (int col_beg, int row_beg, int rank, Range taskTag,
-   Context ctx, HighLevelRuntime *runtime) {    
+  (const int col, const int row, const int rank, const int taskTag,
+   Context ctx, HighLevelRuntime *runtime) {
 
-  typedef InitCirculantMatrixTask ICMT;
-  ICMT::TaskArgs args = {col_beg, row_beg, rank};
+  typedef CirculantMatrixTask ICMT;
+  ICMT::TaskArgs args = {col, row, rank};
   ICMT launcher(TaskArgument(&args,
 			     sizeof(args)),
 		Predicate::TRUE_PRED,
 		0,
-		taskTag.begin);
+		taskTag);
   launcher.add_region_requirement(RegionRequirement
 				  (data,
 				   READ_WRITE,
@@ -76,13 +80,13 @@ void LMatrix::circulant
 }
 
 void LMatrix::save
-(const std::string filename, const Range rg, 
+(const std::string& filename, const Range& columns,
  Context ctx, HighLevelRuntime *runtime, bool print_seed) {
 
   SaveRegionTask::TaskArgs args;
   strcpy(args.filename, filename.c_str());
-  args.col_range = rg;
-  args.seed = seed;
+  args.columns = columns;
+  args.seed    = seed;
   args.print_seed = print_seed;
     
   SaveRegionTask launcher(TaskArgument(&args, sizeof(args)));

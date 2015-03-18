@@ -7,17 +7,15 @@
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
-
 void register_save_region_task();
-
 
 class SaveRegionTask : public TaskLauncher {
     
  public:
   struct TaskArgs {
-    long int seed;
+    long seed;
     bool print_seed;
-    Range col_range;
+    Range columns;
     char filename[50];
   };
 
@@ -35,5 +33,4 @@ class SaveRegionTask : public TaskLauncher {
 		       Context ctx, HighLevelRuntime *runtime);
 };
   
-
 #endif //_SAVE_TASK_H

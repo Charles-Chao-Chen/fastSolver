@@ -11,8 +11,6 @@ int max_row_size(const Node *);
 
 int count_leaf(const Node *node);
 
-//int count_launch_node(Node *node);
-
 // TODO: move into LMatrix class
 void create_matrix
   (LMatrix *(&matrix), int nrow, int ncol,
@@ -27,9 +25,5 @@ void save_HodlrMatrix
 (Node * node, std::string filename,
  Context ctx, HighLevelRuntime *runtime,
  Range rg, bool print_seed=false);
-
-//void print_Vmat
-//(Node *node, std::string filename);
-
 
 #endif // _HTREE_HELPER

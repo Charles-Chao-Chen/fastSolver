@@ -3,12 +3,11 @@
 
 #include "legion.h"
 #include "macros.h"
+
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
-
 void register_zero_matrix_task();
-
 
 class ZeroMatrixTask : public TaskLauncher {
  public:
@@ -22,10 +21,8 @@ class ZeroMatrixTask : public TaskLauncher {
   static void cpu_task(const Task *task,
 		       const std::vector<PhysicalRegion> &regions,
 		       Context ctx, HighLevelRuntime *runtime);
-  // public:
  private:
   static int TASKID;
 };
-
 
 #endif // ZERO_MATRIX_TASK_H

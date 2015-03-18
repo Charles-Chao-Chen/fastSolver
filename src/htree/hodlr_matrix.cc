@@ -1,5 +1,5 @@
 #include "hodlr_matrix.h"
-#include "htree_helper.h"
+#include "node.h"
 #include "init_matrix_tasks.h"
 #include "lapack_blas.h"
 #include "macros.h"
@@ -223,7 +223,7 @@ init_rhs(const long seed, const Range& procs,
     assert(node->lowrank_matrix       != NULL);
     assert(node->lowrank_matrix->cols >= ncol);
     Range range(0, ncol);
-    node->lowrank_matrix->rand(randSeed, range, taskTag,
+    node->lowrank_matrix->rand(randSeed, range, taskTag.begin(),
 			       ctx, runtime);
   } else {
     Range ltag = taskTag.lchild();
@@ -245,7 +245,8 @@ void HodlrMatrix::init_Umat
     assert(node->lowrank_matrix != NULL);
     int col_beg = rhs_cols;
     node->lowrank_matrix->circulant(col_beg, row_beg,
-				    rank, tag, ctx, runtime);
+				    rank, tag.begin(),
+				    ctx, runtime);
   } else {
     Range ltag = tag.lchild();
     Range rtag = tag.rchild();
@@ -275,7 +276,7 @@ init_Vmat(Node *node, double diag, Range tag,
     //  there is no data here.
     if (node->lowrank_matrix->cols > 0) {
       node->lowrank_matrix->circulant(0, row_beg, rank,
-				      tag, ctx, runtime);
+				      tag.begin(), ctx, runtime);
     }
     // init K
     init_circulant_Kmat(node, row_beg, rank, diag,
@@ -293,7 +294,7 @@ init_Vmat(Node *node, double diag, Range tag,
 
 
 void init_circulant_Kmat
-  (Node *vLeaf, int row_beg_glo,
+  (Node *vLeaf, int row,
    int rank, double diag, Range mapping_tag,
    Context ctx, HighLevelRuntime *runtime)
 {
@@ -301,7 +302,7 @@ void init_circulant_Kmat
   int max_tree_size = nleaf * 2;
   assert(max_tree_size < MAX_TREE_SIZE);
   
-  typedef InitCirculantKmatTask ICKT; 
+  typedef DenseMatrixTask ICKT; 
   ICKT::TaskArgs<MAX_TREE_SIZE> args;
 
   args.treeArray[0] = *vLeaf;
@@ -311,13 +312,13 @@ void init_circulant_Kmat
   // encode the array size
   //args.treeArray[0].col_beg = max_tree_size;
   //args.treeSize = max_tree_size;
-  args.row_beg_global = row_beg_glo;
+  args.row  = row;
   args.rank = rank;
   args.diag = diag;
   ICKT launcher(TaskArgument(&args, sizeof(args)),
 		Predicate::TRUE_PRED,
 		0,
-		mapping_tag.begin);
+		mapping_tag.begin());
   
   // k region
   launcher.add_region_requirement(RegionRequirement
@@ -677,7 +678,7 @@ void set_circulant_Hmatrix_data
     int rank = Hmat->ncol;
     //assert(Hmat->ncol == rank);
     Hmat->lowrank_matrix->circulant(0, glo + loc, rank,
-				    tag, ctx, runtime);
+				    tag.begin(), ctx, runtime);
     
   } else {
     Range ltag = tag.lchild();
