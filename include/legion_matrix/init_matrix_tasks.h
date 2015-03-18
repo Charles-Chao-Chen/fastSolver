@@ -41,7 +41,7 @@ class InitCirculantKmatTask : public TaskLauncher {
       int rank;
       //int LD; // leading dimension
       double diag;
-      FSTreeNode treeArray[N];
+      Node treeArray[N];
     };
   
   InitCirculantKmatTask(TaskArgument arg,

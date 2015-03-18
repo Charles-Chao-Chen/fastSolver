@@ -4,7 +4,7 @@
 // this function computes the begining row index in region of
 // Legion leaf i.e. building the subtree with the legion node
 // as the root. This subtree is used in leaf solve (serial) task
-void build_subtree(FSTreeNode *node, int row_beg) {
+void build_subtree(Node *node, int row_beg) {
 
   node->row_beg = row_beg;
   
@@ -17,7 +17,7 @@ void build_subtree(FSTreeNode *node, int row_beg) {
 }
 
 
-int count_matrix_column(const FSTreeNode *node, int col_size) {
+int count_matrix_column(const Node *node, int col_size) {
 
   col_size += node->ncol;
   
@@ -31,7 +31,7 @@ int count_matrix_column(const FSTreeNode *node, int col_size) {
 }
 
 
-int max_row_size(const FSTreeNode * vnode) {
+int max_row_size(const Node * vnode) {
 
   if (vnode->is_real_leaf()) {
     return vnode->nrow;
@@ -46,7 +46,7 @@ int max_row_size(const FSTreeNode * vnode) {
 
 
 int
-tree_to_array(const FSTreeNode * leaf, FSTreeNode * arg, int idx) {
+tree_to_array(const Node * leaf, Node * arg, int idx) {
 
   if (leaf->lchild != NULL && leaf->rchild != NULL) {
 
@@ -62,7 +62,7 @@ tree_to_array(const FSTreeNode * leaf, FSTreeNode * arg, int idx) {
 
 
 void
-tree_to_array(const FSTreeNode *tree, FSTreeNode *array, int idx,
+tree_to_array(const Node *tree, Node *array, int idx,
 	      int shift) {
 
   if (tree->lchild != NULL && tree->rchild != NULL) {
@@ -75,7 +75,7 @@ tree_to_array(const FSTreeNode *tree, FSTreeNode *array, int idx,
   }
 }
 
-void array_to_tree(FSTreeNode *arg, int idx) {
+void array_to_tree(Node *arg, int idx) {
 
   if (arg[ idx ].lchild != NULL) {
     
@@ -93,7 +93,7 @@ void array_to_tree(FSTreeNode *arg, int idx) {
 }
 
 
-void array_to_tree(FSTreeNode *arg, int idx, int shift) {
+void array_to_tree(Node *arg, int idx, int shift) {
 
   if (arg[ idx+shift ].lchild != NULL) {
     
@@ -111,7 +111,7 @@ void array_to_tree(FSTreeNode *arg, int idx, int shift) {
 }
 
 
-int count_leaf(const FSTreeNode *node) {
+int count_leaf(const Node *node) {
   if (node->is_real_leaf())
     return 1;
   else {
@@ -146,7 +146,7 @@ void create_matrix
 
 
 void save_HodlrMatrix
-(FSTreeNode * node, std::string filename,
+(Node * node, std::string filename,
  Context ctx, HighLevelRuntime *runtime,
  Range rg, bool print_seed)
 {
@@ -162,7 +162,7 @@ void save_HodlrMatrix
 }
 
 /*
-int count_launch_node(FSTreeNode *node) {
+int count_launch_node(Node *node) {
   if ( ! node->is_launch_node() ) {
     int nl = count_launch_node(node->lchild);
     int nr = count_launch_node(node->rchild);
@@ -174,7 +174,7 @@ int count_launch_node(FSTreeNode *node) {
 */
 
 /*
-  void HodlrMatrix::print_Vmat(FSTreeNode *node, std::string filename) {
+  void HodlrMatrix::print_Vmat(Node *node, std::string filename) {
 
   //  if (node == vroot)
   //save_region(node, filename, ctx, runtime); // print big V matrix

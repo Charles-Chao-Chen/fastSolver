@@ -123,10 +123,10 @@ cpu_task(const Task *task,
   int row_beg_global = args->row_beg_global;
   int rank = args->rank;
   double diag = args->diag;
-  FSTreeNode *treeArray = args->treeArray;
+  Node *treeArray = args->treeArray;
   assert(task->arglen == sizeof(TaskArgs<MAX_TREE_SIZE>));
 
-  FSTreeNode *vroot = treeArray;
+  Node *vroot = treeArray;
   array_to_tree(treeArray, 0);
   
   RegionAccessor<AccessorType::Generic, double> acc_k = 

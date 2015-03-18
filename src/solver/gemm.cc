@@ -143,7 +143,7 @@ void register_gemm_tasks() {
 
 static void gemm_recursive
   (const double alpha,
-   const FSTreeNode * v, const FSTreeNode * u,
+   const Node * v, const Node * u,
    const Range &range,
    LMatrix *(&result),
    const Range task_tag, Context ctx,
@@ -207,7 +207,7 @@ static void gemm_recursive
 
 void gemm_reduce
   (const double alpha,
-   const FSTreeNode *v, const FSTreeNode *u, const Range &ru,
+   const Node *v, const Node *u, const Range &ru,
    const double beta,   LMatrix *(&result),  const Range taskTag,
    double& tCreate,
    Context ctx, HighLevelRuntime *runtime) {
@@ -231,9 +231,9 @@ void gemm_reduce
 
 // d = beta * d + alpha* u * eta 
 void gemm_broadcast
-  (const double alpha, const FSTreeNode * u, const Range &ru,
+  (const double alpha, const Node * u, const Range &ru,
    LMatrix *(&eta),
-   const double beta,  const FSTreeNode * v, const Range &rv,
+   const double beta,  const Node * v, const Range &rv,
    const Range tag,
    Context ctx, HighLevelRuntime *runtime) {
 

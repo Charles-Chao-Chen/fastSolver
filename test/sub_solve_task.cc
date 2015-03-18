@@ -1,7 +1,7 @@
 #include "sub_solve_task.hpp"
 
 void ExtractRegions
-(const FSTreeNode* node, LMatrixArray& matArr) {
+(const Node* node, LMatrixArray& matArr) {
   if (node->is_legion_leaf()) {
     matArr.append( (*node->lowrank_matrix) );
   }

@@ -335,7 +335,7 @@ void LeafSolveTask::register_tasks(void)
 }
 
 static void serial_leaf_solve
-  (FSTreeNode * unode, FSTreeNode * vnode,
+  (Node * unode, Node * vnode,
    double * u_ptr, double * v_ptr, double * k_ptr, int LD);
 
 void LeafSolveTask::cpu_task
@@ -345,18 +345,18 @@ void LeafSolveTask::cpu_task
 
   assert(regions.size() == 3);
   assert(task->regions.size() == 3);
-  FSTreeNode *arg = (FSTreeNode *)task->args;
+  Node *arg = (Node *)task->args;
   
   // decode tree size
   int tree_size = arg[0].col_beg;
   //std::cout << "Tree size: " << tree_size << std::endl;
   arg[0].col_beg = 0;
-  assert(task->arglen == sizeof(FSTreeNode)*(tree_size*2));
+  assert(task->arglen == sizeof(Node)*(tree_size*2));
 
-  FSTreeNode *vroot = arg;
+  Node *vroot = arg;
   array_to_tree(arg, 0);
 
-  FSTreeNode *uroot = &arg[tree_size];
+  Node *uroot = &arg[tree_size];
   //array_to_tree(arg, 0, tree_size);
   array_to_tree(arg+tree_size, 0);
   
@@ -413,7 +413,7 @@ void LeafSolveTask::cpu_task
 
 
 static void serial_leaf_solve
-  (FSTreeNode * unode, FSTreeNode * vnode,
+  (Node * unode, Node * vnode,
    double * u_ptr, double * v_ptr, double * k_ptr, int LD)
 {
   /*
@@ -552,7 +552,7 @@ static void serial_leaf_solve
 
 // this function wrapper launches leaf tasks
 void solve_legion_leaf
-(const FSTreeNode * uleaf, const FSTreeNode * vleaf,
+(const Node * uleaf, const Node * vleaf,
  const Range task_tag,
  Context ctx, HighLevelRuntime *runtime) {
   
@@ -560,7 +560,7 @@ void solve_legion_leaf
   //assert(nleaf == nleaf_per_node);
   //int max_tree_size = nleaf_per_node * 2;
   int max_tree_size = nleaf * 2;
-  FSTreeNode arg[max_tree_size*2+2];
+  Node arg[max_tree_size*2+2];
 
   arg[0] = *vleaf;
   int tree_size = tree_to_array(vleaf, arg, 0);
@@ -576,7 +576,7 @@ void solve_legion_leaf
   
   LeafSolveTask launcher(TaskArgument(
 			   &arg[0],
-			   sizeof(FSTreeNode)*(max_tree_size*2)),
+			   sizeof(Node)*(max_tree_size*2)),
 			 Predicate::TRUE_PRED,
 			 0,
 			 task_tag.begin

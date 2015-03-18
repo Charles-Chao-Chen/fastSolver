@@ -13,7 +13,7 @@ class LaunchNodeTask : public TaskLauncher {
   struct TaskArgs {
     Range taskTag;
     int   treeSize;
-    FSTreeNode treeArray[N];
+    Node treeArray[N];
   };
   
   LaunchNodeTask(TaskArgument arg,

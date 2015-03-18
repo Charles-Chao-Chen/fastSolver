@@ -15,20 +15,20 @@
 #include "unistd.h"
 
 void solve_top_bfs
-(const FSTreeNode *uroot, const FSTreeNode *vroot, const int launchLevel,
+(const Node *uroot, const Node *vroot, const int launchLevel,
  const Range& mappingTag, Context ctx, HighLevelRuntime *runtime);
 
 void solve_bfs
-(FSTreeNode * uroot, FSTreeNode *vroot,
+(Node * uroot, Node *vroot,
  Range mappingTag, Context ctx, HighLevelRuntime *runtime);
 
 void visit
-(FSTreeNode *unode, FSTreeNode *vnode, const Range mappingTag,
+(Node *unode, Node *vnode, const Range mappingTag,
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime);
 
 void visit_const
-(const FSTreeNode *unode, const FSTreeNode *vnode,
+(const Node *unode, const Node *vnode,
  const Range mappingTag,
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime);
@@ -81,15 +81,15 @@ void FastSolver::solve_top
 }
 
 void solve_top_bfs
-(const FSTreeNode *uroot, const FSTreeNode *vroot, const int launchLevel,
+(const Node *uroot, const Node *vroot, const int launchLevel,
  const Range& mappingTag, Context ctx, HighLevelRuntime *runtime) {
 
-  std::list<const FSTreeNode *> ulist;
-  std::list<const FSTreeNode *> vlist;
+  std::list<const Node *> ulist;
+  std::list<const Node *> vlist;
   ulist.push_back(uroot);
   vlist.push_back(vroot);
-  typedef std::list<const FSTreeNode *>::iterator         Titer;
-  typedef std::list<const FSTreeNode *>::reverse_iterator RTiter;
+  typedef std::list<const Node *>::iterator         Titer;
+  typedef std::list<const Node *>::reverse_iterator RTiter;
 
   std::list<Range> rglist;
   rglist.push_back(mappingTag);
@@ -103,10 +103,10 @@ void solve_top_bfs
   for (; uit != ulist.end(); uit++, vit++, rit++) {
     Range rglchild = rit->lchild();
     Range rgrchild = rit->rchild();
-    FSTreeNode *ulchild = (*uit)->lchild;
-    FSTreeNode *urchild = (*uit)->rchild;
-    FSTreeNode *vlchild = (*vit)->lchild;
-    FSTreeNode *vrchild = (*vit)->rchild;
+    Node *ulchild = (*uit)->lchild;
+    Node *urchild = (*uit)->rchild;
+    Node *vlchild = (*vit)->lchild;
+    Node *vrchild = (*vit)->rchild;
     if ( level < launchLevel ) {
       ulist.push_back( ulchild );
       ulist.push_back( urchild );
@@ -134,15 +134,15 @@ void solve_top_bfs
 }
 
 void solve_bfs
-(FSTreeNode *uroot, FSTreeNode *vroot,
+(Node *uroot, Node *vroot,
  Range mappingTag, Context ctx, HighLevelRuntime *runtime) {
 
-  std::list<FSTreeNode *> ulist;
-  std::list<FSTreeNode *> vlist;
+  std::list<Node *> ulist;
+  std::list<Node *> vlist;
   ulist.push_back(uroot);
   vlist.push_back(vroot);
-  typedef std::list<FSTreeNode *>::iterator         Titer;
-  typedef std::list<FSTreeNode *>::reverse_iterator RTiter;
+  typedef std::list<Node *>::iterator         Titer;
+  typedef std::list<Node *>::reverse_iterator RTiter;
 
   std::list<Range> rglist;
   rglist.push_back(mappingTag);
@@ -155,10 +155,10 @@ void solve_bfs
   for (; uit != ulist.end(); uit++, vit++, rit++) {
     Range rglchild = rit->lchild();
     Range rgrchild = rit->rchild();
-    FSTreeNode *ulchild = (*uit)->lchild;
-    FSTreeNode *urchild = (*uit)->rchild;
-    FSTreeNode *vlchild = (*vit)->lchild;
-    FSTreeNode *vrchild = (*vit)->rchild;
+    Node *ulchild = (*uit)->lchild;
+    Node *urchild = (*uit)->rchild;
+    Node *vlchild = (*vit)->lchild;
+    Node *vrchild = (*vit)->rchild;
     if (      ! (*uit)->is_legion_leaf() ) {
       assert( ! (*vit)->is_legion_leaf() );
       ulist.push_back( ulchild );
@@ -189,7 +189,7 @@ void solve_bfs
 
 
 void visit
-(FSTreeNode *unode, FSTreeNode *vnode, const Range mappingTag,
+(Node *unode, Node *vnode, const Range mappingTag,
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime)
 {
@@ -200,10 +200,10 @@ void visit
     return;
   }
 
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;  
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
+  Node * b0 = unode->lchild;
+  Node * b1 = unode->rchild;  
+  Node * V0 = vnode->lchild;
+  Node * V1 = vnode->rchild;
 
   const Range mappingTag0 = mappingTag.lchild();
   const Range mappingTag1 = mappingTag.rchild();
@@ -255,7 +255,7 @@ void visit
 }
 
 void visit_const
-(const FSTreeNode *unode, const FSTreeNode *vnode,
+(const Node *unode, const Node *vnode,
  const Range mappingTag,
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime)
@@ -267,10 +267,10 @@ void visit_const
     return;
   }
 
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;  
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
+  Node * b0 = unode->lchild;
+  Node * b1 = unode->rchild;  
+  Node * V0 = vnode->lchild;
+  Node * V1 = vnode->rchild;
 
   const Range mappingTag0 = mappingTag.lchild();
   const Range mappingTag1 = mappingTag.rchild();
@@ -338,7 +338,7 @@ void FastSolver::solve_dfs
 
 
 void FastSolver::solve_dfs
-(FSTreeNode * unode, FSTreeNode * vnode,
+(Node * unode, Node * vnode,
  Range taskTag, Context ctx, HighLevelRuntime *runtime) {
 
 
@@ -351,10 +351,10 @@ void FastSolver::solve_dfs
   Range tag0 = taskTag.lchild();
   Range tag1 = taskTag.rchild();
   
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
+  Node * b0 = unode->lchild;
+  Node * b1 = unode->rchild;
+  Node * V0 = vnode->lchild;
+  Node * V1 = vnode->rchild;
 
   solve_dfs(b0, V0, tag0, ctx, runtime);
   solve_dfs(b1, V1, tag1, ctx, runtime);
@@ -434,34 +434,34 @@ void FastSolver::solve_dfs
 
 /*
 void add_subtree_regions
-(LaunchNodeTask &launcher, FSTreeNode *uroot, FSTreeNode *vroot);
+(LaunchNodeTask &launcher, Node *uroot, Node *vroot);
 
 void add_umat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *unode);
+(LaunchNodeTask &launcher, Node *unode);
 
 void add_vmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *vnode);
+(LaunchNodeTask &launcher, Node *vnode);
 
 void add_hmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *hnode);
+(LaunchNodeTask &launcher, Node *hnode);
 
 void add_kmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *vnode);
+(LaunchNodeTask &launcher, Node *vnode);
 */
 
 
 /*
 void solve_bfs_launch
-(FSTreeNode *uroot, FSTreeNode *vroot,
+(Node *uroot, Node *vroot,
  Range mappingTag, Context ctx, HighLevelRuntime *runtime);
 
 void visit_launch_node
-(FSTreeNode *unode, FSTreeNode *vnode, const Range mappingTag,
+(Node *unode, Node *vnode, const Range mappingTag,
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime);
 
 void launch_solve_tasks
-(FSTreeNode *unode, FSTreeNode *vnode, const Range task_tag,
+(Node *unode, Node *vnode, const Range task_tag,
  Context ctx, HighLevelRuntime *runtime);
 */
 
@@ -472,15 +472,15 @@ void launch_solve_tasks
 //  push operations
 /*
 void solve_bfs_launch
-(FSTreeNode *uroot, FSTreeNode *vroot,
+(Node *uroot, Node *vroot,
  Range mappingTag, Context ctx, HighLevelRuntime *runtime) {
 
-  std::list<FSTreeNode *> ulist;
-  std::list<FSTreeNode *> vlist;
+  std::list<Node *> ulist;
+  std::list<Node *> vlist;
   ulist.push_back(uroot);
   vlist.push_back(vroot);
-  typedef std::list<FSTreeNode *>::iterator         Titer;
-  typedef std::list<FSTreeNode *>::reverse_iterator RTiter;
+  typedef std::list<Node *>::iterator         Titer;
+  typedef std::list<Node *>::reverse_iterator RTiter;
 
   std::list<Range> rglist;
   rglist.push_back(mappingTag);
@@ -493,10 +493,10 @@ void solve_bfs_launch
   for (; uit != ulist.end(); uit++, vit++, rit++) {
     Range rglchild = rit->lchild();
     Range rgrchild = rit->rchild();
-    FSTreeNode *ulchild = (*uit)->lchild;
-    FSTreeNode *urchild = (*uit)->rchild;
-    FSTreeNode *vlchild = (*vit)->lchild;
-    FSTreeNode *vrchild = (*vit)->rchild;
+    Node *ulchild = (*uit)->lchild;
+    Node *urchild = (*uit)->rchild;
+    Node *vlchild = (*vit)->lchild;
+    Node *vrchild = (*vit)->rchild;
     //if (      ! (*uit)->is_legion_leaf() ) {
     //assert( ! (*vit)->is_legion_leaf() );
     if ( ! (*uit)->is_launch_node() ) {
@@ -528,7 +528,7 @@ void solve_bfs_launch
 
 
 void visit_launch_node
-(FSTreeNode *unode, FSTreeNode *vnode, const Range mappingTag,
+(Node *unode, Node *vnode, const Range mappingTag,
  double& tRed, double& tBroad, double& tCreate,
  Context ctx, HighLevelRuntime *runtime)
 {
@@ -538,10 +538,10 @@ void visit_launch_node
     return;
   }
 
-  FSTreeNode * b0 = unode->lchild;
-  FSTreeNode * b1 = unode->rchild;  
-  FSTreeNode * V0 = vnode->lchild;
-  FSTreeNode * V1 = vnode->rchild;
+  Node * b0 = unode->lchild;
+  Node * b1 = unode->rchild;  
+  Node * V0 = vnode->lchild;
+  Node * V1 = vnode->rchild;
 
   const Range mappingTag0 = mappingTag.lchild();
   const Range mappingTag1 = mappingTag.rchild();
@@ -594,7 +594,7 @@ void visit_launch_node
 
 
 void launch_solve_tasks
-(FSTreeNode *unode, FSTreeNode *vnode, const Range task_tag,
+(Node *unode, Node *vnode, const Range task_tag,
  Context ctx, HighLevelRuntime *runtime)
 {
   int nleaf = count_leaf(unode);
@@ -643,7 +643,7 @@ void launch_solve_tasks
 
 
 void add_subtree_regions 
-(LaunchNodeTask &launcher, FSTreeNode *unode, FSTreeNode *vnode){
+(LaunchNodeTask &launcher, Node *unode, Node *vnode){
 
 #ifdef DEBUG
   int n0 = launcher.region_requirements.size();
@@ -675,7 +675,7 @@ void add_subtree_regions
 
 
 void add_umat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *unode) {
+(LaunchNodeTask &launcher, Node *unode) {
     
   if (unode->is_legion_leaf()) {
     launcher.add_region_requirement(
@@ -693,7 +693,7 @@ void add_umat_regions
 
 
 void add_vmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *vnode) {
+(LaunchNodeTask &launcher, Node *vnode) {
     
   if ( vnode->Hmat != NULL ) {
     add_hmat_regions(launcher, vnode->Hmat);
@@ -718,7 +718,7 @@ void add_vmat_regions
 // Hmat has the same structure as umat, except
 //  the region privilege is READ_ONLY
 void add_hmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *hnode) {
+(LaunchNodeTask &launcher, Node *hnode) {
     
   if ( hnode->is_real_leaf() ) {
     launcher.add_region_requirement(
@@ -736,7 +736,7 @@ void add_hmat_regions
 
 
 void add_kmat_regions 
-(LaunchNodeTask &launcher, FSTreeNode *vnode) {
+(LaunchNodeTask &launcher, Node *vnode) {
     
   if ( vnode->is_legion_leaf() ) {
     assert( vnode->dense_matrix != NULL );
@@ -799,12 +799,12 @@ cpu_task(const Task *task,
   // extract the arguments
   Range taskTag = args->taskTag;
   int treeSize = args->treeSize;
-  FSTreeNode *treeArray = args->treeArray;
+  Node *treeArray = args->treeArray;
   assert(task->arglen == sizeof(ARGT));
 
   // recover the tree structure
-  FSTreeNode *vroot = treeArray;
-  FSTreeNode *uroot = &treeArray[treeSize];
+  Node *vroot = treeArray;
+  Node *uroot = &treeArray[treeSize];
   array_to_tree(treeArray, 0);
   array_to_tree(treeArray+treeSize, 0);
 

@@ -9,8 +9,6 @@ void register_solver_tasks();
 class FastSolver {
  public:
   FastSolver();
-
-  //enum {TOP};
   
   void solve_top(const HodlrMatrix&, const Range& mappingTag,
 		 Context ctx, HighLevelRuntime *runtime);
@@ -26,14 +24,14 @@ class FastSolver {
 	      << std::endl;}
   
  private:
-  void solve_dfs(FSTreeNode *, FSTreeNode *, Range,
+  void solve_dfs(Node *, Node *, Range,
 		 Context, HighLevelRuntime *);
 
     /*
-  void solve_bfs(FSTreeNode *, FSTreeNode *, Range, 
+  void solve_bfs(Node *, Node *, Range, 
 		 Context, HighLevelRuntime *);
 
-  void visit(FSTreeNode *, FSTreeNode *, const Range,
+  void visit(Node *, Node *, const Range,
 	     double&, double&, double&,
 	     Context, HighLevelRuntime *);
   */
