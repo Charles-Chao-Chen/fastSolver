@@ -1,9 +1,7 @@
 #include "hodlr_matrix.h"
-#include "node.h"
 #include "init_matrix_tasks.h"
 #include "lapack_blas.h"
 #include "macros.h"
-
 
 void create_Vtree
 (Node *unode, Node *vnode);
@@ -16,38 +14,10 @@ void create_Vregions
 
 void create_Kregions
 (Node *vnode,
- Context ctx, HighLevelRuntime *runtime);
-  
+ Context ctx, HighLevelRuntime *runtime);  
 
 // for debugging purpose
 void print_legion_tree(Node *);
-
-Node::Node(int nrow_, int ncol_,
-		       int row_beg_, int col_beg_,
-		       Node *lchild_,
-		       Node *rchild_,
-		       Node *Hmat_,
-		       LMatrix *matrix_,
-		       LMatrix *kmat_,
-		       bool isLegionLeaf_):
-  nrow(nrow_), ncol(ncol_),
-  row_beg(row_beg_), col_beg(col_beg_),
-  lchild(lchild_), rchild(rchild_), Hmat(Hmat_),
-  lowrank_matrix(matrix_), dense_matrix(kmat_),
-  isLegionLeaf(isLegionLeaf_) {}
-
-bool Node::is_real_leaf() const {
-  return (lchild == NULL)
-    &&   (rchild == NULL);
-}
-
-bool Node::is_legion_leaf() const {
-  return isLegionLeaf;
-}
-
-void Node::set_legion_leaf(bool is) {
-  isLegionLeaf = is;
-}
 
 HodlrMatrix::HodlrMatrix
 (int col, int row, int gl, int sl,
@@ -127,7 +97,7 @@ void HodlrMatrix::init_circulant_matrix
 
   Timer t; t.start();
   if (!skipU) {
-    init_Umat(uroot, taskTag, ctx, runtime);       // row_beg = 0
+    init_Umat(uroot, taskTag, ctx, runtime);     // row_beg = 0
   }
   init_Vmat(vroot, diag, taskTag, ctx, runtime); // row_beg = 0
   t.stop();
@@ -165,12 +135,12 @@ void HodlrMatrix::init_from_regions(const LMatrixArray& matArr) {
 }
 */
 
-/*static*/ void
-create_balanced_tree(Node *node, int rank, int threshold) {
-
+/*static*/ void create_balanced_tree
+(Node *node, int rank, int threshold) {
+    
+  // sub-divide the matrix
   int N = node->nrow;
-  if (N > threshold) { // sub-divide the matrix,
-                       // otherwise it is a dense block
+  if (N > threshold) {
 
     node->lchild = new Node;
     node->rchild = new Node;
@@ -184,14 +154,17 @@ create_balanced_tree(Node *node, int rank, int threshold) {
     node->lchild->col_beg = node->col_beg + node->ncol;
     node->rchild->col_beg = node->col_beg + node->ncol;
 
+    // TODO: to be debugged
+    node->lchild->row_beg = node->row_beg;
+    node->rchild->row_beg = node->row_beg + node->lchild->nrow;
+      
     // recursive call
     create_balanced_tree(node->lchild, rank, threshold);
     create_balanced_tree(node->rchild, rank, threshold);
-    
   }
   else {
-    assert(N > rank); // assume the size of dense blocks is larger
-                      // than the rank
+    // assume the size of dense blocks is larger than the rank
+    assert(N > rank); 
   }
 }
 
@@ -238,9 +211,10 @@ init_rhs(const long seed, const Range& procs,
 void HodlrMatrix::init_Umat
 (Node *node, Range tag, Context ctx,
  HighLevelRuntime *runtime, int row_beg) {
-
+  
+  //assert(node->row_beg == row_beg);
+  
   if ( node->is_legion_leaf() ) {
-
     // initialize the whole region with one call
     assert(node->lowrank_matrix != NULL);
     int col_beg = rhs_cols;
@@ -253,9 +227,8 @@ void HodlrMatrix::init_Umat
     init_Umat(node->lchild, ltag, ctx, runtime, row_beg);
     init_Umat(node->rchild, rtag, ctx, runtime, row_beg +
 	      node->lchild->nrow);
-  }  
+  }
 }
-
 
 static void init_circulant_Kmat
   (Node *V_legion_leaf, int row_beg_glo,
@@ -291,7 +264,6 @@ init_Vmat(Node *node, double diag, Range tag,
 	      ctx, runtime, row_beg+node->lchild->nrow);
   }
 }
-
 
 void init_circulant_Kmat
   (Node *vLeaf, int row,
@@ -364,30 +336,6 @@ mark_legion_leaf(Node *node, const int leafSize, int& nleaf) {
   return nRealLeaf;
 }
 
-
-// this function picks launch nodes as those having the
-//  number of threshold legion leaves.
-// nlaunch records the number of launch nodes
-/* static */
-/*int
-mark_launch_node(Node *node, int threshold) {
-
-  int nLeaf;
-  if (node->is_legion_leaf()) {
-    nLeaf = 1;
-  } else {
-    int nl = mark_launch_node(node->lchild, threshold);
-    int nr = mark_launch_node(node->rchild, threshold);
-    nLeaf = nl + nr;
-  }
-
-  // mark "launch node" on all nodes from the launch level
-  // (or lower levels)
-  node->set_launch_node( (nLeaf > threshold) ? false : true );
-  return nLeaf;
-}
-*/
-
 // return the number of legion leaf
 /* static */ void create_legion_node
 (Node *node, Context ctx, HighLevelRuntime *runtime) {
@@ -402,92 +350,6 @@ mark_launch_node(Node *node, int threshold) {
     create_legion_node(node->rchild, ctx, runtime);
   }
 }
-
-/*
-void HodlrMatrix::create_vnode_from_unode
-(Node *unode, Node *vnode,
- Context ctx, HighLevelRuntime *runtime)
-{
-  // create V tree
-  if ( ! unode->is_real_leaf() ) {
-
-    int lnrow = unode->lchild->nrow;
-    int rnrow = unode->rchild->nrow;
-    int lncol = unode->rchild->ncol; // notice the order here
-    int rncol = unode->lchild->ncol; // it is reversed in v
-    int lrow_beg = unode->lchild->row_beg; // u and v have the
-    int rrow_beg = unode->rchild->row_beg; // same row structure
-    
-    vnode -> lchild = new Node(lnrow, lncol, lrow_beg);
-    vnode -> rchild = new Node(rnrow, rncol, rrow_beg);
-
-    // set column begin index for Legion leaf,
-    // to be used in the big V matrix at Legion leaf
-    if (unode->is_legion_leaf()) {
-      vnode->set_legion_leaf(true);
-
-      if (unode->lowrank_matrix == NULL) { // skip Legion leaf
-	vnode -> lchild -> col_beg = vnode -> col_beg + vnode -> ncol;
-	vnode -> rchild -> col_beg = vnode -> col_beg + vnode -> ncol;
-      }
-    }
-    create_vnode_from_unode(unode->lchild, vnode->lchild, ctx, runtime);
-    create_vnode_from_unode(unode->rchild, vnode->rchild, ctx, runtime);
-    
-  } else {
-    vnode -> lchild = NULL;
-    vnode -> rchild = NULL;
-
-    if ( unode->is_legion_leaf() ) {
-      vnode->set_legion_leaf(true);
-    }
-  }
-
-  // create H-tiled matrices for two children
-  // including Legion leaf
-  if ( ! unode->is_legion_leaf() ) {
-    int lnrow = vnode -> lchild -> nrow;
-    int rnrow = vnode -> rchild -> nrow;
-    int lncol = vnode -> lchild -> ncol;
-    int rncol = vnode -> rchild -> ncol;
-
-    vnode -> lchild -> Hmat =  new Node(lnrow, lncol);
-    vnode -> rchild -> Hmat =  new Node(rnrow, rncol);
-
-    create_Hmatrix(vnode->lchild,
-		   vnode->lchild->Hmat,
-		   vnode->lchild->ncol,
-		   ctx, runtime);
-    create_Hmatrix(vnode->rchild,
-		   vnode->rchild->Hmat,
-		   vnode->rchild->ncol,
-		   ctx, runtime);
-  }
-
-    
-  // create a big rectangle at Legion leaf for lower levels
-  // not including Legion leaf
-  // please refer to Eric's slides of ver 2
-  if (unode->lowrank_matrix != NULL) {
-
-    assert(unode->nrow == vnode->nrow);
-    int urow = unode->lowrank_matrix->rows;
-    int ucol = unode->lowrank_matrix->cols;
-    int vrow = urow;
-    int vcol = ucol - (unode->col_beg + unode->ncol); // u and v have the same size under Legion leaf
-
-    // when the legion leaf is the real leaf, there is
-    // no data here.
-    create_matrix(vnode->lowrank_matrix, vrow, vcol,
-		  ctx, runtime);
- 
-    // create K matrix
-    int ncol = max_row_size(vnode);
-    create_matrix(vnode->dense_matrix, vnode->nrow, ncol,
-		  ctx, runtime);
-  }
-}
-*/
 
 void create_Vtree(Node *unode, Node *vnode) {
   
@@ -566,62 +428,6 @@ void create_Vregions
   }
 }
 
-/*
-  // old routine that still needs information from uroot
-  void create_Vregions
-(Node *unode, Node *vnode,
- Context ctx, HighLevelRuntime *runtime)
-{
-  // create H-tiled matrices for two children
-  // including Legion leaf
-  if ( ! unode->is_legion_leaf() ) {
-
-    int lnrow = vnode -> lchild -> nrow;
-    int rnrow = vnode -> rchild -> nrow;
-    int lncol = vnode -> lchild -> ncol;
-    int rncol = vnode -> rchild -> ncol;
-
-    vnode -> lchild -> Hmat =  new Node(lnrow, lncol);
-    vnode -> rchild -> Hmat =  new Node(rnrow, rncol);
-
-    create_Hmatrix(vnode->lchild,
-		   vnode->lchild->Hmat,
-		   vnode->lchild->ncol,
-		   ctx, runtime);
-    create_Hmatrix(vnode->rchild,
-		   vnode->rchild->Hmat,
-		   vnode->rchild->ncol,
-		   ctx, runtime);
-
-    // recursive call
-    create_Vregions(unode->lchild, vnode->lchild, ctx, runtime);
-    create_Vregions(unode->rchild, vnode->rchild, ctx, runtime);
-  }
-
-    
-  // create a big rectangle at Legion leaf for lower levels
-  // not including Legion leaf. So when the legion leaf and
-  // the real leaf conincide, there is such big rectangle
-  // region there.
-  // please refer to Eric's slides of ver 2
-  if (unode->lowrank_matrix != NULL) { // Legion leaf level
-
-    assert(unode->nrow == vnode->nrow);
-    int urow = unode->lowrank_matrix->rows;
-    int ucol = unode->lowrank_matrix->cols;
-
-    // u and v have the same size under Legion leaf
-    int vrow = urow;
-    int vcol = ucol - (unode->col_beg + unode->ncol);
-
-    // when the legion leaf is the real leaf, there is
-    // no data here.
-    create_matrix(vnode->lowrank_matrix,
-		  vrow, vcol, ctx, runtime);
-  }
-}
- */
-
 void create_Kregions
 (Node *vnode,
  Context ctx, HighLevelRuntime *runtime)
@@ -690,7 +496,6 @@ void set_circulant_Hmatrix_data
   }  
 }
 
-
 void print_legion_tree(Node * node) {
 
   if (node == NULL) return;
@@ -704,29 +509,21 @@ void print_legion_tree(Node * node) {
 	 node->nrow,    node->ncol,
 	 node->is_legion_leaf() ? "legion leaf" : "");
 
-  //if (node->set_legion_leaf() == true)
-  //std::cout << "Legion leaf." << std::endl;
-    
   if (node->lowrank_matrix != NULL) {
-
     int nrow = node->lowrank_matrix->rows;
     int ncol = node->lowrank_matrix->cols;
-
     printf("Matrix size: %d x %d\n", nrow, ncol);
   }
 
-  if (node->dense_matrix != NULL) {
-      
+  if (node->dense_matrix != NULL) {      
     int nrow = node->dense_matrix->rows;
     int ncol = node->dense_matrix->cols;
     printf("K Mat: %d x %d\n", nrow, ncol);
   }
-
     
   print_legion_tree(node->lchild);
   print_legion_tree(node->rchild);
 }
-
 
 void fill_circulant_Kmat(Node * vnode, int row_beg_glo, int r, double diag, double *Kmat, int LD) {
 
@@ -760,8 +557,6 @@ void fill_circulant_Kmat(Node * vnode, int row_beg_glo, int r, double diag, doub
     double *B = U;
     double *C = Kmat + vnode->row_beg;
     blas::dgemm_(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
-
-    //printf("After init Kmat.\n");
     
     free(U);
     return;
@@ -792,4 +587,20 @@ void HodlrMatrix::save_solution
 #endif
   Range rRhs(this->rhs_cols);
   save_HodlrMatrix(this->uroot, filename, ctx, runtime, rRhs);
+}
+
+void save_HodlrMatrix
+(Node * node, std::string filename,
+ Context ctx, HighLevelRuntime *runtime,
+ Range rg, bool print_seed)
+{
+  if ( node->is_legion_leaf() ) {
+    node->lowrank_matrix->save(filename, rg, ctx, runtime,
+			       print_seed);
+  } else {
+    save_HodlrMatrix(node->lchild, filename,
+		     ctx, runtime, rg, print_seed);
+    save_HodlrMatrix(node->rchild, filename,
+		     ctx, runtime, rg, print_seed);
+  }
 }

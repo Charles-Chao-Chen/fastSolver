@@ -57,4 +57,8 @@ public:
   LogicalRegion data;
 };
 
+void create_matrix
+  (LMatrix *(&matrix), int nrow, int ncol,
+   Context ctx, HighLevelRuntime *runtime);
+
 #endif // LEGION_MATRIX_H

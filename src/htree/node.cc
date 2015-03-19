@@ -1,6 +1,33 @@
 #include "node.h"
 #include "macros.h"
 
+Node::Node(int nrow_, int ncol_,
+		       int row_beg_, int col_beg_,
+		       Node *lchild_,
+		       Node *rchild_,
+		       Node *Hmat_,
+		       LMatrix *matrix_,
+		       LMatrix *kmat_,
+		       bool isLegionLeaf_):
+  nrow(nrow_), ncol(ncol_),
+  row_beg(row_beg_), col_beg(col_beg_),
+  lchild(lchild_), rchild(rchild_), Hmat(Hmat_),
+  lowrank_matrix(matrix_), dense_matrix(kmat_),
+  isLegionLeaf(isLegionLeaf_) {}
+
+bool Node::is_real_leaf() const {
+  return (lchild == NULL)
+    &&   (rchild == NULL);
+}
+
+bool Node::is_legion_leaf() const {
+  return isLegionLeaf;
+}
+
+void Node::set_legion_leaf(bool is) {
+  isLegionLeaf = is;
+}
+
 // this function computes the begining row index in region of
 // Legion leaf i.e. building the subtree with the legion node
 // as the root. This subtree is used in leaf solve (serial) task
@@ -111,56 +138,6 @@ int count_leaf(const Node *node) {
     return n1+n2;
   }
 }
-
-void create_matrix
-(LMatrix *(&matrix), int nrow, int ncol,
- Context ctx, HighLevelRuntime *runtime) {
-
-  // ncol can be 0 for the matrix below legion node
-  // in v tree
-  assert(nrow > 0);
-  matrix = new LMatrix(nrow, ncol);
-
-  int lower[2] = {0,      0};
-  int upper[2] = {nrow-1, ncol-1}; // inclusive bound
-  Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
-  FieldSpace fs = runtime->create_field_space(ctx);
-  IndexSpace is = runtime->
-    create_index_space(ctx, Domain::from_rect<2>(rect));
-  FieldAllocator allocator = runtime->
-    create_field_allocator(ctx, fs);
-  allocator.allocate_field(sizeof(double), FID_X);
-  matrix->data = runtime->create_logical_region(ctx, is, fs);
-  assert(matrix->data != LogicalRegion::NO_REGION);
-}
-
-void save_HodlrMatrix
-(Node * node, std::string filename,
- Context ctx, HighLevelRuntime *runtime,
- Range rg, bool print_seed)
-{
-  if ( node->is_legion_leaf() ) {
-    node->lowrank_matrix->save(filename, rg, ctx, runtime,
-			       print_seed);
-  } else {
-    save_HodlrMatrix(node->lchild, filename,
-		     ctx, runtime, rg, print_seed);
-    save_HodlrMatrix(node->rchild, filename,
-		     ctx, runtime, rg, print_seed);
-  }
-}
-
-/*
-int count_launch_node(Node *node) {
-  if ( ! node->is_launch_node() ) {
-    int nl = count_launch_node(node->lchild);
-    int nr = count_launch_node(node->rchild);
-    return nl + nr;
-  } else {
-    return 1;
-  }
-}
-*/
 
 /*
   void HodlrMatrix::print_Vmat(Node *node, std::string filename) {

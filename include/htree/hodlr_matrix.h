@@ -3,46 +3,15 @@
 
 #include <string>
 #include <fstream>
+
+#include "node.h"
 #include "legion_matrix.h"
 #include "matrix_array.hpp"
 #include "timer.hpp"
+
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
-
-// U and V have the same row structure
-struct Node {
-public:
-  Node(int nrow=0,
-       int ncol=0,
-       int row_beg=0,
-       int col_beg=0,
-       Node *lchild=NULL,
-       Node *rchild=NULL,
-       Node *Hmat=NULL,
-       LMatrix *matrix=NULL,
-       LMatrix *kmat=NULL,
-       bool isLegionLeaf=false);
-
-  bool is_real_leaf()   const;
-  bool is_legion_leaf() const;
-  void set_legion_leaf(bool);
-
-  int nrow;    
-  int ncol;
-  int row_beg; // begin index in the region
-  int col_beg;
-
-  Node *lchild;
-  Node *rchild;
-  Node *Hmat;
-  
-  LMatrix *lowrank_matrix; // low rank blocks
-  LMatrix *dense_matrix;   // dense blocks
-
-private:
-  bool isLegionLeaf;
-};
 
 class HodlrMatrix {
  public:
@@ -69,9 +38,6 @@ class HodlrMatrix {
   int  launch_level() const {return gloLevel-subLevel;}
   int  get_num_rhs() {return rhs_cols;}
   int  get_num_leaf() {return nLegionLeaf;}
-  //void set_num_leaf(int nleaf) {this->nLegionLeaf = nleaf;}
-  //int  get_num_launch_node() {return nLaunchNode;}
-  //void set_num_launch_node(int n) {nLaunchNode = n;}
   std::string get_file_soln() const {return file_soln;}
 
   void display_launch_time() const {
@@ -84,9 +50,6 @@ class HodlrMatrix {
   Node *vroot;
 
  private:
-  /* --- create tree --- */
-  //void create_vnode_from_unode(Node *, Node *,
-  //			       Context, HighLevelRuntime *);
 
   /* --- populate data --- */
   void init_Umat(Node *node, Range tag,
@@ -105,8 +68,6 @@ class HodlrMatrix {
   int nLegionLeaf;
   
  private:
-  //int nLaunchNode;
-  //Range procs;
   double timeInit;
   std::string file_rhs;
   std::string file_soln;
@@ -124,5 +85,10 @@ void set_circulant_Hmatrix_data
 void fill_circulant_Kmat
   (Node * vnode, int, int r, double diag,
    double *Kmat, int LD);
+
+void save_HodlrMatrix
+(Node * node, std::string filename,
+ Context ctx, HighLevelRuntime *runtime,
+ Range rg, bool print_seed=false);
 
 #endif // _LEGION_TREE_

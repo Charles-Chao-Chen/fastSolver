@@ -4,6 +4,28 @@
 #include "save_region_task.h"
 #include "macros.h"
 
+void create_matrix
+(LMatrix *(&matrix), int nrow, int ncol,
+ Context ctx, HighLevelRuntime *runtime) {
+
+  // ncol can be 0 for the matrix below legion node
+  // in v tree
+  assert(nrow > 0);
+  matrix = new LMatrix(nrow, ncol);
+
+  int lower[2] = {0,      0};
+  int upper[2] = {nrow-1, ncol-1}; // inclusive bound
+  Rect<2> rect((Point<2>(lower)), (Point<2>(upper)));
+  FieldSpace fs = runtime->create_field_space(ctx);
+  IndexSpace is = runtime->
+    create_index_space(ctx, Domain::from_rect<2>(rect));
+  FieldAllocator allocator = runtime->
+    create_field_allocator(ctx, fs);
+  allocator.allocate_field(sizeof(double), FID_X);
+  matrix->data = runtime->create_logical_region(ctx, is, fs);
+  assert(matrix->data != LogicalRegion::NO_REGION);
+}
+
 LMatrix::LMatrix(const int rows_, const int cols_,
 		 const LogicalRegion lr)
   : rows(rows_), cols(cols_), data(lr) {}
